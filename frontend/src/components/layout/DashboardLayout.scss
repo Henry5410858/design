@@ -1,0 +1,484 @@
+// =============================================================================
+// DASHBOARD LAYOUT COMPONENT STYLES
+// =============================================================================
+
+@use '../../styles/main.scss' as *;
+
+// =============================================================================
+// LAYOUT CONTAINER
+// =============================================================================
+
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background: $gradient-primary;
+  
+  // =============================================================================
+  // SIDEBAR STYLES
+  // =============================================================================
+  
+  .sidebar {
+    position: fixed;
+    inset-y: 0;
+    left: 0;
+    z-index: $z-fixed;
+    width: 18rem; // 288px - increased for better proportions
+    height: 100vh; // Ensure full viewport height
+    background-color: rgba($gray-800, 0.8);
+    backdrop-filter: blur(8px);
+    border-right: 1px solid rgba($primary-color, 0.3);
+    display: flex;
+    flex-direction: column;
+    padding: $spacing-2xl $spacing-lg;
+    transform: translateX(-100%);
+    transition: transform $transition-slow ease-in-out;
+    
+    @include respond-to(lg) {
+      transform: translateX(0);
+    }
+    
+    &--open {
+      transform: translateX(0);
+    }
+    
+    // Sidebar Header
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: $spacing-3xl;
+      padding-bottom: $spacing-lg;
+      border-bottom: 1px solid rgba($primary-color, 0.2);
+      
+      .logo {
+        font-size: 1.75rem; // 28px
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: $primary-color;
+        
+        @include respond-to(lg) {
+          font-size: 2rem; // 32px
+        }
+      }
+      
+      .close-btn {
+        padding: $spacing-sm;
+        color: $gray-400;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color $transition-normal;
+        
+        svg {
+          width: 1.25rem; // 20px
+          height: 1.25rem; // 20px
+        }
+        
+        &:hover {
+          color: white;
+        }
+        
+        @include respond-to(lg) {
+          display: none;
+        }
+      }
+    }
+    
+    // Navigation
+    &__nav {
+      flex: 1;
+      
+      .nav-item {
+        margin-bottom: $spacing-md;
+        
+        .nav-link {
+          display: flex;
+          align-items: center;
+          gap: $spacing-lg;
+          padding: $spacing-md $spacing-lg;
+          border-radius: $radius-lg;
+          color: $gray-200;
+          text-decoration: none;
+          transition: all $transition-normal;
+          cursor: pointer;
+          border: 1px solid transparent;
+          
+          &:hover {
+            background-color: rgba($primary-color, 0.2);
+            color: $primary-color;
+            border-color: rgba($primary-color, 0.3);
+            transform: translateX(4px);
+          }
+          
+          &.active {
+            background-color: rgba($primary-color, 0.3);
+            font-weight: 600;
+            color: $primary-color;
+            border-color: rgba($primary-color, 0.5);
+            box-shadow: $shadow-md;
+          }
+          
+          .nav-icon {
+            font-size: 1.25rem;
+            width: 1.25rem; // 20px
+            height: 1.25rem; // 20px
+            transition: transform $transition-normal;
+          }
+          
+          &:hover .nav-icon {
+            transform: scale(1.1);
+          }
+        }
+      }
+    }
+    
+    // Footer
+    &__footer {
+      margin-top: auto;
+      font-size: 0.75rem;
+      color: $gray-400;
+      text-align: center;
+      padding-top: $spacing-lg;
+      border-top: 1px solid rgba($primary-color, 0.2);
+    }
+  }
+  
+  // =============================================================================
+  // MOBILE OVERLAY
+  // =============================================================================
+  
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: $z-modal-backdrop;
+    
+    @include respond-to(lg) {
+      display: none;
+    }
+  }
+  
+  // =============================================================================
+  // MAIN CONTENT AREA
+  // =============================================================================
+  
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-left: 0;
+    
+    @include respond-to(lg) {
+      margin-left: 18rem; // 288px - sidebar width
+    }
+    
+    // =============================================================================
+    // TOP NAVBAR
+    // =============================================================================
+    
+    .top-navbar {
+      position: sticky;
+      top: 0;
+      z-index: $z-sticky;
+      height: 4.5rem; // 72px - increased for better proportions
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 $spacing-lg;
+      background-color: rgba($gray-800, 0.8);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba($primary-color, 0.3);
+      box-shadow: $shadow-lg;
+      
+      @include respond-to(lg) {
+        padding: 0 $spacing-2xl;
+      }
+      
+      // Left Section
+      .navbar-left {
+        display: flex;
+        align-items: center;
+        gap: $spacing-lg;
+        flex: 1;
+        
+        .menu-btn {
+          padding: $spacing-md;
+          color: $gray-400;
+          background: rgba($primary-color, 0.1);
+          border: 1px solid rgba($primary-color, 0.2);
+          border-radius: $radius-lg;
+          cursor: pointer;
+          transition: all $transition-normal;
+          
+          svg {
+            width: 1.25rem; // 20px
+            height: 1.25rem; // 20px
+          }
+          
+          &:hover {
+            color: white;
+            background: rgba($primary-color, 0.2);
+            border-color: rgba($primary-color, 0.4);
+            transform: scale(1.05);
+          }
+          
+          @include respond-to(lg) {
+            display: none;
+          }
+        }
+        
+        .search-bar {
+          display: none;
+          width: 20rem; // 320px - increased for better proportions
+          
+          @include respond-to(sm) {
+            display: block;
+          }
+          
+          .search-input {
+            width: 100%;
+            padding: $spacing-md $spacing-lg;
+            border-radius: $radius-lg;
+            background-color: rgba($gray-700, 0.5);
+            border: 1px solid rgba($primary-color, 0.3);
+            color: white;
+            font-size: 0.875rem;
+            
+            &::placeholder {
+              color: $gray-400;
+            }
+            
+            &:focus {
+              outline: none;
+              border-color: $primary-color;
+              box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
+              background-color: rgba($gray-700, 0.7);
+            }
+            
+            &:hover {
+              background-color: rgba($gray-700, 0.6);
+              border-color: rgba($primary-color, 0.4);
+            }
+          }
+        }
+      }
+      
+      // Right Section
+      .navbar-right {
+        display: flex;
+        align-items: center;
+        gap: $spacing-md;
+        
+        @include respond-to(lg) {
+          gap: $spacing-lg;
+        }
+        
+        // Notification Button
+        .notification-btn {
+          position: relative;
+          background: none;
+          border: none;
+          color: $primary-color;
+          cursor: pointer;
+          padding: $spacing-sm;
+          transition: color $transition-normal;
+          
+          svg {
+            width: 1.25rem; // 20px
+            height: 1.25rem; // 20px
+          }
+          
+          &:hover {
+            color: $secondary-color;
+          }
+          
+          .notification-dot {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: block;
+            height: 0.5rem; // 8px
+            width: 0.5rem; // 8px
+            border-radius: 50%;
+            background-color: $secondary-color;
+          }
+        }
+        
+        // User Menu
+        .user-menu {
+          position: relative;
+          
+          .user-btn {
+            display: flex;
+            align-items: center;
+            gap: $spacing-sm;
+            width: 2.5rem; // 40px - increased for better proportions
+            height: 2.5rem; // 40px - increased for better proportions
+            border-radius: 50%;
+            background-color: rgba($primary-color, 0.2);
+            border: 1px solid rgba($primary-color, 0.3);
+            color: $primary-color;
+            cursor: pointer;
+            transition: all $transition-normal;
+            
+            &:hover {
+              background-color: rgba($primary-color, 0.3);
+              border-color: rgba($primary-color, 0.5);
+              transform: scale(1.05);
+            }
+            
+            .user-avatar {
+              font-weight: 700;
+              font-size: 1rem;
+            }
+            
+            .chevron-icon {
+              font-size: 0.75rem;
+              transition: transform $transition-normal;
+              width: 0.75rem; // 12px
+              height: 0.75rem; // 12px
+              
+              &.rotated {
+                transform: rotate(180deg);
+              }
+            }
+          }
+          
+          // User Dropdown Menu
+          .user-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: $spacing-md;
+            width: 14rem; // 224px - increased for better proportions
+            background-color: rgba($gray-800, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba($primary-color, 0.3);
+            border-radius: $radius-xl;
+            box-shadow: $shadow-xl;
+            z-index: $z-dropdown;
+            
+            .dropdown-header {
+              padding: $spacing-lg;
+              border-bottom: 1px solid $gray-700;
+              
+              .username {
+                font-size: 0.875rem;
+                font-weight: 500;
+                color: white;
+                margin-bottom: $spacing-sm;
+              }
+              
+              .email {
+                font-size: 0.75rem;
+                color: $gray-400;
+              }
+            }
+            
+            .dropdown-menu {
+              padding: $spacing-md 0;
+              
+              .menu-item {
+                display: block;
+                width: 100%;
+                padding: $spacing-md $spacing-lg;
+                font-size: 0.875rem;
+                color: $gray-200;
+                text-decoration: none;
+                transition: all $transition-normal;
+                
+                svg {
+                  width: 0.875rem; // 14px
+                  height: 0.875rem; // 14px
+                  margin-right: $spacing-md;
+                }
+                
+                &:hover {
+                  background-color: rgba($primary-color, 0.2);
+                  color: $primary-color;
+                  transform: translateX(4px);
+                }
+                
+                &.logout {
+                  color: #ef4444;
+                  
+                  &:hover {
+                    background-color: rgba(#ef4444, 0.2);
+                    color: #fca5a5;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // =============================================================================
+    // CONTENT AREA
+    // =============================================================================
+    
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      
+      .content-wrapper {
+        padding: $spacing-lg;
+        min-height: calc(100vh - 4.5rem); // Account for navbar height
+        
+        @include respond-to(lg) {
+          padding: $spacing-2xl;
+        }
+        
+        @include respond-to(xl) {
+          padding: $spacing-3xl;
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// LOGOUT SPINNER
+// =============================================================================
+
+.logout-spinner {
+  width: 0.75rem; // 12px
+  height: 0.75rem; // 12px
+  border: 1px solid #ef4444;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+// =============================================================================
+// RESPONSIVE ADJUSTMENTS
+// =============================================================================
+
+@include respond-to(sm) {
+  .dashboard-layout {
+    .main-content {
+      .top-navbar {
+        .navbar-left {
+          .search-bar {
+            display: block;
+          }
+        }
+      }
+    }
+  }
+}
+
+@include respond-to(lg) {
+  .dashboard-layout {
+    .sidebar {
+      transform: translateX(0);
+    }
+    
+    .main-content {
+      margin-left: 18rem; // 288px - sidebar width
+    }
+  }
+}
+

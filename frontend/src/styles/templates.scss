@@ -1,0 +1,503 @@
+// =============================================================================
+// TEMPLATES PAGE STYLES - Beautiful & Modern UI
+// =============================================================================
+
+@use './main.scss' as *;
+
+// =============================================================================
+// TEMPLATES PAGE CONTAINER
+// =============================================================================
+
+.templates-page {
+  min-height: 100vh;
+  background: $gradient-primary;
+  padding: $spacing-lg;
+  
+  @include respond-to(lg) {
+    padding: $spacing-xl;
+  }
+}
+
+// =============================================================================
+// TEMPLATES HEADER
+// =============================================================================
+
+.templates-header {
+  text-align: center;
+  margin-bottom: $spacing-3xl;
+  max-width: 64rem;
+  margin-left: auto;
+  margin-right: auto;
+  
+  .header-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, $primary-color 0%, $secondary-color 50%, $accent-color 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: $spacing-lg;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    
+    @include respond-to(sm) {
+      font-size: 3rem;
+    }
+    
+    @include respond-to(lg) {
+      font-size: 3.5rem;
+    }
+  }
+  
+  .header-subtitle {
+    font-size: 1.125rem;
+    color: $gray-300;
+    line-height: 1.6;
+    max-width: 48rem;
+    margin: 0 auto;
+    
+    @include respond-to(sm) {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+// =============================================================================
+// TEMPLATES CONTROLS
+// =============================================================================
+
+.templates-controls {
+  margin-bottom: $spacing-2xl;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+// Category Filter Buttons
+.category-filters {
+  display: flex;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: $spacing-xl;
+  
+  .category-btn {
+    padding: $spacing-sm $spacing-lg;
+    border-radius: $radius-full;
+    border: 2px solid transparent;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all $transition-normal;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, $primary-color, $secondary-color);
+      opacity: 0;
+      transition: opacity $transition-normal;
+      z-index: -1;
+    }
+    
+    &.active {
+      background: linear-gradient(135deg, $primary-color, $secondary-color);
+      color: white;
+      border-color: transparent;
+      box-shadow: $shadow-lg;
+      transform: translateY(-2px);
+      
+      &::before {
+        opacity: 1;
+      }
+    }
+    
+    &:not(.active) {
+      background: rgba($gray-800, 0.8);
+      color: $gray-200;
+      border-color: rgba($primary-color, 0.3);
+      
+      &:hover {
+        background: rgba($primary-color, 0.1);
+        border-color: rgba($primary-color, 0.5);
+        transform: translateY(-1px);
+        box-shadow: $shadow-md;
+      }
+    }
+    
+    @include respond-to(sm) {
+      font-size: 1rem;
+      padding: $spacing-md $spacing-xl;
+    }
+  }
+}
+
+// Search and Create Section
+.controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  align-items: center;
+  
+  @include respond-to(sm) {
+    flex-direction: row;
+    justify-content: center;
+    gap: $spacing-xl;
+  }
+}
+
+// Create Template Button
+.create-template-btn {
+  @include button-primary;
+  padding: $spacing-lg $spacing-2xl;
+  font-size: 1.125rem;
+  font-weight: 600;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-lg;
+  position: relative;
+  overflow: hidden;
+  min-width: 200px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left $transition-slow;
+  }
+  
+  &:hover::before {
+    left: 100%;
+  }
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: $shadow-2xl;
+  }
+  
+  .btn-icon {
+    font-size: 1.5rem;
+    margin-right: $spacing-sm;
+  }
+}
+
+// Search Input
+.search-input {
+  @include input-base;
+  width: 100%;
+  max-width: 24rem;
+  padding: $spacing-md $spacing-lg;
+  font-size: 1rem;
+  border-radius: $radius-xl;
+  background: rgba($gray-800, 0.8);
+  border: 2px solid rgba($primary-color, 0.3);
+  
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.2);
+    background: rgba($gray-800, 0.9);
+  }
+  
+  &:hover {
+    border-color: rgba($primary-color, 0.5);
+    background: rgba($gray-800, 0.85);
+  }
+}
+
+// =============================================================================
+// TEMPLATES GRID
+// =============================================================================
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+  max-width: 80rem;
+  margin: 0 auto;
+  
+  @include respond-to(sm) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-xl;
+  }
+  
+  @include respond-to(lg) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-2xl;
+  }
+  
+  @include respond-to(xl) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-2xl;
+  }
+}
+
+// =============================================================================
+// TEMPLATE CARD
+// =============================================================================
+
+.template-card {
+  @include card-base;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all $transition-normal;
+  border: 2px solid rgba($primary-color, 0.2);
+  
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: $shadow-2xl;
+    border-color: rgba($primary-color, 0.5);
+    
+    .template-thumbnail {
+      transform: scale(1.05);
+    }
+    
+    .template-overlay {
+      opacity: 1;
+    }
+  }
+  
+  // Thumbnail Container
+  .template-thumbnail {
+    position: relative;
+    overflow: hidden;
+    transition: transform $transition-normal;
+    
+    img {
+      width: 100%;
+      height: 12rem;
+      object-fit: cover;
+      transition: transform $transition-normal;
+    }
+    
+    // Template Type Badge
+    .template-type {
+      position: absolute;
+      top: $spacing-md;
+      left: $spacing-md;
+      padding: $spacing-xs $spacing-sm;
+      background: rgba($primary-color, 0.9);
+      color: white;
+      border-radius: $radius-full;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      backdrop-filter: blur(8px);
+    }
+    
+    // Delete Button
+    .delete-btn {
+      position: absolute;
+      top: $spacing-md;
+      right: $spacing-md;
+      width: 2.5rem;
+      height: 2.5rem;
+      background: rgba(#ef4444, 0.95);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      cursor: pointer;
+      opacity: 1;
+      transition: all $transition-normal;
+      backdrop-filter: blur(8px);
+      font-size: 1.25rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      
+      &:hover {
+        background: #ef4444;
+        transform: scale(1.1);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+      }
+      
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+  }
+  
+  // Template Overlay
+  .template-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba($primary-color, 0.1), rgba($secondary-color, 0.1));
+    opacity: 0;
+    transition: opacity $transition-normal;
+    pointer-events: none;
+  }
+  
+  // Template Content
+  .template-content {
+    padding: $spacing-lg;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    
+    .template-name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: white;
+      line-height: 1.3;
+      margin: 0;
+    }
+    
+    .template-actions {
+      display: flex;
+      gap: $spacing-sm;
+      
+      .action-btn {
+        @include button-primary;
+        padding: $spacing-sm $spacing-md;
+        font-size: 0.875rem;
+        border-radius: $radius-lg;
+        flex: 1;
+        
+        &.secondary {
+          @include button-secondary;
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// LOADING STATE
+// =============================================================================
+
+.templates-loading {
+  text-align: center;
+  padding: $spacing-4xl;
+  
+  .loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 3px solid rgba($primary-color, 0.2);
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto $spacing-lg;
+  }
+}
+
+// =============================================================================
+// ANIMATIONS
+// =============================================================================
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.templates-loading {
+  .loading-text {
+    color: $gray-400;
+    font-size: 1.125rem;
+  }
+}
+
+// =============================================================================
+// CREATE TEMPLATE DIALOG
+// =============================================================================
+
+.create-dialog {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-modal;
+  padding: $spacing-md;
+  
+  .dialog-content {
+    @include card-base;
+    width: 100%;
+    max-width: 28rem;
+    padding: $spacing-2xl;
+    border: 2px solid rgba($primary-color, 0.3);
+    
+    .dialog-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+      text-align: center;
+      margin-bottom: $spacing-xl;
+    }
+    
+    .form-group {
+      margin-bottom: $spacing-lg;
+      
+      label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $gray-200;
+        margin-bottom: $spacing-sm;
+      }
+      
+      input, select {
+        @include input-base;
+        width: 100%;
+        padding: $spacing-md;
+        font-size: 1rem;
+        border-radius: $radius-lg;
+      }
+    }
+    
+    .dialog-actions {
+      display: flex;
+      gap: $spacing-md;
+      justify-content: flex-end;
+      
+      .btn {
+        padding: $spacing-md $spacing-lg;
+        border-radius: $radius-lg;
+        font-weight: 500;
+        transition: all $transition-normal;
+        cursor: pointer;
+        
+        &.btn-secondary {
+          @include button-secondary;
+        }
+        
+        &.btn-primary {
+          @include button-primary;
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// RESPONSIVE ADJUSTMENTS
+// =============================================================================
+
+@include respond-to(sm) {
+  .templates-header {
+    margin-bottom: $spacing-4xl;
+  }
+  
+  .templates-controls {
+    margin-bottom: $spacing-3xl;
+  }
+}
+
+@include respond-to(lg) {
+  .templates-page {
+    padding: $spacing-2xl;
+  }
+}
