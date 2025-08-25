@@ -57,18 +57,10 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       description: 'Diseño atractivo para promociones en redes sociales',
       isPremium: true
     },
-    {
-      id: '3',
-      name: 'Post Informativo',
-      category: 'social-posts',
-      thumbnail: '/api/placeholder/400/300',
-      description: 'Layout limpio para información y noticias',
-      isPremium: false
-    },
 
     // Stories
     {
-      id: '4',
+      id: '3',
       name: 'IG/FB/WSP Story',
       category: 'stories',
       thumbnail: '/api/placeholder/400/700',
@@ -76,25 +68,17 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       isPremium: false
     },
     {
-      id: '5',
+      id: '4',
       name: 'Story Promocional',
       category: 'stories',
       thumbnail: '/api/placeholder/400/700',
       description: 'Story con elementos promocionales atractivos',
       isPremium: true
     },
-    {
-      id: '6',
-      name: 'Story Informativo',
-      category: 'stories',
-      thumbnail: '/api/placeholder/400/700',
-      description: 'Story para compartir información importante',
-      isPremium: false
-    },
 
     // Flyers
     {
-      id: '7',
+      id: '5',
       name: 'Marketplace Flyer',
       category: 'flyers',
       thumbnail: '/api/placeholder/400/300',
@@ -102,25 +86,17 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       isPremium: false
     },
     {
-      id: '8',
+      id: '6',
       name: 'Flyer Evento',
       category: 'flyers',
       thumbnail: '/api/placeholder/400/300',
       description: 'Flyer para eventos y conferencias',
       isPremium: true
     },
-    {
-      id: '9',
-      name: 'Flyer Promocional',
-      category: 'flyers',
-      thumbnail: '/api/placeholder/400/300',
-      description: 'Flyer para promociones y ofertas',
-      isPremium: false
-    },
 
     // Banners
     {
-      id: '10',
+      id: '7',
       name: 'FB Feed Banner',
       category: 'banners',
       thumbnail: '/api/placeholder/400/200',
@@ -128,25 +104,17 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       isPremium: false
     },
     {
-      id: '11',
+      id: '8',
       name: 'Banner Web',
       category: 'banners',
       thumbnail: '/api/placeholder/400/200',
       description: 'Banner para sitios web y landing pages',
       isPremium: true
     },
-    {
-      id: '12',
-      name: 'Banner Email',
-      category: 'banners',
-      thumbnail: '/api/placeholder/400/200',
-      description: 'Banner para campañas de email marketing',
-      isPremium: false
-    },
 
     // Badges
     {
-      id: '13',
+      id: '9',
       name: 'Digital Badge',
       category: 'badges',
       thumbnail: '/api/placeholder/300/300',
@@ -154,25 +122,17 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       isPremium: false
     },
     {
-      id: '14',
+      id: '10',
       name: 'Visual Card',
       category: 'badges',
       thumbnail: '/api/placeholder/300/300',
       description: 'Tarjeta visual para presentaciones',
       isPremium: true
     },
-    {
-      id: '15',
-      name: 'Profile Badge',
-      category: 'badges',
-      thumbnail: '/api/placeholder/300/300',
-      description: 'Badge para perfiles profesionales',
-      isPremium: false
-    },
 
     // Documents
     {
-      id: '16',
+      id: '11',
       name: 'Brochure Simple',
       category: 'documents',
       thumbnail: '/api/placeholder/400/600',
@@ -180,20 +140,12 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       isPremium: false
     },
     {
-      id: '17',
+      id: '12',
       name: 'Documento 1 Página',
       category: 'documents',
       thumbnail: '/api/placeholder/400/600',
       description: 'Documento de una página para presentaciones',
       isPremium: true
-    },
-    {
-      id: '18',
-      name: 'Folleto Informativo',
-      category: 'documents',
-      thumbnail: '/api/placeholder/400/600',
-      description: 'Folleto informativo profesional',
-      isPremium: false
     }
   ];
 
