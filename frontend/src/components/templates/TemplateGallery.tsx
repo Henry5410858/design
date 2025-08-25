@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import { FiEdit3, FiDownload, FiFilter, FiGrid, FiImage, FiFileText, FiVideo } from 'react-icons/fi';
+import { FiEdit3, FiDownload, FiFilter, FiGrid, FiImage, FiFileText, FiVideo, FiSmartphone, FiMonitor, FiShare2, FiBookOpen } from 'react-icons/fi';
 
 export interface Template {
   id: string;
   name: string;
-  category: 'flyers' | 'banners' | 'stories' | 'docs';
+  category: 'social-posts' | 'stories' | 'flyers' | 'banners' | 'badges' | 'documents';
   thumbnail: string;
   description: string;
   isPremium: boolean;
@@ -30,14 +30,178 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
 
   const categories = [
     { id: 'all', name: 'Todos', icon: <FiGrid /> },
-    { id: 'flyers', name: 'Flyers', icon: <FiImage /> },
-    { id: 'banners', name: 'Banners', icon: <FiImage /> },
-    { id: 'stories', name: 'Stories', icon: <FiVideo /> },
-    { id: 'docs', name: 'Documentos', icon: <FiFileText /> }
+    { id: 'social-posts', name: 'Posts Redes', icon: <FiImage /> },
+    { id: 'stories', name: 'Stories', icon: <FiSmartphone /> },
+    { id: 'flyers', name: 'Flyers', icon: <FiShare2 /> },
+    { id: 'banners', name: 'Banners', icon: <FiMonitor /> },
+    { id: 'badges', name: 'Badges', icon: <FiImage /> },
+    { id: 'documents', name: 'Documentos', icon: <FiBookOpen /> }
   ];
 
+  // Sample templates for each category
+  const sampleTemplates: Template[] = [
+    // Social Posts
+    {
+      id: '1',
+      name: 'IG/FB Square Post',
+      category: 'social-posts',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Post cuadrado optimizado para Instagram y Facebook',
+      isPremium: false
+    },
+    {
+      id: '2',
+      name: 'Post Promocional',
+      category: 'social-posts',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Diseño atractivo para promociones en redes sociales',
+      isPremium: true
+    },
+    {
+      id: '3',
+      name: 'Post Informativo',
+      category: 'social-posts',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Layout limpio para información y noticias',
+      isPremium: false
+    },
+
+    // Stories
+    {
+      id: '4',
+      name: 'IG/FB/WSP Story',
+      category: 'stories',
+      thumbnail: '/api/placeholder/400/700',
+      description: 'Story vertical para Instagram, Facebook y WhatsApp',
+      isPremium: false
+    },
+    {
+      id: '5',
+      name: 'Story Promocional',
+      category: 'stories',
+      thumbnail: '/api/placeholder/400/700',
+      description: 'Story con elementos promocionales atractivos',
+      isPremium: true
+    },
+    {
+      id: '6',
+      name: 'Story Informativo',
+      category: 'stories',
+      thumbnail: '/api/placeholder/400/700',
+      description: 'Story para compartir información importante',
+      isPremium: false
+    },
+
+    // Flyers
+    {
+      id: '7',
+      name: 'Marketplace Flyer',
+      category: 'flyers',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Flyer optimizado para marketplace y ventas',
+      isPremium: false
+    },
+    {
+      id: '8',
+      name: 'Flyer Evento',
+      category: 'flyers',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Flyer para eventos y conferencias',
+      isPremium: true
+    },
+    {
+      id: '9',
+      name: 'Flyer Promocional',
+      category: 'flyers',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Flyer para promociones y ofertas',
+      isPremium: false
+    },
+
+    // Banners
+    {
+      id: '10',
+      name: 'FB Feed Banner',
+      category: 'banners',
+      thumbnail: '/api/placeholder/400/200',
+      description: 'Banner optimizado para Facebook Feed',
+      isPremium: false
+    },
+    {
+      id: '11',
+      name: 'Banner Web',
+      category: 'banners',
+      thumbnail: '/api/placeholder/400/200',
+      description: 'Banner para sitios web y landing pages',
+      isPremium: true
+    },
+    {
+      id: '12',
+      name: 'Banner Email',
+      category: 'banners',
+      thumbnail: '/api/placeholder/400/200',
+      description: 'Banner para campañas de email marketing',
+      isPremium: false
+    },
+
+    // Badges
+    {
+      id: '13',
+      name: 'Digital Badge',
+      category: 'badges',
+      thumbnail: '/api/placeholder/300/300',
+      description: 'Badge digital para certificaciones y logros',
+      isPremium: false
+    },
+    {
+      id: '14',
+      name: 'Visual Card',
+      category: 'badges',
+      thumbnail: '/api/placeholder/300/300',
+      description: 'Tarjeta visual para presentaciones',
+      isPremium: true
+    },
+    {
+      id: '15',
+      name: 'Profile Badge',
+      category: 'badges',
+      thumbnail: '/api/placeholder/300/300',
+      description: 'Badge para perfiles profesionales',
+      isPremium: false
+    },
+
+    // Documents
+    {
+      id: '16',
+      name: 'Brochure Simple',
+      category: 'documents',
+      thumbnail: '/api/placeholder/400/600',
+      description: 'Brochure de una página simple y elegante',
+      isPremium: false
+    },
+    {
+      id: '17',
+      name: 'Documento 1 Página',
+      category: 'documents',
+      thumbnail: '/api/placeholder/400/600',
+      description: 'Documento de una página para presentaciones',
+      isPremium: true
+    },
+    {
+      id: '18',
+      name: 'Folleto Informativo',
+      category: 'documents',
+      thumbnail: '/api/placeholder/400/600',
+      description: 'Folleto informativo profesional',
+      isPremium: false
+    }
+  ];
+
+  // Use provided templates or fall back to sample templates
+  const allTemplates = templates.length > 0 ? templates : sampleTemplates;
+
   // Ensure templates is always an array and filter safely
-  const safeTemplates = Array.isArray(templates) ? templates : [];
+  const safeTemplates = Array.isArray(allTemplates) ? allTemplates : [];
   
   const filteredTemplates = safeTemplates.filter(template => {
     const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
@@ -125,11 +289,18 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           >
             {/* Thumbnail */}
             <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-              <img
-                src={template.thumbnail}
-                alt={template.name}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
+              <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    {template.category === 'stories' ? <FiSmartphone className="w-6 h-6 text-gray-600" /> :
+                     template.category === 'documents' ? <FiBookOpen className="w-6 h-6 text-gray-600" /> :
+                     template.category === 'banners' ? <FiMonitor className="w-6 h-6 text-gray-600" /> :
+                     template.category === 'badges' ? <FiImage className="w-6 h-6 text-gray-600" /> :
+                     <FiImage className="w-6 h-6 text-gray-600" />}
+                  </div>
+                  <span className="text-gray-500 text-sm font-medium">{template.name}</span>
+                </div>
+              </div>
               
               {/* Premium Badge */}
               {template.isPremium && (
