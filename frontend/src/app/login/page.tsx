@@ -2,11 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { FiMail, FiLock, FiArrowRight, FiZap } from 'react-icons/fi';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -17,49 +20,157 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('http://localhost:4000/api/auth/signin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    if (res.ok) {
-      const { token } = await res.json();
-      localStorage.setItem('token', token); // Use localStorage instead of cookie
-      console.log('LoginPage: token set =', token); // Debug log
-      console.log('LoginPage: localStorage token =', localStorage.getItem('token'));
-      router.push('/');
-    } else {
-      setError('Invalid email or password');
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const res = await fetch('http://localhost:4000/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (res.ok) {
+        const { token } = await res.json();
+        localStorage.setItem('token', token);
+        router.push('/');
+      } else {
+        setError('Email o contraseña incorrectos');
+      }
+    } catch (err) {
+      setError('Error de conexión. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-[#41015F] to-gray-900">
-      <form onSubmit={handleLogin} className="bg-gray-800/90 backdrop-blur-sm p-8 rounded-2xl shadow-2xl max-w-sm w-full border border-[#31dFC5]/30">
-        <h1 className="text-2xl font-bold mb-4 text-white">Login</h1>
-        <input
-          type="email"
-          placeholder="Email address"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="border border-[#31dFC5]/30 rounded px-3 py-2 w-full mb-4 bg-gray-700/50 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#31dFC5]/50"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="border border-[#31dFC5]/30 rounded px-3 py-2 w-full mb-4 bg-gray-700/50 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#31dFC5]/50"
-          required
-        />
-        {error && <div className="text-red-500 mb-2">{error}</div>}
-        <button type="submit" className="w-full bg-[#01AAC7] text-white py-2 rounded mb-2 hover:bg-[#31dFC5] transition-colors">Login</button>
-        <div className="text-center text-sm text-gray-300">
-          Don&apos;t have an account?{` `}
-          <Link href="/signup" className="text-[#31dFC5] underline hover:text-[#01AAC7]">Sign Up</Link>
-        </div>
-      </form>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo Section */}
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="w-16 h-16 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <FiZap className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">LupaProp</h1>
+          <p className="text-gray-600">Centro de Diseño Profesional</p>
+        </motion.div>
+
+        {/* Login Form */}
+        <motion.div
+          className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Bienvenido de vuelta</h2>
+            <p className="text-gray-600">Inicia sesión en tu cuenta</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            {/* Email Input */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Correo electrónico
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiMail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Contraseña
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FiLock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <motion.div 
+                className="text-error text-sm text-center p-3 bg-error/10 rounded-xl border border-error/20"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {/* Submit Button */}
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white py-3 px-6 rounded-2xl font-semibold hover:from-brand-primary-dark hover:to-brand-secondary-dark transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Iniciando sesión...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  Iniciar Sesión
+                  <FiArrowRight className="ml-2 w-4 h-4" />
+                </div>
+              )}
+            </button>
+          </form>
+
+          {/* Sign Up Link */}
+          <div className="text-center mt-6 pt-6 border-t border-gray-200">
+            <p className="text-gray-600 text-sm">
+              ¿No tienes una cuenta?{' '}
+              <Link 
+                href="/signup" 
+                className="text-brand-primary font-semibold hover:text-brand-primary-dark transition-colors duration-200 underline"
+              >
+                Regístrate aquí
+              </Link>
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Footer */}
+        <motion.div 
+          className="text-center mt-8 text-gray-500 text-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <p>© 2024 LupaProp. Todos los derechos reservados.</p>
+        </motion.div>
+      </div>
     </div>
   );
 }

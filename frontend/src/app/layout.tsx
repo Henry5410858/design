@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.scss";
+import "./globals.css";
 import { UserProvider } from '../context/UserContext';
+import ClientOnly from '../components/ClientOnly';
 
 export const metadata: Metadata = {
-  title: 'Design Center',
-  description: 'A professional design and proposal generation hub',
+  title: 'LupaProp - Centro de Diseño Profesional',
+  description: 'Una plataforma profesional para diseño y generación de propuestas',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
-        <UserProvider>
-          {children}
-        </UserProvider>
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" 
+          rel="stylesheet" 
+        />
+      </head>
+      <body className="font-sans antialiased">
+        <ClientOnly>
+          <UserProvider>
+            {children}
+          </UserProvider>
+        </ClientOnly>
       </body>
     </html>
   );

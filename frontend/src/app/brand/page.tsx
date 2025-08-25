@@ -45,7 +45,7 @@ export default function BrandPage() {
       }
     } catch (error) {
       console.error('Error fetching brand kit:', error);
-      setMessage({ type: 'error', text: 'Failed to load brand kit' });
+      setMessage({ type: 'error', text: 'Error al cargar el kit de marca' });
     } finally {
       setLoading(false);
     }
@@ -80,13 +80,13 @@ export default function BrandPage() {
         setBrandKit(prev => ({ ...prev, logo: data.logo }));
         setLogoPreview(`http://localhost:4000${data.logo}`);
         setLogoFile(null);
-        setMessage({ type: 'success', text: 'Logo uploaded successfully!' });
+        setMessage({ type: 'success', text: '¡Logo subido exitosamente!' });
       } else {
         throw new Error('Failed to upload logo');
       }
     } catch (error) {
       console.error('Error uploading logo:', error);
-      setMessage({ type: 'error', text: 'Failed to upload logo' });
+      setMessage({ type: 'error', text: 'Error al subir el logo' });
     }
   };
 
@@ -104,13 +104,13 @@ export default function BrandPage() {
       });
 
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Brand kit saved successfully!' });
+        setMessage({ type: 'success', text: '¡Kit de marca guardado exitosamente!' });
       } else {
         throw new Error('Failed to save brand kit');
       }
     } catch (error) {
       console.error('Error saving brand kit:', error);
-      setMessage({ type: 'error', text: 'Failed to save brand kit' });
+      setMessage({ type: 'error', text: 'Error al guardar el kit de marca' });
     } finally {
       setSaving(false);
     }
@@ -124,7 +124,7 @@ export default function BrandPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
         </div>
       </DashboardLayout>
     );
@@ -135,16 +135,16 @@ export default function BrandPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Brand Kit</h1>
-          <p className="text-gray-600">Manage your brand identity, colors, and typography</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Kit de Marca</h1>
+          <p className="text-gray-600">Gestiona tu identidad de marca, colores y tipografía</p>
         </div>
 
         {/* Success/Error Messages */}
         {message && (
           <div className={`mb-6 p-4 rounded-xl ${
             message.type === 'success' 
-              ? 'bg-green-50 border border-green-200 text-green-800' 
-              : 'bg-red-50 border border-red-200 text-red-800'
+              ? 'bg-success/10 border border-success/20 text-success' 
+              : 'bg-error/10 border border-error/20 text-error'
           }`}>
             {message.text}
           </div>
@@ -154,34 +154,34 @@ export default function BrandPage() {
           {/* Left Column - Brand Settings */}
           <div className="lg:col-span-2 space-y-6">
             {/* Logo & Basic Branding */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FiImage className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-brand-primary/10 rounded-xl">
+                  <FiImage className="w-5 h-5 text-brand-primary" />
                 </div>
-                Logo & Brand Identity
+                Logo e Identidad de Marca
               </h2>
               
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Brand Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nombre de la Marca</label>
                   <input
                     type="text"
                     value={brandKit?.brandName || ''}
                     onChange={(e) => updateBrandKit({ brandName: e.target.value })}
-                    placeholder="Enter your brand name"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Ingresa el nombre de tu marca"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tagline</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Slogan</label>
                   <input
                     type="text"
                     value={brandKit?.tagline || ''}
                     onChange={(e) => updateBrandKit({ tagline: e.target.value })}
-                    placeholder="Enter your brand tagline"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Ingresa el slogan de tu marca"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
                   />
                 </div>
 
@@ -192,7 +192,7 @@ export default function BrandPage() {
                       <div className="w-20 h-20 border-2 border-gray-200 rounded-xl overflow-hidden">
                         <img 
                           src={logoPreview} 
-                          alt="Brand logo" 
+                          alt="Logo de marca" 
                           className="w-full h-full object-contain"
                         />
                       </div>
@@ -202,14 +202,14 @@ export default function BrandPage() {
                         type="file"
                         accept="image/*"
                         onChange={handleLogoUpload}
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20 transition-colors duration-200"
                       />
                       {logoFile && (
                         <button
                           onClick={uploadLogo}
-                          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                          className="mt-2 px-4 py-2 bg-brand-primary text-white rounded-xl text-sm font-medium hover:bg-brand-primary-dark transition-colors duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1"
                         >
-                          Upload Logo
+                          Subir Logo
                         </button>
                       )}
                     </div>
@@ -219,17 +219,17 @@ export default function BrandPage() {
             </div>
 
             {/* Colors */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <FiDroplet className="w-5 h-5 text-purple-600" />
+                <div className="p-2 bg-brand-secondary/10 rounded-xl">
+                  <FiDroplet className="w-5 h-5 text-brand-secondary" />
                 </div>
-                Brand Colors
+                Colores de Marca
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Color Primario</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -241,7 +241,7 @@ export default function BrandPage() {
                           accent: brandKit?.colors?.accent || '#10B981'
                         }
                       })}
-                      className="w-16 h-16 rounded-xl border-2 border-gray-200 cursor-pointer"
+                      className="w-16 h-16 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-brand-primary transition-colors duration-200"
                     />
                     <input
                       type="text"
@@ -253,14 +253,14 @@ export default function BrandPage() {
                           accent: brandKit?.colors?.accent || '#10B981'
                         }
                       })}
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-mono text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
                     />
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">Used for headings and primary elements</p>
+                  <p className="text-sm text-gray-500 mt-1">Usado para títulos y elementos principales</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Color</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Color Secundario</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -272,7 +272,7 @@ export default function BrandPage() {
                           accent: brandKit?.colors?.accent || '#10B981'
                         }
                       })}
-                      className="w-16 h-16 rounded-xl border-2 border-gray-200 cursor-pointer"
+                      className="w-16 h-16 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-brand-secondary transition-colors duration-200"
                     />
                     <input
                       type="text"
@@ -284,14 +284,14 @@ export default function BrandPage() {
                           accent: brandKit?.colors?.accent || '#10B981'
                         }
                       })}
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-mono text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand-secondary focus:border-transparent transition-all duration-200"
                     />
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">Used for accents and secondary elements</p>
+                  <p className="text-sm text-gray-500 mt-1">Usado para acentos y elementos secundarios</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Color de Acento</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -303,7 +303,7 @@ export default function BrandPage() {
                           accent: e.target.value
                         }
                       })}
-                      className="w-16 h-16 rounded-xl border-2 border-gray-200 cursor-pointer"
+                      className="w-16 h-16 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-success transition-colors duration-200"
                     />
                     <input
                       type="text"
@@ -315,26 +315,26 @@ export default function BrandPage() {
                           accent: e.target.value
                         }
                       })}
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-mono text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-success focus:border-transparent transition-all duration-200"
                     />
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">Used for highlights and special elements</p>
+                  <p className="text-sm text-gray-500 mt-1">Usado para destacados y elementos especiales</p>
                 </div>
               </div>
             </div>
 
             {/* Typography */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <FiType className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-success/10 rounded-xl">
+                  <FiType className="w-5 h-5 text-success" />
                 </div>
-                Typography
+                Tipografía
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Heading Font</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fuente de Títulos</label>
                   <select
                     value={brandKit?.fonts?.heading || 'Inter'}
                     onChange={(e) => updateBrandKit({
@@ -343,7 +343,7 @@ export default function BrandPage() {
                         body: brandKit?.fonts?.body || 'Inter'
                       }
                     })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
                   >
                     <option value="Inter">Inter</option>
                     <option value="Roboto">Roboto</option>
@@ -356,7 +356,7 @@ export default function BrandPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Body Font</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fuente del Cuerpo</label>
                   <select
                     value={brandKit?.fonts?.body || 'Inter'}
                     onChange={(e) => updateBrandKit({
@@ -365,7 +365,7 @@ export default function BrandPage() {
                         body: e.target.value
                       }
                     })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
                   >
                     <option value="Inter">Inter</option>
                     <option value="Roboto">Roboto</option>
@@ -380,26 +380,26 @@ export default function BrandPage() {
             </div>
 
             {/* Save Button */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-sm hover:shadow-md transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full px-8 py-4 bg-gradient-to-r from-brand-primary to-brand-secondary text-white rounded-xl font-bold text-lg shadow-soft hover:shadow-elevated transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 {saving ? (
                   <>
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                    Saving...
+                    Guardando...
                   </>
                 ) : (
                   <>
                     <FiSave className="w-6 h-6" />
-                    Save Brand Kit
+                    Guardar Kit de Marca
                   </>
                 )}
               </button>
               <p className="text-sm text-gray-500 mt-3 text-center">
-                Your brand elements will automatically apply to all templates
+                Tus elementos de marca se aplicarán automáticamente a todas las plantillas
               </p>
             </div>
           </div>
@@ -407,12 +407,12 @@ export default function BrandPage() {
           {/* Right Column - Brand Preview */}
           <div className="space-y-6">
             {/* Brand Preview */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FiImage className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-brand-primary/10 rounded-xl">
+                  <FiImage className="w-5 h-5 text-brand-primary" />
                 </div>
-                Brand Preview
+                Vista Previa de Marca
               </h2>
               
               <div className="space-y-6">
@@ -421,7 +421,7 @@ export default function BrandPage() {
                   <div className="text-center p-6 bg-gray-50 rounded-xl">
                     <img 
                       src={logoPreview} 
-                      alt="Brand logo" 
+                      alt="Logo de marca" 
                       className="max-w-full max-h-32 mx-auto object-contain"
                     />
                   </div>
@@ -440,28 +440,28 @@ export default function BrandPage() {
                 {/* Color Palette */}
                 {brandKit?.colors && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Color Palette</h4>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Paleta de Colores</h4>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="text-center">
                         <div 
-                          className="w-12 h-12 rounded-lg mx-auto mb-2 border border-gray-200"
+                          className="w-12 h-12 rounded-xl mx-auto mb-2 border border-gray-200"
                           style={{ backgroundColor: brandKit.colors.primary }}
                         ></div>
-                        <span className="text-xs text-gray-500">Primary</span>
+                        <span className="text-xs text-gray-500">Primario</span>
                       </div>
                       <div className="text-center">
                         <div 
-                          className="w-12 h-12 rounded-lg mx-auto mb-2 border border-gray-200"
+                          className="w-12 h-12 rounded-xl mx-auto mb-2 border border-gray-200"
                           style={{ backgroundColor: brandKit.colors.secondary }}
                         ></div>
-                        <span className="text-xs text-gray-500">Secondary</span>
+                        <span className="text-xs text-gray-500">Secundario</span>
                       </div>
                       <div className="text-center">
                         <div 
-                          className="w-12 h-12 rounded-lg mx-auto mb-2 border border-gray-200"
+                          className="w-12 h-12 rounded-xl mx-auto mb-2 border border-gray-200"
                           style={{ backgroundColor: brandKit.colors.accent }}
                         ></div>
-                        <span className="text-xs text-gray-500">Accent</span>
+                        <span className="text-xs text-gray-500">Acento</span>
                       </div>
                     </div>
                   </div>
@@ -470,19 +470,19 @@ export default function BrandPage() {
                 {/* Typography Preview */}
                 {brandKit?.fonts && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Typography</h4>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Tipografía</h4>
                     <div className="space-y-2">
                       <div 
                         className="text-lg font-semibold"
                         style={{ fontFamily: brandKit.fonts.heading }}
                       >
-                        Heading Font: {brandKit.fonts.heading}
+                        Fuente de Títulos: {brandKit.fonts.heading}
                       </div>
                       <div 
                         className="text-sm"
                         style={{ fontFamily: brandKit.fonts.body }}
                       >
-                        Body Font: {brandKit.fonts.body}
+                        Fuente del Cuerpo: {brandKit.fonts.body}
                       </div>
                     </div>
                   </div>

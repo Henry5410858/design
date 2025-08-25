@@ -247,7 +247,14 @@ export default function TemplateEditor({ id }: { id: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
-  const [brandKit, setBrandKit] = useState<any>(null);
+  const [brandKit, setBrandKit] = useState<{
+    logo?: string;
+    colors?: {
+      primary?: string;
+      secondary?: string;
+      accent?: string;
+    };
+  } | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -973,8 +980,8 @@ export default function TemplateEditor({ id }: { id: string }) {
       element.style.zIndex = '1000'; // Bring to front during drag
       
       let isDragging = true;
-      let lastX = e.clientX;
-      let lastY = e.clientY;
+      const lastX = e.clientX;
+      const lastY = e.clientY;
       
       const onMouseMove = (moveEvent: MouseEvent) => {
         if (!isDragging) return;

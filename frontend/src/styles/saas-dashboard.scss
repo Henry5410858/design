@@ -1,0 +1,621 @@
+// =============================================================================
+// SAAS DASHBOARD - Modern SaaS Dashboard Styling System
+// =============================================================================
+
+@use "sass:map";
+
+// =============================================================================
+// COLOR SYSTEM
+// =============================================================================
+
+// Neutral Palette (whitespace-heavy approach)
+$white: #ffffff;
+$gray-50: #fafafa;
+$gray-100: #f5f5f5;
+$gray-200: #e5e5e5;
+$gray-300: #d4d4d4;
+$gray-400: #a3a3a3;
+$gray-500: #737373;
+$gray-600: #525252;
+$gray-700: #404040;
+$gray-800: #262626;
+$gray-900: #171717;
+
+// Brand Colors (accent for highlights and primary buttons)
+$brand-primary: #6366f1;      // Indigo
+$brand-primary-light: #818cf8;
+$brand-primary-dark: #4f46e5;
+$brand-secondary: #8b5cf6;    // Purple
+$brand-accent: #06b6d4;       // Cyan
+
+// Semantic Colors
+$success: #10b981;
+$warning: #f59e0b;
+$error: #ef4444;
+$info: #3b82f6;
+
+// Background Colors
+$bg-primary: $white;
+$bg-secondary: $gray-50;
+$bg-tertiary: $gray-100;
+$bg-elevated: $white;
+
+// =============================================================================
+// TYPOGRAPHY SYSTEM
+// =============================================================================
+
+// Font Families
+$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-family-display: 'Poppins', $font-family-base;
+
+// Font Sizes
+$text-xs: 0.75rem;      // 12px
+$text-sm: 0.875rem;     // 14px
+$text-base: 1rem;       // 16px
+$text-lg: 1.125rem;     // 18px
+$text-xl: 1.25rem;      // 20px
+$text-2xl: 1.5rem;      // 24px
+$text-3xl: 1.875rem;    // 30px
+$text-4xl: 2.25rem;     // 36px
+$text-5xl: 3rem;        // 48px
+
+// Font Weights
+$font-light: 300;
+$font-normal: 400;
+$font-medium: 500;
+$font-semibold: 600;
+$font-bold: 700;
+
+// Line Heights
+$leading-tight: 1.25;
+$leading-snug: 1.375;
+$leading-normal: 1.5;
+$leading-relaxed: 1.625;
+
+// Typography Scale
+$typography: (
+  'title-xl': (
+    'font-size': $text-5xl,
+    'font-weight': $font-bold,
+    'line-height': $leading-tight,
+    'font-family': $font-family-display
+  ),
+  'title-lg': (
+    'font-size': $text-4xl,
+    'font-weight': $font-bold,
+    'line-height': $leading-tight,
+    'font-family': $font-family-display
+  ),
+  'title': (
+    'font-size': $text-3xl,
+    'font-weight': $font-bold,
+    'line-height': $leading-tight,
+    'font-family': $font-family-display
+  ),
+  'subtitle-lg': (
+    'font-size': $text-xl,
+    'font-weight': $font-semibold,
+    'line-height': $leading-snug,
+    'font-family': $font-family-base
+  ),
+  'subtitle': (
+    'font-size': $text-lg,
+    'font-weight': $font-semibold,
+    'line-height': $leading-snug,
+    'font-family': $font-family-base
+  ),
+  'body-lg': (
+    'font-size': $text-lg,
+    'font-weight': $font-normal,
+    'line-height': $leading-relaxed,
+    'font-family': $font-family-base
+  ),
+  'body': (
+    'font-size': $text-base,
+    'font-weight': $font-normal,
+    'line-height': $leading-normal,
+    'font-family': $font-family-base
+  ),
+  'body-sm': (
+    'font-size': $text-sm,
+    'font-weight': $font-normal,
+    'line-height': $leading-normal,
+    'font-family': $font-family-base
+  ),
+  'caption': (
+    'font-size': $text-xs,
+    'font-weight': $font-normal,
+    'line-height': $leading-normal,
+    'font-family': $font-family-base
+  )
+);
+
+// =============================================================================
+// SPACING SYSTEM (whitespace-heavy)
+// =============================================================================
+
+$spacing: (
+  '0': 0,
+  '1': 0.25rem,       // 4px
+  '2': 0.5rem,        // 8px
+  '3': 0.75rem,       // 12px
+  '4': 1rem,          // 16px
+  '5': 1.25rem,       // 20px
+  '6': 1.5rem,        // 24px
+  '7': 1.75rem,       // 28px
+  '8': 2rem,          // 32px
+  '9': 2.25rem,       // 36px
+  '10': 2.5rem,       // 40px
+  '12': 3rem,         // 48px
+  '16': 4rem,         // 64px
+  '20': 5rem,         // 80px
+  '24': 6rem,         // 96px
+  '32': 8rem,         // 128px
+  '40': 10rem,        // 160px
+  '48': 12rem,        // 192px
+  '64': 16rem,        // 256px
+);
+
+// =============================================================================
+// BORDER RADIUS SYSTEM
+// =============================================================================
+
+$radius: (
+  'none': 0,
+  'sm': 0.375rem,     // 6px
+  'base': 0.5rem,     // 8px
+  'md': 0.75rem,      // 12px
+  'lg': 1rem,         // 16px
+  'xl': 1.5rem,       // 24px
+  '2xl': 1rem,        // 16px (as specified)
+  '3xl': 1.5rem,      // 24px
+  'full': 9999px
+);
+
+// =============================================================================
+// SHADOW SYSTEM (soft shadows)
+// =============================================================================
+
+$shadows: (
+  'none': 'none',
+  'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+  'base': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+  'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+  'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+  'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+  '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  'soft': '0 2px 8px rgba(0, 0, 0, 0.08)',
+  'elevated': '0 4px 12px rgba(0, 0, 0, 0.12)'
+);
+
+// =============================================================================
+// TRANSITION SYSTEM
+// =============================================================================
+
+$transitions: (
+  'fast': 150ms ease-out,
+  'normal': 200ms ease-out,
+  'slow': 300ms ease-out,
+  'bounce': 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55)
+);
+
+// =============================================================================
+// Z-INDEX SYSTEM
+// =============================================================================
+
+$z-index: (
+  'dropdown': 1000,
+  'sticky': 1020,
+  'fixed': 1030,
+  'modal-backdrop': 1040,
+  'modal': 1050,
+  'popover': 1060,
+  'tooltip': 1070,
+  'toast': 1080
+);
+
+// =============================================================================
+// MIXINS
+// =============================================================================
+
+// Typography Mixins
+@mixin typography($variant) {
+  @if map.has-key($typography, $variant) {
+    $styles: map.get($typography, $variant);
+    font-size: map.get($styles, 'font-size');
+    font-weight: map.get($styles, 'font-weight');
+    line-height: map.get($styles, 'line-height');
+    font-family: map.get($styles, 'font-family');
+  }
+}
+
+// Spacing Mixins
+@mixin spacing($property, $size) {
+  @if map.has-key($spacing, $size) {
+    #{$property}: map.get($spacing, $size);
+  }
+}
+
+// Shadow Mixins
+@mixin shadow($size) {
+  @if map.has-key($shadows, $size) {
+    box-shadow: map.get($shadows, $size);
+  }
+}
+
+// Transition Mixins
+@mixin transition($property: all, $duration: normal) {
+  @if map.has-key($transitions, $duration) {
+    transition: #{$property} map.get($transitions, $duration);
+  }
+}
+
+// =============================================================================
+// BUTTON COMPONENTS (pill-shaped)
+// =============================================================================
+
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: map.get($spacing, '2');
+  padding: map.get($spacing, '2') map.get($spacing, '4');
+  border-radius: map.get($radius, 'full'); // Pill-shaped
+  font-weight: $font-medium;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  @include transition();
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  &:focus-visible {
+    outline: 2px solid $brand-primary;
+    outline-offset: 2px;
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  background-color: $brand-primary;
+  color: $white;
+  
+  &:hover:not(:disabled) {
+    background-color: $brand-primary-dark;
+    transform: translateY(-1px);
+    @include shadow('md');
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    @include shadow('base');
+  }
+}
+
+@mixin button-secondary {
+  @include button-base;
+  background-color: transparent;
+  color: $brand-primary;
+  border: 1px solid $brand-primary;
+  
+  &:hover:not(:disabled) {
+    background-color: rgba($brand-primary, 0.05);
+    transform: translateY(-1px);
+    @include shadow('soft');
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+@mixin button-ghost {
+  @include button-base;
+  background-color: transparent;
+  color: $gray-600;
+  
+  &:hover:not(:disabled) {
+    background-color: $gray-100;
+    color: $gray-900;
+  }
+}
+
+// =============================================================================
+// CARD COMPONENTS (rounded, soft shadows, hover lift)
+// =============================================================================
+
+@mixin card-base {
+  background-color: $bg-elevated;
+  border: 1px solid $gray-200;
+  border-radius: map.get($radius, '2xl');
+  @include shadow('soft');
+  @include transition();
+  
+  &:hover {
+    @include shadow('elevated');
+    transform: translateY(-2px);
+  }
+}
+
+@mixin card-interactive {
+  @include card-base;
+  cursor: pointer;
+  
+  &:hover {
+    border-color: $brand-primary;
+  }
+}
+
+@mixin card-elevated {
+  @include card-base;
+  @include shadow('elevated');
+  
+  &:hover {
+    @include shadow('2xl');
+    transform: translateY(-4px);
+  }
+}
+
+// =============================================================================
+// INPUT COMPONENTS
+// =============================================================================
+
+@mixin input-base {
+  width: 100%;
+  padding: map.get($spacing, '3') map.get($spacing, '4');
+  background-color: $bg-primary;
+  border: 1px solid $gray-300;
+  border-radius: map.get($radius, 'lg');
+  color: $gray-900;
+  font-size: $text-sm;
+  @include transition();
+  
+  &::placeholder {
+    color: $gray-400;
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: $brand-primary;
+    @include shadow('soft');
+  }
+  
+  &:disabled {
+    background-color: $gray-100;
+    color: $gray-500;
+    cursor: not-allowed;
+  }
+}
+
+// =============================================================================
+// MODAL COMPONENTS (centered, clean, blur background)
+// =============================================================================
+
+@mixin modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba($gray-900, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: map.get($z-index, 'modal-backdrop');
+}
+
+@mixin modal-content {
+  background-color: $bg-primary;
+  border-radius: map.get($radius, '2xl');
+  @include shadow('2xl');
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+// =============================================================================
+// SIDEBAR COMPONENTS (icons + labels, collapsible)
+// =============================================================================
+
+@mixin sidebar-base {
+  background-color: $bg-primary;
+  border-right: 1px solid $gray-200;
+  @include shadow('soft');
+  transition: width map.get($transitions, 'normal');
+}
+
+@mixin sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: map.get($spacing, '3');
+  padding: map.get($spacing, '3') map.get($spacing, '4');
+  border-radius: map.get($radius, 'lg');
+  color: $gray-600;
+  text-decoration: none;
+  @include transition();
+  
+  &:hover {
+    background-color: $gray-100;
+    color: $gray-900;
+  }
+  
+  &.active {
+    background-color: rgba($brand-primary, 0.1);
+    color: $brand-primary;
+  }
+}
+
+// =============================================================================
+// TOP BAR COMPONENTS (profile, notifications, plan info)
+// =============================================================================
+
+@mixin topbar-base {
+  background-color: $bg-primary;
+  border-bottom: 1px solid $gray-200;
+  @include shadow('soft');
+  backdrop-filter: blur(8px);
+}
+
+@mixin topbar-item {
+  display: flex;
+  align-items: center;
+  gap: map.get($spacing, '2');
+  padding: map.get($spacing, '2') map.get($spacing, '3');
+  border-radius: map.get($radius, 'lg');
+  color: $gray-600;
+  @include transition();
+  
+  &:hover {
+    background-color: $gray-100;
+    color: $gray-900;
+  }
+}
+
+// =============================================================================
+// UTILITY CLASSES
+// =============================================================================
+
+// Typography Utilities
+@each $name, $styles in $typography {
+  .text-#{$name} {
+    @include typography($name);
+  }
+}
+
+// Spacing Utilities
+@each $name, $value in $spacing {
+  .p-#{$name} { padding: $value; }
+  .pt-#{$name} { padding-top: $value; }
+  .pr-#{$name} { padding-right: $value; }
+  .pb-#{$name} { padding-bottom: $value; }
+  .pl-#{$name} { padding-left: $value; }
+  .px-#{$name} { padding-left: $value; padding-right: $value; }
+  .py-#{$name} { padding-top: $value; padding-bottom: $value; }
+  
+  .m-#{$name} { margin: $value; }
+  .mt-#{$name} { margin-top: $value; }
+  .mr-#{$name} { margin-right: $value; }
+  .mb-#{$name} { margin-bottom: $value; }
+  .ml-#{$name} { margin-left: $value; }
+  .mx-#{$name} { margin-left: $value; margin-right: $value; }
+  .my-#{$name} { margin-top: $value; margin-bottom: $value; }
+}
+
+// Border Radius Utilities
+@each $name, $value in $radius {
+  .rounded-#{$name} {
+    border-radius: $value;
+  }
+}
+
+// Shadow Utilities
+@each $name, $value in $shadows {
+  .shadow-#{$name} {
+    box-shadow: $value;
+  }
+}
+
+// =============================================================================
+// RESPONSIVE BREAKPOINTS
+// =============================================================================
+
+$breakpoints: (
+  'sm': 640px,
+  'md': 768px,
+  'lg': 1024px,
+  'xl': 1280px,
+  '2xl': 1536px
+);
+
+@mixin respond-to($breakpoint) {
+  @if map.has-key($breakpoints, $breakpoint) {
+    @media (min-width: map.get($breakpoints, $breakpoint)) {
+      @content;
+    }
+  } @else {
+    @warn "Unknown breakpoint: #{$breakpoint}";
+  }
+}
+
+// =============================================================================
+// ANIMATIONS (for Framer Motion integration)
+// =============================================================================
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Animation utilities
+.animate-fade-in {
+  animation: fadeIn map.get($transitions, 'normal') ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp map.get($transitions, 'normal') ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn map.get($transitions, 'normal') ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn map.get($transitions, 'normal') ease-out;
+}
+
+// Hover animations
+.hover-lift {
+  @include transition();
+  
+  &:hover {
+    transform: translateY(-2px);
+    @include shadow('elevated');
+  }
+}
+
+.hover-scale {
+  @include transition();
+  
+  &:hover {
+    transform: scale(1.02);
+  }
+}

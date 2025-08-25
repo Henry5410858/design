@@ -7,10 +7,17 @@ const UserContext = createContext<{ user: User; setUser: (u: User) => void }>({ 
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+    
     const fetchUser = async () => {
       const token = getTokenFromStorage();
       console.log('UserContext: token from localStorage =', token); // Debug log
@@ -35,7 +42,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
     };
     fetchUser();
-  }, [router, pathname]);
+  }, [isClient, router, pathname]);
 
   return <UserContext.Provider value={{ user, setUser }}>{children}</UserContext.Provider>;
 }
