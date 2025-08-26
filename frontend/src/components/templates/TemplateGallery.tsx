@@ -9,21 +9,18 @@ export interface Template {
   category: 'social-posts' | 'stories' | 'flyers' | 'banners' | 'badges' | 'documents';
   thumbnail: string;
   description: string;
-  isPremium: boolean;
 }
 
 interface TemplateGalleryProps {
   templates?: Template[];
   onEditTemplate: (templateId: string) => void;
   onDownloadTemplate: (templateId: string) => void;
-  onUpgradeRequired?: () => void;
 }
 
 const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   templates = [],
   onEditTemplate,
-  onDownloadTemplate,
-  onUpgradeRequired
+  onDownloadTemplate
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<'all' | Template['category']>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,16 +43,14 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'IG/FB Square Post',
       category: 'social-posts',
       thumbnail: '/api/placeholder/400/300',
-      description: 'Post cuadrado optimizado para Instagram y Facebook',
-      isPremium: false
+      description: 'Post cuadrado optimizado para Instagram y Facebook'
     },
     {
       id: '2',
       name: 'Post Promocional',
       category: 'social-posts',
       thumbnail: '/api/placeholder/400/300',
-      description: 'Diseño atractivo para promociones en redes sociales',
-      isPremium: true
+      description: 'Diseño atractivo para promociones en redes sociales'
     },
 
     // Stories
@@ -64,16 +59,14 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'IG/FB/WSP Story',
       category: 'stories',
       thumbnail: '/api/placeholder/400/700',
-      description: 'Story vertical para Instagram, Facebook y WhatsApp',
-      isPremium: false
+      description: 'Story vertical para Instagram, Facebook y WhatsApp'
     },
     {
       id: '4',
       name: 'Story Promocional',
       category: 'stories',
       thumbnail: '/api/placeholder/400/700',
-      description: 'Story con elementos promocionales atractivos',
-      isPremium: true
+      description: 'Story con elementos promocionales atractivos'
     },
 
     // Flyers
@@ -82,16 +75,14 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'Marketplace Flyer',
       category: 'flyers',
       thumbnail: '/api/placeholder/400/300',
-      description: 'Flyer optimizado para marketplace y ventas',
-      isPremium: false
+      description: 'Flyer optimizado para marketplace y ventas'
     },
     {
       id: '6',
       name: 'Flyer Evento',
       category: 'flyers',
       thumbnail: '/api/placeholder/400/300',
-      description: 'Flyer para eventos y conferencias',
-      isPremium: true
+      description: 'Flyer para eventos y conferencias'
     },
 
     // Banners
@@ -100,16 +91,14 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'FB Feed Banner',
       category: 'banners',
       thumbnail: '/api/placeholder/400/200',
-      description: 'Banner optimizado para Facebook Feed',
-      isPremium: false
+      description: 'Banner optimizado para Facebook Feed'
     },
     {
       id: '8',
       name: 'Banner Web',
       category: 'banners',
       thumbnail: '/api/placeholder/400/200',
-      description: 'Banner para sitios web y landing pages',
-      isPremium: true
+      description: 'Banner para sitios web y landing pages'
     },
 
     // Badges
@@ -118,16 +107,14 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'Digital Badge',
       category: 'badges',
       thumbnail: '/api/placeholder/300/300',
-      description: 'Badge digital para certificaciones y logros',
-      isPremium: false
+      description: 'Badge digital para certificaciones y logros'
     },
     {
       id: '10',
       name: 'Visual Card',
       category: 'badges',
       thumbnail: '/api/placeholder/300/300',
-      description: 'Tarjeta visual para presentaciones',
-      isPremium: true
+      description: 'Tarjeta visual para presentaciones'
     },
 
     // Documents
@@ -136,16 +123,14 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'Brochure Simple',
       category: 'documents',
       thumbnail: '/api/placeholder/400/600',
-      description: 'Brochure de una página simple y elegante',
-      isPremium: false
+      description: 'Brochure de una página simple y elegante'
     },
     {
       id: '12',
       name: 'Documento 1 Página',
       category: 'documents',
       thumbnail: '/api/placeholder/400/600',
-      description: 'Documento de una página para presentaciones',
-      isPremium: true
+      description: 'Documento de una página para presentaciones'
     }
   ];
 
@@ -163,10 +148,6 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   });
 
   const handleEditTemplate = (template: Template) => {
-    if (template.isPremium && onUpgradeRequired) {
-      onUpgradeRequired();
-      return;
-    }
     onEditTemplate(template.id);
   };
 
@@ -254,13 +235,6 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 </div>
               </div>
               
-              {/* Premium Badge */}
-              {template.isPremium && (
-                <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
-                  PREMIUM
-                </div>
-              )}
-              
               {/* Hover Overlay */}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                 <div className="text-center text-white">
@@ -278,9 +252,6 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
                   {template.name}
                 </h3>
-                {template.isPremium && (
-                  <FiImage className="w-4 h-4 text-yellow-500 flex-shrink-0 ml-2" />
-                )}
               </div>
               
               <p className="text-gray-600 text-xs mb-3 line-clamp-2">
