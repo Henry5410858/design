@@ -13,7 +13,7 @@ export interface Template {
 
 interface TemplateGalleryProps {
   templates?: Template[];
-  onEditTemplate: (templateId: string) => void;
+  onEditTemplate?: (templateId: string) => void;
   onDownloadTemplate: (templateId: string) => void;
 }
 
@@ -148,7 +148,9 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   });
 
   const handleEditTemplate = (template: Template) => {
-    onEditTemplate(template.id);
+    // Route to the correct specialized editor based on category
+    const categoryRoute = template.category.replace('-', '/');
+    window.location.href = `/editor/${categoryRoute}/${template.id}`;
   };
 
   return (
