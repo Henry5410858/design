@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FiImage, FiType, FiSquare, FiDownload, FiSave, FiRotateCcw, FiRotateCw } from 'react-icons/fi';
+import { useUser } from '@/context/UserContext';
 
 interface StoriesEditorProps {
   id: string;
@@ -24,7 +25,8 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
     '#230038'  // Very dark purple
   ];
   const [fontSize, setFontSize] = useState(48);
-  const [userPlan, setUserPlan] = useState<'Free' | 'Pro' | 'Enterprise'>('Free');
+  const { user } = useUser();
+  const userPlan = (user?.plan as 'Free' | 'Premium' | 'Ultra-Premium') || 'Free';
   const [history, setHistory] = useState<any[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isDragging, setIsDragging] = useState(false);
@@ -114,6 +116,8 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
       saveToHistory(objects, backgroundColor);
     }
   }, []);
+
+
 
   // Close shape selector when clicking outside
   useEffect(() => {
@@ -264,6 +268,10 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
         
         // Reset drag start to current position for next movement
         setDragStart({ x: e.clientX, y: e.clientY });
+      } else {
+        // Object was deleted, stop dragging
+        setIsDragging(false);
+        setSelectedId(null);
       }
     } else if (isResizing && resizeTarget) {
       const obj = objects.find(o => o.id === resizeTarget);
@@ -290,6 +298,10 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
           width: newWidth,
           height: newHeight
         });
+      } else {
+        // Object was deleted, stop resizing
+        setIsResizing(false);
+        setResizeTarget(null);
       }
     }
   };
@@ -299,7 +311,11 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
       setIsDragging(false);
       setIsResizing(false);
       setResizeTarget(null);
-      saveToHistory(objects, backgroundColor);
+      
+      // Only save history if we still have objects
+      if (objects.length > 0) {
+        saveToHistory(objects, backgroundColor);
+      }
     }
   };
 
@@ -458,8 +474,8 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                   direction: 'ltr',
                   textAlign: 'center'
                 }}
-              >
-                {obj.content}
+          >
+            {obj.content}
               </div>
             )}
             {isSelected && (
@@ -476,7 +492,21 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                     e.stopPropagation();
                     const newObjects = objects.filter(o => o.id !== obj.id);
                     setObjects(newObjects);
-                    // Don't clear selectedId - maintain selection
+                    
+                    // Clear selection if the deleted object was selected
+                    if (selectedId === obj.id) {
+                      setSelectedId(null);
+                    }
+                    
+                    // Stop any ongoing operations on the deleted object
+                    if (resizeTarget === obj.id) {
+                      setIsResizing(false);
+                      setResizeTarget(null);
+                    }
+                    if (isDragging && selectedId === obj.id) {
+                      setIsDragging(false);
+                    }
+                    
                     saveToHistory(newObjects, backgroundColor);
                   }}
                   className="delete-button w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg text-sm font-bold"
@@ -502,8 +532,8 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
             onMouseDown={(e) => handleMouseDown(e, obj)}
           >
             <img
-              src={obj.src}
-              alt=""
+            src={obj.src}
+            alt=""
               className={baseClasses}
               style={{
                 width: '100%',
@@ -543,7 +573,21 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                     e.stopPropagation();
                     const newObjects = objects.filter(o => o.id !== obj.id);
                     setObjects(newObjects);
-                    // Don't clear selectedId - maintain selection
+                    
+                    // Clear selection if the deleted object was selected
+                    if (selectedId === obj.id) {
+                      setSelectedId(null);
+                    }
+                    
+                    // Stop any ongoing operations on the deleted object
+                    if (resizeTarget === obj.id) {
+                      setIsResizing(false);
+                      setResizeTarget(null);
+                    }
+                    if (isDragging && selectedId === obj.id) {
+                      setIsDragging(false);
+                    }
+                    
                     saveToHistory(newObjects, backgroundColor);
                   }}
                   className="delete-button w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg text-sm font-bold"
@@ -622,7 +666,21 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                     e.stopPropagation();
                     const newObjects = objects.filter(o => o.id !== obj.id);
                     setObjects(newObjects);
-                    // Don't clear selectedId - maintain selection
+                    
+                    // Clear selection if the deleted object was selected
+                    if (selectedId === obj.id) {
+                      setSelectedId(null);
+                    }
+                    
+                    // Stop any ongoing operations on the deleted object
+                    if (resizeTarget === obj.id) {
+                      setIsResizing(false);
+                      setResizeTarget(null);
+                    }
+                    if (isDragging && selectedId === obj.id) {
+                      setIsDragging(false);
+                    }
+                    
                     saveToHistory(newObjects, backgroundColor);
                   }}
                   className="delete-button w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg text-sm font-bold"
@@ -682,7 +740,21 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                     e.stopPropagation();
                     const newObjects = objects.filter(o => o.id !== obj.id);
                     setObjects(newObjects);
-                    // Don't clear selectedId - maintain selection
+                    
+                    // Clear selection if the deleted object was selected
+                    if (selectedId === obj.id) {
+                      setSelectedId(null);
+                    }
+                    
+                    // Stop any ongoing operations on the deleted object
+                    if (resizeTarget === obj.id) {
+                      setIsResizing(false);
+                      setResizeTarget(null);
+                    }
+                    if (isDragging && selectedId === obj.id) {
+                      setIsDragging(false);
+                    }
+                    
                     saveToHistory(newObjects, backgroundColor);
                   }}
                   className="delete-button w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg text-sm font-bold"
@@ -707,7 +779,22 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Editor de Stories</h1>
-              <p className="text-sm text-gray-500">Plan: {userPlan}</p>
+              <p className="text-sm text-gray-500">
+                Plan: {!user ? (
+                  <span className="inline-flex items-center gap-1">
+                    <div className="w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+                    Cargando...
+                  </span>
+                ) : (
+                  <span className={`font-medium ${
+                    userPlan === 'Premium' ? 'text-blue-600' : 
+                    userPlan === 'Ultra-Premium' ? 'text-purple-600' : 
+                    'text-gray-600'
+                  }`}>
+                    {userPlan}
+                  </span>
+                )}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button 
@@ -994,7 +1081,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                             }}
                           />
                           <span className="text-xs text-gray-600">{shape.name}</span>
-                        </button>
+              </button>
                       ))}
                     </div>
                   </div>
@@ -1070,16 +1157,16 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
               </div>
             </div>
           )}
-        </div>
+          </div>
 
-        {/* Canvas */}
+          {/* Canvas */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Canvas del Story</h3>
-          
-          <div className="flex justify-center">
-            <div 
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Canvas del Story</h3>
+            
+            <div className="flex justify-center">
+              <div
               className="relative"
-              style={{
+                style={{
                 transform: `scale(${canvasDisplayScale})`,
                 transformOrigin: 'center center',
                 width: `${100 / canvasDisplayScale}%`,
@@ -1099,17 +1186,17 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                 onMouseUp={handleMouseUp}
                 onClick={handleCanvasClick}
               >
-              {objects.map(renderObject)}
-              
-              {objects.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">📱</div>
-                    <p className="text-lg font-medium">¡Comienza a crear tu story!</p>
-                    <p className="text-sm">Usa las herramientas para agregar elementos</p>
+                {objects.map(renderObject)}
+                
+                {objects.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">📱</div>
+                      <p className="text-lg font-medium">¡Comienza a crear tu story!</p>
+                      <p className="text-sm">Usa las herramientas para agregar elementos</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               </div>
             </div>
           </div>

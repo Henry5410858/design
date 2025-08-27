@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
-  const { email, password, role, firstName, lastName, phone, company, position, location, bio } = req.body;
+  const { email, password, plan, firstName, lastName, phone, company, position, location, bio } = req.body;
   
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password required' });
@@ -23,7 +23,7 @@ router.post('/signup', async (req, res) => {
     const userData = {
       email,
       password: hashed,
-      role: role || 'Free',
+      plan: plan || 'Free',
       firstName: firstName || '',
       lastName: lastName || '',
       phone: phone || '',
@@ -38,7 +38,7 @@ router.post('/signup', async (req, res) => {
       message: 'User created', 
       user: { 
         email: user.email, 
-        role: user.role,
+        plan: user.plan,
         firstName: user.firstName,
         lastName: user.lastName
       } 
@@ -60,7 +60,7 @@ router.post('/signin', async (req, res) => {
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
     // Generate a real JWT
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user._id, email: user.email, plan: user.plan },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '7d' }
     );
@@ -69,7 +69,7 @@ router.post('/signin', async (req, res) => {
       user: { 
         id: user._id,
         email: user.email, 
-        role: user.role,
+        plan: user.plan,
         firstName: user.firstName,
         lastName: user.lastName
       } 
@@ -85,8 +85,8 @@ router.post('/validate', async (req, res) => {
   const { token } = req.body;
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-    // Return the decoded user info (id, email, role)
-    res.json({ id: decoded.id, email: decoded.email, role: decoded.role });
+    // Return the decoded user info (id, email, plan)
+    res.json({ id: decoded.id, email: decoded.email, plan: decoded.plan });
   } catch (err) {
     res.status(401).json({ message: 'Invalid token' });
   }
@@ -95,7 +95,7 @@ router.post('/validate', async (req, res) => {
 // PUT /api/auth/update-profile
 router.put('/update-profile', async (req, res) => {
   try {
-    const { id, firstName, lastName, email, phone, company, position, location, bio, role, preferences } = req.body;
+    const { id, firstName, lastName, email, phone, company, position, location, bio, plan, preferences } = req.body;
     
     if (!id) {
       return res.status(400).json({ message: 'User ID required' });
@@ -110,7 +110,7 @@ router.put('/update-profile', async (req, res) => {
       position: position || '',
       location: location || '',
       bio: bio || '',
-      role: role || 'Free',
+      plan: plan || 'Free',
       preferences: preferences || {}
     };
     
@@ -129,7 +129,7 @@ router.put('/update-profile', async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-        role: user.role,
+        plan: user.plan,
         firstName: user.firstName,
         lastName: user.lastName,
         phone: user.phone,

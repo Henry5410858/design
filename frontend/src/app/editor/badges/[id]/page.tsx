@@ -1,4 +1,4 @@
-import BadgesEditor from '../../../../components/editors/BadgesEditor';
+import BadgesEditor from '@/components/editors/BadgesEditor';
 
 export default async function BadgesEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -1,4 +1,4 @@
-import StoriesEditor from '../../../../components/editors/StoriesEditor';
+import StoriesEditor from '@/components/editors/StoriesEditor';
 
 export default async function StoriesEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

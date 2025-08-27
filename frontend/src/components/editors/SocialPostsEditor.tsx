@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FiImage, FiType, FiSquare, FiDownload, FiSave, FiRotateCcw, FiRotateCw } from 'react-icons/fi';
+import { useUser } from '@/context/UserContext';
 
 interface SocialPostsEditorProps {
   id: string;
@@ -44,7 +45,8 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
     '#230038'  // Very dark purple
   ];
   const [fontSize, setFontSize] = useState(48);
-  const [userPlan, setUserPlan] = useState<'Free' | 'Pro' | 'Enterprise'>('Free'); // Mock user plan
+  const { user } = useUser();
+  const userPlan = (user?.plan as 'Free' | 'Premium' | 'Ultra-Premium') || 'Free';
   const [history, setHistory] = useState<HistoryState[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isDragging, setIsDragging] = useState(false);
@@ -135,6 +137,8 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
       saveToHistory(objects, backgroundColor);
     }
   }, []);
+
+
 
   // Close shape selector when clicking outside
   useEffect(() => {
@@ -288,6 +292,10 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
         
         // Reset drag start to current position for next movement
         setDragStart({ x: e.clientX, y: e.clientY });
+      } else {
+        // Object was deleted, stop dragging
+        setIsDragging(false);
+        setSelectedId(null);
       }
     } else if (isResizing && resizeTarget) {
       const obj = objects.find(o => o.id === resizeTarget);
@@ -314,6 +322,10 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
           width: newWidth,
           height: newHeight
         });
+      } else {
+        // Object was deleted, stop resizing
+        setIsResizing(false);
+        setResizeTarget(null);
       }
     }
   };
@@ -323,7 +335,11 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
       setIsDragging(false);
       setIsResizing(false);
       setResizeTarget(null);
-      saveToHistory(objects, backgroundColor);
+      
+      // Only save history if we still have objects
+      if (objects.length > 0) {
+        saveToHistory(objects, backgroundColor);
+      }
     }
   };
 
@@ -481,14 +497,14 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
               <div
                 className="w-full h-full flex items-center justify-center"
                 style={{
-                  fontSize: obj.fontSize,
-                  color: obj.color,
+              fontSize: obj.fontSize,
+              color: obj.color,
                   fontFamily: obj.fontFamily,
                   direction: 'ltr',
                   textAlign: 'center'
-                }}
-              >
-                {obj.content}
+            }}
+          >
+            {obj.content}
               </div>
             )}
             {isSelected && (
@@ -524,7 +540,21 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
                     e.stopPropagation();
                     const newObjects = objects.filter(o => o.id !== obj.id);
                     setObjects(newObjects);
-                    // Don't clear selectedId - maintain selection
+                    
+                    // Clear selection if the deleted object was selected
+                    if (selectedId === obj.id) {
+                      setSelectedId(null);
+                    }
+                    
+                    // Stop any ongoing operations on the deleted object
+                    if (resizeTarget === obj.id) {
+                      setIsResizing(false);
+                      setResizeTarget(null);
+                    }
+                    if (isDragging && selectedId === obj.id) {
+                      setIsDragging(false);
+                    }
+                    
                     saveToHistory(newObjects, backgroundColor);
                   }}
                   className="delete-button w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg text-sm font-bold"
@@ -550,8 +580,8 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
             onMouseDown={(e) => handleMouseDown(e, obj)}
           >
             <img
-              src={obj.src}
-              alt=""
+            src={obj.src}
+            alt=""
               className={baseClasses}
               style={{
                 width: '100%',
@@ -692,7 +722,21 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
                     e.stopPropagation();
                     const newObjects = objects.filter(o => o.id !== obj.id);
                     setObjects(newObjects);
-                    // Don't clear selectedId - maintain selection
+                    
+                    // Clear selection if the deleted object was selected
+                    if (selectedId === obj.id) {
+                      setSelectedId(null);
+                    }
+                    
+                    // Stop any ongoing operations on the deleted object
+                    if (resizeTarget === obj.id) {
+                      setIsResizing(false);
+                      setResizeTarget(null);
+                    }
+                    if (isDragging && selectedId === obj.id) {
+                      setIsDragging(false);
+                    }
+                    
                     saveToHistory(newObjects, backgroundColor);
                   }}
                   className="delete-button w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg text-sm font-bold"
@@ -754,7 +798,21 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
                     e.stopPropagation();
                     const newObjects = objects.filter(o => o.id !== obj.id);
                     setObjects(newObjects);
-                    // Don't clear selectedId - maintain selection
+                    
+                    // Clear selection if the deleted object was selected
+                    if (selectedId === obj.id) {
+                      setSelectedId(null);
+                    }
+                    
+                    // Stop any ongoing operations on the deleted object
+                    if (resizeTarget === obj.id) {
+                      setIsResizing(false);
+                      setResizeTarget(null);
+                    }
+                    if (isDragging && selectedId === obj.id) {
+                      setIsDragging(false);
+                    }
+                    
                     saveToHistory(newObjects, backgroundColor);
                   }}
                   className="delete-button w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg text-sm font-bold"
@@ -779,7 +837,22 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Editor de Posts para Redes Sociales</h1>
-              <p className="text-sm text-gray-500">Plan: {userPlan}</p>
+              <p className="text-sm text-gray-500">
+                Plan: {!user ? (
+                  <span className="inline-flex items-center gap-1">
+                    <div className="w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+                    Cargando...
+                  </span>
+                ) : (
+                  <span className={`font-medium ${
+                    userPlan === 'Premium' ? 'text-blue-600' : 
+                    userPlan === 'Ultra-Premium' ? 'text-purple-600' : 
+                    'text-gray-600'
+                  }`}>
+                    {userPlan}
+                  </span>
+                )}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button 
@@ -834,8 +907,8 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
 
         {/* Tools Row */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Herramientas</h3>
-          
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Herramientas</h3>
+            
           <div className="grid grid-cols-2 lg:grid-cols-8 gap-4">
             {/* Canvas Size */}
             <div>
@@ -1062,7 +1135,7 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
                             }}
                           />
                           <span className="text-xs text-gray-600">{shape.name}</span>
-                        </button>
+              </button>
                       ))}
                     </div>
                   </div>
@@ -1083,16 +1156,16 @@ export default function SocialPostsEditor({ id }: SocialPostsEditorProps) {
           </div>
 
 
-        </div>
+          </div>
 
-        {/* Canvas */}
+          {/* Canvas */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Canvas</h3>
-          
-          <div className="flex justify-center">
-            <div 
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Canvas</h3>
+            
+            <div className="flex justify-center">
+              <div
               className="relative"
-              style={{
+                style={{
                 transform: `scale(${canvasDisplayScale})`,
                 transformOrigin: 'center center',
                 width: `${100 / canvasDisplayScale}%`,
