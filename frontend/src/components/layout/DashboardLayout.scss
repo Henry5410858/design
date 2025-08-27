@@ -470,6 +470,24 @@
   }
 }
 
+@include respond-to(md) {
+  .dashboard-layout {
+    .main-content {
+      .top-navbar {
+        padding: 0 $spacing-xl;
+        
+        .navbar-left {
+          gap: $spacing-xl;
+        }
+        
+        .navbar-right {
+          gap: $spacing-lg;
+        }
+      }
+    }
+  }
+}
+
 @include respond-to(lg) {
   .dashboard-layout {
     .sidebar {
@@ -478,6 +496,85 @@
     
     .main-content {
       margin-left: 18rem; // 288px - sidebar width
+      
+      .top-navbar {
+        padding: 0 $spacing-2xl;
+      }
+      
+      .content-area {
+        .content-wrapper {
+          padding: $spacing-2xl;
+        }
+      }
+    }
+  }
+}
+
+@include respond-to(xl) {
+  .dashboard-layout {
+    .main-content {
+      .content-area {
+        .content-wrapper {
+          padding: $spacing-3xl;
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// MOBILE SPECIFIC STYLES
+// =============================================================================
+
+@media (max-width: 639px) {
+  .dashboard-layout {
+    .sidebar {
+      width: 100%;
+      max-width: 20rem;
+    }
+    
+    .main-content {
+      .top-navbar {
+        padding: 0 $spacing-md;
+        
+        .navbar-left {
+          gap: $spacing-md;
+        }
+        
+        .navbar-right {
+          gap: $spacing-sm;
+        }
+      }
+      
+      .content-area {
+        .content-wrapper {
+          padding: $spacing-md;
+        }
+      }
+    }
+  }
+}
+
+// =============================================================================
+// TABLET SPECIFIC STYLES
+// =============================================================================
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .dashboard-layout {
+    .sidebar {
+      width: 16rem;
+    }
+    
+    .main-content {
+      .top-navbar {
+        padding: 0 $spacing-lg;
+      }
+      
+      .content-area {
+        .content-wrapper {
+          padding: $spacing-lg;
+        }
+      }
     }
   }
 }

@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "mongodb": "mongod --dbpath ./db",
+    "dev": "concurrently \"npm run mongodb\" \"npm run start\""
   },
   "keywords": [],
   "author": "",
@@ -15,6 +16,7 @@
     "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
     "canvas": "^3.2.0",
+    "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",

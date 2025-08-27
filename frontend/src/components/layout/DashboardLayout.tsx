@@ -31,9 +31,25 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { setUser } = useUser();
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+      if (window.innerWidth < 1024) {
+        setSidebarCollapsed(false);
+        setMobileMenuOpen(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Close profile menu when Escape key is pressed
   useEffect(() => {
@@ -51,6 +67,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [profileMenuOpen]);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  }, [pathname, mobileMenuOpen]);
 
   const navigation = [
     {
@@ -91,7 +114,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     }
   ];
 
-  const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
+  const toggleSidebar = () => {
+    if (!isMobile) {
+      setSidebarCollapsed(!sidebarCollapsed);
+    }
+  };
+  
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
   const toggleProfileMenu = () => setProfileMenuOpen(!profileMenuOpen);
 
@@ -148,7 +176,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         transition={{ duration: 0.3, ease: 'easeOut' }}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-4 lg:px-6 border-b border-gray-200">
           <motion.div
             className="flex items-center gap-3"
             initial={{ opacity: 0 }}
@@ -160,7 +188,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </div>
             {!sidebarCollapsed && (
               <motion.h1
-                className="text-xl font-bold text-gray-900 font-display"
+                className="text-xl font-bold text-gray-900 font-display hidden sm:block"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
@@ -186,7 +214,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav className="flex-1 px-3 lg:px-4 py-6 space-y-2 overflow-y-auto">
           {navigation.map((item, index) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -200,7 +228,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               >
                 <Link
                   href={item.href}
-                  className={`group flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-200 ${
+                  className={`group flex items-center gap-3 px-3 lg:px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-200 ${
                     isActive
                       ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -215,7 +243,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   </div>
                   
                   {!sidebarCollapsed && (
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 hidden sm:block">
                       <div className="font-medium">{item.name}</div>
                       <div className="text-xs text-gray-500 truncate">{item.description}</div>
                     </div>
@@ -223,7 +251,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   
                   {isActive && !sidebarCollapsed && (
                     <motion.div
-                      className="w-2 h-2 bg-brand-primary rounded-full"
+                      className="w-2 h-2 bg-brand-primary rounded-full hidden sm:block"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.2 }}
@@ -236,7 +264,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </nav>
 
         {/* User Section */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-3 lg:p-4 border-t border-gray-200">
           <motion.div
             className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
             initial={{ opacity: 0, y: 20 }}
@@ -248,9 +276,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </div>
             
             {!sidebarCollapsed && (
-              <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-medium text-gray-900">Usuario Demo</div>
-                            <div className="text-xs text-gray-500">Plan Premium</div>
+              <div className="flex-1 min-w-0 hidden sm:block">
+                <div className="text-sm font-medium text-gray-900">Usuario Demo</div>
+                <div className="text-xs text-gray-500">Plan Premium</div>
                 
                 {/* Plan Progress */}
                 <div className="mt-2">
@@ -288,9 +316,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.3 }}
         >
-          <div className="flex items-center justify-between h-16 px-6">
+          <div className="flex items-center justify-between h-16 px-4 lg:px-6">
             {/* Left Section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 lg:gap-4">
               <button
                 onClick={toggleMobileMenu}
                 className="lg:hidden flex items-center justify-center w-10 h-10 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors duration-200"
@@ -298,13 +326,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <FiMenu className="w-6 h-6" />
               </button>
               
-              <h1 className="text-xl font-semibold text-gray-900 font-display">
+              <h1 className="text-lg lg:text-xl font-semibold text-gray-900 font-display">
                 Dashboard
               </h1>
             </div>
 
             {/* Center Section - Search */}
-            <div className="hidden md:flex flex-1 max-w-md mx-8">
+            <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
               <div className="relative w-full group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <FiSearch className="h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors duration-200" />
@@ -323,7 +351,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </div>
 
             {/* Right Section */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 lg:gap-3">
               {/* Notifications */}
               <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors duration-200">
                 <FiBell className="w-5 h-5" />
@@ -334,16 +362,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               <div className="relative">
                 <button
                   onClick={toggleProfileMenu}
-                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  className="flex items-center gap-2 lg:gap-3 p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-full flex items-center justify-center">
                     <FiUser className="w-4 h-4 text-white" />
                   </div>
-                                            <div className="hidden sm:block text-left">
-                            <div className="text-sm font-medium text-gray-900">Usuario Demo</div>
-                            <div className="text-xs text-gray-500">usuario@demo.com</div>
-                            <div className="text-xs text-brand-primary font-medium">Plan Premium</div>
-                          </div>
+                  <div className="hidden sm:block text-left">
+                    <div className="text-sm font-medium text-gray-900">Usuario Demo</div>
+                    <div className="text-xs text-gray-500">usuario@demo.com</div>
+                    <div className="text-xs text-brand-primary font-medium">Plan Premium</div>
+                  </div>
                 </button>
 
                 {/* Profile Popup Menu */}
@@ -377,7 +405,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                             <div>
                               <div className="font-semibold text-gray-900">Usuario Demo</div>
                               <div className="text-sm text-gray-500">usuario@demo.com</div>
-                                                                    <div className="text-xs text-brand-primary font-medium">Plan Premium</div>
+                              <div className="text-xs text-brand-primary font-medium">Plan Premium</div>
                             </div>
                           </div>
                         </div>
@@ -410,7 +438,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </motion.header>
 
         {/* Page Content */}
-        <main className="p-6">
+        <main className="p-4 lg:p-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

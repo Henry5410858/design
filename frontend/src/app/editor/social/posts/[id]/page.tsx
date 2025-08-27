@@ -1,4 +1,4 @@
-import SocialPostsEditor from '../../../../components/editors/SocialPostsEditor';
+import SocialPostsEditor from '@/components/editors/SocialPostsEditor';
 
 export default async function SocialPostsEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
