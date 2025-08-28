@@ -89,6 +89,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       description: 'Galería de plantillas'
     },
     {
+      name: 'Canva',
+      href: '/canva',
+      icon: FiImage,
+      description: 'Diseños profesionales con Canva'
+    },
+    {
       name: 'Flyers',
       href: '/flyers',
       icon: FiImage,

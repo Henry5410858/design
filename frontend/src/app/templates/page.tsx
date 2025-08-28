@@ -1,18 +1,10 @@
-'use client';
-import TemplateGallery from '../../components/templates/TemplateGallery';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import React from 'react';
+import CanvaTemplateGallery from '@/components/templates/CanvaTemplateGallery';
 
-export default function TemplateGalleryPage() {
-  const handleDownloadTemplate = (templateId: string) => {
-    // Handle template download
-    console.log('Download template:', templateId);
-  };
-
+export default function TemplatesPage() {
   return (
-    <DashboardLayout>
-      <TemplateGallery 
-        onDownloadTemplate={handleDownloadTemplate}
-      />
-    </DashboardLayout>
+    <div>
+      <CanvaTemplateGallery />
+    </div>
   );
 }

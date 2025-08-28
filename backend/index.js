@@ -23,6 +23,7 @@ if (!fs.existsSync(uploadsDir)) {
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/templates', require('./routes/templates'));
+app.use('/api/canva', require('./routes/canva'));
 // Temporarily remove auth middleware for testing
 const brandKitRouter = require('./routes/brandKit');
 app.use('/api/brand-kit', brandKitRouter);

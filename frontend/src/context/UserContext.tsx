@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
-type User = { id: string; plan: 'Free' | 'Premium' | 'Ultra-Premium' } | null;
+type User = { id: string; plan: 'Free' | 'Premium' | 'Ultra-Premium'; email?: string } | null;
 const UserContext = createContext<{ user: User; setUser: (u: User) => void }>({ user: null, setUser: () => {} });
 
 export function UserProvider({ children }: { children: ReactNode }) {
