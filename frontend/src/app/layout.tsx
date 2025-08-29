@@ -1,30 +1,23 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { UserProvider } from '../context/UserContext';
-import ClientOnly from '../components/ClientOnly';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'LupaProp - Centro de Diseño Profesional',
-  description: 'Una plataforma profesional para diseño y generación de propuestas',
+  title: 'RedDragon - Professional Design Templates',
+  description: 'Access professional Canva templates for all your design needs. Posts, stories, flyers, banners, and more.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" 
-          rel="stylesheet" 
-        />
-      </head>
-      <body className="font-sans antialiased">
-        <ClientOnly>
-          <UserProvider>
-            {children}
-          </UserProvider>
-        </ClientOnly>
+    <html lang="en">
+      <body className={inter.className}>
+        {children}
       </body>
     </html>
   );

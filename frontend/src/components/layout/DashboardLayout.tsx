@@ -1,457 +1,221 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FiHome, 
-  FiGrid, 
-  FiFileText, 
-  FiImage, 
-  FiCalendar, 
-  FiSettings, 
-  FiUser, 
-  FiBell, 
-  FiSearch, 
-  FiMenu, 
-  FiX,
-  FiChevronLeft,
-  FiChevronRight,
-  FiStar,
-  FiZap,
-  FiLogOut,
-  FiEdit3
-} from 'react-icons/fi';
+'use client';
+
+import React, { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useUser } from '../../context/UserContext';
+import { usePathname } from 'next/navigation';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const { user, logout, isLoading } = useAuth();
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-  const { setUser } = useUser();
 
-  // Check if device is mobile
+  const navigationItems = useMemo(() => [
+    {
+      name: '🏠 Dashboard',
+      href: '/',
+      icon: '🏠',
+      description: 'Vista general del centro de diseño'
+    },
+    {
+      name: '🎨 Plantillas',
+      href: '/templates',
+      icon: '🎨',
+      description: 'Explora nuestras plantillas profesionales'
+    },
+    {
+      name: '🏷️ Mi Marca',
+      href: '/brand-kit',
+      icon: '🏷️',
+      description: 'Configura tu identidad de marca'
+    },
+    {
+      name: '📥 Descargas',
+      href: '/downloads',
+      icon: '📥',
+      description: 'Gestiona tus diseños descargados'
+    }
+  ], []);
+
+  const handleLogout = useCallback(() => {
+    logout();
+  }, [logout]);
+
+  const handleSidebarOpen = useCallback(() => {
+    setSidebarOpen(true);
+  }, []);
+
+  const handleSidebarClose = useCallback(() => {
+    setSidebarOpen(false);
+  }, []);
+
+  // Check if user is authenticated - only run when user or isLoading changes
+  useEffect(() => {
+    if (!isLoading && !user) {
+      // Redirect to main platform login
+      const mainPlatformUrl = process.env.NEXT_PUBLIC_MAIN_PLATFORM_URL || '/';
+      window.location.href = mainPlatformUrl;
+    }
+  }, [user, isLoading]); // Only depend on user and isLoading
+
+  // Handle responsive behavior - only run once on mount
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-      if (window.innerWidth < 1024) {
-        setSidebarCollapsed(false);
-        setMobileMenuOpen(false);
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(false);
       }
     };
 
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, []); // Empty dependency array - only run on mount
 
-  // Close profile menu when Escape key is pressed
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && profileMenuOpen) {
-        setProfileMenuOpen(false);
-      }
-    };
+  // Loading state with skeleton loader
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-600 rounded-full animate-spin mx-auto" style={{ animationDelay: '-0.5s' }}></div>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Cargando Centro de Diseño</h2>
+          <p className="text-gray-500">Preparando tu experiencia creativa...</p>
+        </div>
+      </div>
+    );
+  }
 
-    if (profileMenuOpen) {
-      document.addEventListener('keydown', handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [profileMenuOpen]);
-
-  // Close mobile menu when route changes
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      setMobileMenuOpen(false);
-    }
-  }, [pathname, mobileMenuOpen]);
-
-  const navigation = [
-    {
-      name: 'Dashboard',
-      href: '/',
-      icon: FiHome,
-      description: 'Vista general del proyecto'
-    },
-    {
-      name: 'Templates',
-      href: '/templates',
-      icon: FiGrid,
-      description: 'Galería de plantillas'
-    },
-    {
-      name: 'Canva',
-      href: '/canva',
-      icon: FiImage,
-      description: 'Diseños profesionales con Canva'
-    },
-    {
-      name: 'Flyers',
-      href: '/flyers',
-      icon: FiImage,
-      description: 'Diseños de volantes'
-    },
-    {
-      name: 'Propuestas',
-      href: '/proposal',
-      icon: FiFileText,
-      description: 'Gestión de propuestas'
-    },
-    {
-      name: 'Calendario',
-      href: '/calendar',
-      icon: FiCalendar,
-      description: 'Planificación de proyectos'
-    },
-    {
-      name: 'Configuración',
-      href: '/settings',
-      icon: FiSettings,
-      description: 'Ajustes del sistema'
-    }
-  ];
-
-  const toggleSidebar = () => {
-    if (!isMobile) {
-      setSidebarCollapsed(!sidebarCollapsed);
-    }
-  };
-  
-  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
-  const toggleProfileMenu = () => setProfileMenuOpen(!profileMenuOpen);
-
-  const handleLogout = () => {
-    // Clear authentication data
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    
-    // Update user context
-    setUser(null);
-    
-    // Close the profile menu
-    setProfileMenuOpen(false);
-    
-    // Redirect to login page
-    router.push('/login');
-  };
-
-  const handleProfileClick = () => {
-    // Navigate to profile page
-    router.push('/change-userinfo');
-    setProfileMenuOpen(false);
-  };
+  // Not authenticated
+  if (!user) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            className="fixed inset-0 z-40 lg:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div 
-              className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"
-              onClick={toggleMobileMenu}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden flex">
+      {/* Background Decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-cyan-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-pink-400/10 to-blue-400/10 rounded-full blur-3xl"></div>
+      </div>
 
       {/* Sidebar */}
-      <motion.aside
-        className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 shadow-soft transition-all duration-300 ease-out ${
-          sidebarCollapsed ? 'w-20' : 'w-72'
-        } lg:translate-x-0 ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-        initial={{ x: -288 }}
-        animate={{ x: 0 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-      >
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/95 backdrop-blur-xl shadow-2xl border-r border-white/30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-4 lg:px-6 border-b border-gray-200">
-          <motion.div
-            className="flex items-center gap-3"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="w-10 h-10 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center shadow-lg">
-              <FiZap className="w-6 h-6 text-white" />
+        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200/30">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-lg font-black">🎨</span>
             </div>
-            {!sidebarCollapsed && (
-              <motion.h1
-                className="text-xl font-bold text-gray-900 font-display hidden sm:block"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                LupaProp
-              </motion.h1>
-            )}
-          </motion.div>
-          
+            <span className="text-lg font-black text-gray-900">DiseñoPro</span>
+          </div>
           <button
-            onClick={toggleSidebar}
-            className="hidden lg:flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors duration-200"
+            onClick={handleSidebarClose}
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
           >
-            {sidebarCollapsed ? <FiChevronRight className="w-4 h-4" /> : <FiChevronLeft className="w-4 h-4" />}
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
-          
-          <button
-            onClick={toggleMobileMenu}
-            className="lg:hidden flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors duration-200"
-          >
-            <FiX className="w-5 h-5" />
-          </button>
+        </div>
+
+        {/* User Info */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200/30">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-black text-sm">
+                {user?.name?.charAt(0) || 'U'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-gray-900 truncate">
+                {user?.name || 'Usuario'}
+              </p>
+              <p className="text-xs text-gray-600 font-medium">
+                Plan {user?.plan || 'Free'}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 lg:px-4 py-6 space-y-2 overflow-y-auto">
-          {navigation.map((item, index) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            
-            return (
-              <motion.div
-                key={item.name}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 + index * 0.05 }}
-              >
-                <Link
-                  href={item.href}
-                  className={`group flex items-center gap-3 px-3 lg:px-4 py-3 rounded-2xl text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? 'bg-brand-primary/20 text-brand-primary'
-                      : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200 group-hover:text-gray-700'
-                  }`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  
-                  {!sidebarCollapsed && (
-                    <div className="flex-1 min-w-0 hidden sm:block">
-                      <div className="font-medium">{item.name}</div>
-                      <div className="text-xs text-gray-500 truncate">{item.description}</div>
-                    </div>
-                  )}
-                  
-                  {isActive && !sidebarCollapsed && (
-                    <motion.div
-                      className="w-2 h-2 bg-brand-primary rounded-full hidden sm:block"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2 }}
-                    />
-                  )}
-                </Link>
-              </motion.div>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+          {navigationItems.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-bold transition-all duration-300 group ${
+                pathname === item.href
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              <span className="text-lg">{item.icon}</span>
+              <span className="text-sm">{item.name}</span>
+            </Link>
+          ))}
         </nav>
+      </div>
 
-        {/* User Section */}
-        <div className="p-3 lg:p-4 border-t border-gray-200">
-          <motion.div
-            className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className="w-10 h-10 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-full flex items-center justify-center">
-              <FiUser className="w-5 h-5 text-white" />
-            </div>
-            
-            {!sidebarCollapsed && (
-              <div className="flex-1 min-w-0 hidden sm:block">
-                <div className="text-sm font-medium text-gray-900">Usuario Demo</div>
-                <div className="text-xs text-gray-500">Plan Premium</div>
-                
-                {/* Plan Progress */}
-                <div className="mt-2">
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                    <span>Uso del plan</span>
-                    <span>75%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <motion.div
-                      className="bg-gradient-to-r from-brand-primary to-brand-secondary h-1.5 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: '75%' }}
-                      transition={{ delay: 0.5, duration: 1 }}
-                    />
-                  </div>
-                </div>
-                
-                <button className="mt-3 w-full px-3 py-2 bg-brand-primary text-white text-xs font-medium rounded-xl hover:bg-brand-primary-dark transition-colors duration-200">
-                  Actualizar Plan
-                </button>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      </motion.aside>
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={handleSidebarClose}
+        />
+      )}
 
       {/* Main Content */}
-      <div className={`transition-all duration-300 ease-out ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72'
-      }`}>
-        {/* Top Navigation */}
-        <motion.header
-          className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-soft"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.3 }}
-        >
-          <div className="flex items-center justify-between h-16 px-4 lg:px-6">
-            {/* Left Section */}
-            <div className="flex items-center gap-3 lg:gap-4">
+      <div className="flex-1 min-h-screen flex flex-col lg:ml-64">
+        {/* Top Bar */}
+        <div className="fixed top-0 right-0 left-0 lg:left-64 z-40 bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/30">
+          <div className="flex items-center justify-between px-6 py-3">
+            <div className="flex items-center space-x-4">
               <button
-                onClick={toggleMobileMenu}
-                className="lg:hidden flex items-center justify-center w-10 h-10 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors duration-200"
+                onClick={handleSidebarOpen}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
               >
-                <FiMenu className="w-6 h-6" />
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
               </button>
               
-              <h1 className="text-lg lg:text-xl font-semibold text-gray-900 font-display">
-                Dashboard
-              </h1>
-            </div>
-
-            {/* Center Section - Search */}
-            <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
-              <div className="relative w-full group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FiSearch className="h-5 w-5 text-gray-400 group-focus-within:text-brand-primary transition-colors duration-200" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Buscar en el dashboard..."
-                  className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
-                />
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                  <kbd className="hidden sm:inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 bg-gray-100 rounded-lg">
-                    ⌘K
-                  </kbd>
-                </div>
+              <div className="hidden lg:block">
+                <h1 className="text-lg font-black text-gray-900">Centro de Diseño</h1>
+                <p className="text-xs text-gray-600">Bienes Raíces Profesionales</p>
               </div>
             </div>
 
-            {/* Right Section */}
-            <div className="flex items-center gap-2 lg:gap-3">
-              {/* Notifications */}
-              <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors duration-200">
-                <FiBell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-red-400 to-red-600 rounded-full animate-pulse"></span>
+            <div className="flex items-center space-x-4">
+              <div className="hidden sm:flex items-center space-x-3 text-sm">
+                <span className="text-gray-600 font-medium">Plan:</span>
+                <span className="font-bold text-purple-600">{user?.plan || 'Free'}</span>
+              </div>
+              
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 transition-all duration-300 text-sm"
+              >
+                <span>🚪</span>
+                <span>Cerrar Sesión</span>
               </button>
-
-              {/* User Profile with Popup Menu */}
-              <div className="relative">
-                <button
-                  onClick={toggleProfileMenu}
-                  className="flex items-center gap-2 lg:gap-3 p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-full flex items-center justify-center">
-                    <FiUser className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="hidden sm:block text-left">
-                    <div className="text-sm font-medium text-gray-900">Usuario Demo</div>
-                    <div className="text-xs text-gray-500">usuario@demo.com</div>
-                    <div className="text-xs text-brand-primary font-medium">Plan Premium</div>
-                  </div>
-                </button>
-
-                {/* Profile Popup Menu */}
-                <AnimatePresence>
-                  {profileMenuOpen && (
-                    <>
-                      {/* Backdrop */}
-                      <motion.div
-                        className="fixed inset-0 z-40"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setProfileMenuOpen(false)}
-                      />
-                      
-                      {/* Menu */}
-                      <motion.div
-                        className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-elevated border border-gray-200 z-50 overflow-hidden"
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {/* Header */}
-                        <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-full flex items-center justify-center">
-                              <FiUser className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-gray-900">Usuario Demo</div>
-                              <div className="text-sm text-gray-500">usuario@demo.com</div>
-                              <div className="text-xs text-brand-primary font-medium">Plan Premium</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Menu Items */}
-                        <div className="py-2">
-                          <button
-                            onClick={handleProfileClick}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                          >
-                            <FiEdit3 className="w-4 h-4 text-gray-500" />
-                            <span>Editar Perfil</span>
-                          </button>
-                          
-                          <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 transition-colors duration-200"
-                          >
-                            <FiLogOut className="w-4 h-4" />
-                            <span>Cerrar Sesión</span>
-                          </button>
-                        </div>
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
             </div>
           </div>
-        </motion.header>
+        </div>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.3 }}
-          >
-            {children}
-          </motion.div>
+        <main className="flex-1 pt-20">
+          {children}
         </main>
       </div>
     </div>
