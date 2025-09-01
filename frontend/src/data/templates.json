@@ -1,0 +1,122 @@
+[
+  {
+    "id": "1",
+    "category": "IG/FB Square Post",
+    "name": "Post Minimalista Blanco",
+    "thumbnail": "/thumbnails/square-post-1.jpg",
+    "link": "https://www.canva.com/templates/EAFZuJ1UaoM-white-minimalist-real-estate-instagram-post/",
+    "dimensions": "1080×1080",
+    "description": "Post minimalista en blanco para Instagram y Facebook, perfecto para mostrar propiedades elegantes",
+    "plan": "Free"
+  },
+  {
+    "id": "2",
+    "category": "IG/FB Square Post",
+    "name": "Post Azul Cielo Moderno",
+    "thumbnail": "/thumbnails/square-post-2.jpg",
+    "link": "https://www.canva.com/templates/EAGMAk9QiO4-sky-blue-modern-real-estate-instagram-post/",
+    "dimensions": "1080×1080",
+    "description": "Post moderno en azul cielo para redes sociales, ideal para propiedades contemporáneas",
+    "plan": "Premium"
+  },
+  {
+    "id": "3",
+    "category": "IG/FB/WSP Story",
+    "name": "Story Minimalista Negro",
+    "thumbnail": "/thumbnails/story-1.jpg",
+    "link": "https://www.canva.com/templates/EAE-A-ReYnY-black-minimalist-real-estate-instagram-story-/",
+    "dimensions": "1080×1920",
+    "description": "Story minimalista en negro para Instagram, WhatsApp y Facebook, diseño elegante y profesional",
+    "plan": "Free"
+  },
+  {
+    "id": "4",
+    "category": "IG/FB/WSP Story",
+    "name": "Story Casa Moderna",
+    "thumbnail": "/thumbnails/story-2.jpg",
+    "link": "https://www.canva.com/templates/EAE931_U97U-real-estate-modern-home-instagram-story-/",
+    "dimensions": "1080×1920",
+    "description": "Story para casa moderna, perfecto para mostrar propiedades contemporáneas en redes sociales",
+    "plan": "Premium"
+  },
+  {
+    "id": "5",
+    "category": "Marketplace Flyer",
+    "name": "Flyer Azul y Blanco Moderno",
+    "thumbnail": "/thumbnails/flyer-1.jpg",
+    "link": "https://www.canva.com/templates/EAGoJfNG1WY-blue-white-modern-real-estate-sale-flyer/",
+    "dimensions": "1200×1500",
+    "description": "Flyer moderno azul y blanco para venta de propiedades, diseño profesional y atractivo",
+    "plan": "Free"
+  },
+  {
+    "id": "6",
+    "category": "Marketplace Flyer",
+    "name": "Flyer Marrón y Blanco Moderno",
+    "thumbnail": "/thumbnails/flyer-2.jpg",
+    "link": "https://www.canva.com/templates/EAGvin08-o4-brown-and-white-modern-real-estate-flyer/",
+    "dimensions": "1200×1500",
+    "description": "Flyer moderno marrón y blanco, perfecto para propiedades con estilo rústico elegante",
+    "plan": "Premium"
+  },
+  {
+    "id": "7",
+    "category": "FB Feed Banner",
+    "name": "Banner Paisaje Bienes Raíces",
+    "thumbnail": "/thumbnails/banner-1.jpg",
+    "link": "https://www.canva.com/templates/EAE59FuOFA8-real-estate-banner-landscape-/",
+    "dimensions": "1200×628",
+    "description": "Banner de paisaje para Facebook, ideal para mostrar propiedades con vistas espectaculares",
+    "plan": "Free"
+  },
+  {
+    "id": "8",
+    "category": "FB Feed Banner",
+    "name": "Banner Ciudad Bienes Raíces",
+    "thumbnail": "/thumbnails/banner-2.jpg",
+    "link": "https://www.canva.com/templates/EADajkSQBPk-city-real-estate-blog-banner/",
+    "dimensions": "1200×628",
+    "description": "Banner de ciudad para blog y Facebook, perfecto para propiedades urbanas",
+    "plan": "Premium"
+  },
+  {
+    "id": "9",
+    "category": "Digital Badge / Visual Card",
+    "name": "Tarjeta Visual Profesional",
+    "thumbnail": "/thumbnails/badge-1.jpg",
+    "link": "https://www.canva.com/design/DAGxYvR7hSE/yMsvz0ZhYYNnGq1RteSMBQ/edit?utm_content=DAGxYvR7hSE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
+    "dimensions": "1080×1350",
+    "description": "Tarjeta visual profesional para redes sociales, ideal para mostrar propiedades destacadas",
+    "plan": "Ultra-Premium"
+  },
+  {
+    "id": "10",
+    "category": "Digital Badge / Visual Card",
+    "name": "Insignia Digital Elegante",
+    "thumbnail": "/thumbnails/badge-2.jpg",
+    "link": "https://www.canva.com/design/DAGxY89PGpE/fLdIOIwzFgtmk0fURknlsA/edit?utm_content=DAGxY89PGpE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
+    "dimensions": "1080×1350",
+    "description": "Insignia digital elegante para mostrar credenciales profesionales y propiedades exclusivas",
+    "plan": "Ultra-Premium"
+  },
+  {
+    "id": "11",
+    "category": "Brochure / Simple 1-page Document",
+    "name": "Folleto Profesional",
+    "thumbnail": "/thumbnails/brochure-1.jpg",
+    "link": "https://www.canva.com/design/DAGxYwoU2Ug/8tbsPHPa_KtxP4DI7xe5WA/edit?utm_content=DAGxYwoU2Ug&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
+    "dimensions": "A4/Letter",
+    "description": "Folleto profesional de una página para presentar propiedades y servicios inmobiliarios",
+    "plan": "Premium"
+  },
+  {
+    "id": "12",
+    "category": "Brochure / Simple 1-page Document",
+    "name": "Documento Simple",
+    "thumbnail": "/thumbnails/brochure-2.jpg",
+    "link": "https://www.canva.com/design/DAGxYzQ57GU/QfU9hr25Ux_Kk3YxA529pQ/edit?utm_content=DAGxYzQ57GU&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
+    "dimensions": "A4/Letter",
+    "description": "Documento simple de una página para información inmobiliaria y presentaciones",
+    "plan": "Free"
+  }
+]

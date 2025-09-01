@@ -5,6 +5,132 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark Theme CSS Custom Properties */
+:root {
+  /* Light Theme Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --accent-primary: #3b82f6;
+  --accent-secondary: #8b5cf6;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --shadow-primary: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-secondary: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="dark"] {
+  /* Dark Theme Colors */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --border-primary: #334155;
+  --border-secondary: #475569;
+  --accent-primary: #60a5fa;
+  --accent-secondary: #a78bfa;
+  --accent-success: #34d399;
+  --accent-warning: #fbbf24;
+  --accent-error: #f87171;
+  --shadow-primary: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-secondary: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 20px rgba(96, 165, 250, 0.4);
+}
+
+/* Base Dark Theme Styles */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom line-clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Glassmorphism effects */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Dark Theme Specific Classes */
+.dark-bg {
+  background-color: var(--bg-primary);
+}
+
+.dark-bg-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.dark-bg-tertiary {
+  background-color: var(--bg-tertiary);
+}
+
+.dark-text {
+  color: var(--text-primary);
+}
+
+.dark-text-secondary {
+  color: var(--text-secondary);
+}
+
+.dark-text-tertiary {
+  color: var(--text-tertiary);
+}
+
+.dark-border {
+  border-color: var(--border-primary);
+}
+
+.dark-border-secondary {
+  border-color: var(--border-secondary);
+}
+
+.dark-shadow {
+  box-shadow: var(--shadow-primary);
+}
+
+.dark-shadow-lg {
+  box-shadow: var(--shadow-secondary);
+}
+
+.dark-shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
 /* CSS Custom Properties for Design System */
 :root {
   /* Brand Colors */

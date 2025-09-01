@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Inter } from 'next/font/google';
 import "./globals.css";
 import { UserProvider } from '../context/UserContext';
 import ClientOnly from '../components/ClientOnly';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'LupaProp - Centro de Diseño Profesional',
@@ -19,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet" 
         />
       </head>
-      <body className="font-sans antialiased">
+      <body className={`${inter.className} font-sans antialiased`}>
         <ClientOnly>
           <UserProvider>
             {children}
