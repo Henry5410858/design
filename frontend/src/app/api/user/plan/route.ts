@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// This route should be statically generated
+export const dynamic = 'auto';
+
 // Mock user plans - in a real app, this would come from a database
 // These represent actual user subscription plans, not template-based plans
 const mockUserPlans: Record<string, 'Free' | 'Premium' | 'Ultra-Premium'> = {

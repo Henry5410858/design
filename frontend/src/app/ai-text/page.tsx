@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+
+// Force dynamic rendering for this page
+export const dynamic = 'auto';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FiZap, FiCopy, FiRefreshCw, FiStar } from 'react-icons/fi';
 
@@ -14,7 +17,7 @@ export default function AITextPage() {
     
     setLoading(true);
     try {
-      const response = await fetch('/api/ai-text', {
+      const response = await fetch('http://localhost:4000/api/ai-text', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

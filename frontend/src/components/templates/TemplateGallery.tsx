@@ -1,19 +1,8 @@
-import React from 'react';
-import {
-  SquarePostTemplate1,
-  SquarePostTemplate2,
-  StoryTemplate1,
-  StoryTemplate2,
-  FlyerTemplate1,
-  FlyerTemplate2,
-  BannerTemplate1,
-  BannerTemplate2,
-  BadgeTemplate1,
-  BadgeTemplate2,
-  BrochureTemplate1,
-  BrochureTemplate2,
-  TemplateProps
-} from './index';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { FiEdit3, FiDownload, FiFilter, FiGrid, FiImage, FiFileText, FiVideo, FiSmartphone, FiMonitor, FiShare2, FiBookOpen } from 'react-icons/fi';
 
 interface TemplateItem {
   id: string;
@@ -21,9 +10,8 @@ interface TemplateItem {
   category: string;
   dimensions: string;
   description: string;
-  template: React.ComponentType<TemplateProps>;
-  canvaTemplateId: string; // Canva template ID for direct editing
-  color: string;
+  editorType?: 'flyer' | 'social' | 'story' | 'badge' | 'banner' | 'document' | 'brochure';
+  templateKey?: string; // For real estate templates
 }
 
 const TemplateGallery: React.FC = () => {
@@ -37,133 +25,140 @@ const TemplateGallery: React.FC = () => {
     ctaText: "Get Started Today"
   };
 
-  // Template definitions with Canva template IDs
-  const templates: TemplateItem[] = [
-    // SquarePost Templates
+const TemplateGallery: React.FC<TemplateGalleryProps> = ({
+  templates = [],
+  onEditTemplate,
+  onDownloadTemplate
+}) => {
+  const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState<'all' | Template['category']>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const categories = [
+    { id: 'all', name: 'Todos', icon: <FiGrid /> },
+    { id: 'social-posts', name: 'Posts Redes', icon: <FiImage /> },
+    { id: 'stories', name: 'Stories', icon: <FiSmartphone /> },
+    { id: 'flyers', name: 'Flyers', icon: <FiShare2 /> },
+    { id: 'banners', name: 'Banners', icon: <FiMonitor /> },
+    { id: 'badges', name: 'Badges', icon: <FiImage /> },
+    { id: 'documents', name: 'Documentos', icon: <FiBookOpen /> }
+  ];
+
+  // Enhanced templates with editor types and template keys
+  const sampleTemplates: Template[] = [
+    // Social Posts
     {
-      id: 'square-post-1',
-      name: 'Minimal Square Post',
-      category: 'SquarePost',
-      dimensions: '1080×1080',
-      description: 'Clean, professional design for Instagram and Facebook',
-      template: SquarePostTemplate1,
-      canvaTemplateId: 'DAF123456789', // Replace with actual Canva template ID
-      color: 'from-slate-400 to-slate-600'
+      id: '1',
+      name: 'IG/FB Square Post',
+      category: 'social-posts',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Post cuadrado optimizado para Instagram y Facebook',
+      editorType: 'social',
+      templateKey: 'luxuryHouse'
     },
     {
-      id: 'square-post-2',
-      name: 'Vibrant Square Post',
-      category: 'SquarePost',
-      dimensions: '1080×1080',
-      description: 'Bold, eye-catching design with modern aesthetics',
-      template: SquarePostTemplate2,
-      canvaTemplateId: 'DAF123456790', // Replace with actual Canva template ID
-      color: 'from-purple-400 to-pink-500'
+      id: '2',
+      name: 'Post Promocional',
+      category: 'social-posts',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Diseño atractivo para promociones en redes sociales',
+      editorType: 'social',
+      templateKey: 'modernFamily'
     },
     // Story Templates
     {
-      id: 'story-1',
-      name: 'Minimal Story',
-      category: 'Story',
-      dimensions: '1080×1920',
-      description: 'Professional story design for Instagram and WhatsApp',
-      template: StoryTemplate1,
-      canvaTemplateId: 'DAF123456791', // Replace with actual Canva template ID
-      color: 'from-slate-400 to-slate-600'
+      id: '3',
+      name: 'IG/FB/WSP Story',
+      category: 'stories',
+      thumbnail: '/api/placeholder/400/700',
+      description: 'Story vertical para Instagram, Facebook y WhatsApp',
+      editorType: 'story',
+      templateKey: 'dreamHome'
     },
     {
-      id: 'story-2',
-      name: 'Vibrant Story',
-      category: 'Story',
-      dimensions: '1080×1920',
-      description: 'Creative story design with bold colors and animations',
-      template: StoryTemplate2,
-      canvaTemplateId: 'DAF123456792', // Replace with actual Canva template ID
-      color: 'from-indigo-400 to-pink-500'
+      id: '4',
+      name: 'Story Promocional',
+      category: 'stories',
+      thumbnail: '/api/placeholder/400/700',
+      description: 'Story con elementos promocionales atractivos',
+      editorType: 'story',
+      templateKey: 'cityRealEstate'
     },
     // Flyer Templates
     {
-      id: 'flyer-1',
-      name: 'Minimal Flyer',
-      category: 'Flyer',
-      dimensions: '1200×1500',
-      description: 'Professional flyer design for print and digital',
-      template: FlyerTemplate1,
-      canvaTemplateId: 'DAF123456793', // Replace with actual Canva template ID
-      color: 'from-slate-400 to-slate-600'
+      id: '5',
+      name: 'Marketplace Flyer',
+      category: 'flyers',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Flyer optimizado para marketplace y ventas',
+      editorType: 'flyer',
+      templateKey: 'luxuryHouse'
     },
     {
-      id: 'flyer-2',
-      name: 'Vibrant Flyer',
-      category: 'Flyer',
-      dimensions: '1200×1500',
-      description: 'Eye-catching flyer with modern design elements',
-      template: FlyerTemplate2,
-      canvaTemplateId: 'DAF123456794', // Replace with actual Canva template ID
-      color: 'from-purple-400 to-orange-400'
+      id: '6',
+      name: 'Flyer Evento',
+      category: 'flyers',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Flyer para eventos y conferencias',
+      editorType: 'flyer',
+      templateKey: 'modernFamily'
     },
     // Banner Templates
     {
-      id: 'banner-1',
-      name: 'Minimal Banner',
-      category: 'Banner',
-      dimensions: '1200×628',
-      description: 'Professional banner for Facebook feed and ads',
-      template: BannerTemplate1,
-      canvaTemplateId: 'DAF123456795', // Replace with actual Canva template ID
-      color: 'from-slate-400 to-slate-600'
+      id: '7',
+      name: 'FB Feed Banner',
+      category: 'banners',
+      thumbnail: '/api/placeholder/400/200',
+      description: 'Banner optimizado para Facebook Feed',
+      editorType: 'banner',
+      templateKey: 'cityRealEstate'
     },
     {
-      id: 'banner-2',
-      name: 'Vibrant Banner',
-      category: 'Banner',
-      dimensions: '1200×628',
-      description: 'Attention-grabbing banner with bold colors',
-      template: BannerTemplate2,
-      canvaTemplateId: 'DAF123456796', // Replace with actual Canva template ID
-      color: 'from-blue-400 to-pink-500'
+      id: '8',
+      name: 'Banner Web',
+      category: 'banners',
+      thumbnail: '/api/placeholder/400/200',
+      description: 'Banner para sitios web y landing pages',
+      editorType: 'banner',
+      templateKey: 'modernFamily'
     },
     // Badge Templates
     {
-      id: 'badge-1',
-      name: 'Minimal Badge',
-      category: 'Badge',
-      dimensions: '800×800',
-      description: 'Clean badge design for digital and print use',
-      template: BadgeTemplate1,
-      canvaTemplateId: 'DAF123456797', // Replace with actual Canva template ID
-      color: 'from-slate-400 to-slate-600'
+      id: '9',
+      name: 'Badge Vendido',
+      category: 'badges',
+      thumbnail: '/api/placeholder/400/400',
+      description: 'Badge para propiedades vendidas',
+      editorType: 'badge',
+      templateKey: 'luxuryHouse'
     },
     {
-      id: 'badge-2',
-      name: 'Vibrant Badge',
-      category: 'Badge',
-      dimensions: '800×800',
-      description: 'Colorful badge with modern design elements',
-      template: BadgeTemplate2,
-      canvaTemplateId: 'DAF123456798', // Replace with actual Canva template ID
-      color: 'from-emerald-400 to-cyan-500'
+      id: '10',
+      name: 'Badge Reservado',
+      category: 'badges',
+      thumbnail: '/api/placeholder/400/400',
+      description: 'Badge para propiedades reservadas',
+      editorType: 'badge',
+      templateKey: 'modernFamily'
     },
     // Brochure Templates
     {
-      id: 'brochure-1',
-      name: 'Minimal Brochure',
-      category: 'Brochure',
-      dimensions: '1200×1500',
-      description: 'Professional brochure layout for business use',
-      template: BrochureTemplate1,
-      canvaTemplateId: 'DAF123456799', // Replace with actual Canva template ID
-      color: 'from-slate-400 to-slate-600'
+      id: '11',
+      name: 'Brochure Trifold',
+      category: 'documents',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Brochure profesional trifold para villas',
+      editorType: 'brochure',
+      templateKey: 'trifoldBrochure'
     },
     {
-      id: 'brochure-2',
-      name: 'Vibrant Brochure',
-      category: 'Brochure',
-      dimensions: '1200×1500',
-      description: 'Creative brochure with bold design elements',
-      template: BrochureTemplate2,
-      canvaTemplateId: 'DAF123456800', // Replace with actual Canva template ID
-      color: 'from-rose-400 to-purple-500'
+      id: '12',
+      name: 'Documento Propiedad',
+      category: 'documents',
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Documento detallado de propiedad',
+      editorType: 'document',
+      templateKey: 'dreamHome'
     }
   ];
 
@@ -174,29 +169,50 @@ const TemplateGallery: React.FC = () => {
     window.open(canvaUrl, '_blank');
   };
 
-  // Function to get appropriate scale for template preview
-  const getTemplateScale = (dimensions: string) => {
-    if (dimensions.includes('1080×1080')) return 'scale-50';
-    if (dimensions.includes('1080×1920')) return 'scale-40';
-    if (dimensions.includes('1200×1500')) return 'scale-40';
-    if (dimensions.includes('1200×628')) return 'scale-50';
-    if (dimensions.includes('800×800')) return 'scale-60';
-    return 'scale-50';
+  // Ensure templates is always an array and filter safely
+  const safeTemplates = Array.isArray(allTemplates) ? allTemplates : [];
+  
+  const filteredTemplates = safeTemplates.filter(template => {
+    const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
+    const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         template.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleEditTemplate = (template: Template) => {
+    if (template.editorType && template.templateKey) {
+      // Navigate to the unified editor with template information
+      router.push(`/editor?type=${template.editorType}&template=${template.templateKey}&id=${template.id}`);
+    } else {
+      // Fallback to default editor
+      router.push(`/editor?type=${template.category === 'social-posts' ? 'social' : template.category === 'documents' ? 'document' : template.category.slice(0, -1)}&id=${template.id}`);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            🎨 Professional Design Templates
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Galería de Templates
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Choose from our collection of professionally designed templates. 
-            Click any template to open it directly in Canva's editor for customization.
+          <p className="text-gray-600">
+            Selecciona un template para comenzar a diseñar o crea uno desde cero
           </p>
         </div>
+        
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="primary"
+            onClick={() => router.push('/editor?type=flyer&id=new')}
+            className="flex items-center space-x-2"
+          >
+            <FiEdit3 className="w-4 h-4" />
+            <span>Crear Nuevo Diseño</span>
+          </Button>
+        </div>
+      </div>
 
         {/* Template Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -285,10 +301,94 @@ const TemplateGallery: React.FC = () => {
           </div>
         </div>
 
-        {/* Note about Canva Template IDs */}
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-4xl mx-auto">
-          <h3 className="text-lg font-semibold text-yellow-800 mb-3">
-            💡 Important Note
+      {/* Templates Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredTemplates.map(template => (
+          <Card
+            key={template.id}
+            variant="interactive"
+            padding="none"
+            className="group overflow-hidden"
+            onClick={() => handleEditTemplate(template)}
+          >
+            {/* Thumbnail */}
+            <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+              <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    {template.category === 'stories' ? <FiSmartphone className="w-6 h-6 text-gray-600" /> :
+                     template.category === 'documents' ? <FiBookOpen className="w-6 h-6 text-gray-600" /> :
+                     template.category === 'banners' ? <FiMonitor className="w-6 h-6 text-gray-600" /> :
+                     template.category === 'badges' ? <FiImage className="w-6 h-6 text-gray-600" /> :
+                     <FiImage className="w-6 h-6 text-gray-600" />}
+                  </div>
+                  <span className="text-gray-500 text-sm font-medium">{template.name}</span>
+                </div>
+              </div>
+              
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <FiEdit3 className="w-6 h-6" />
+                  </div>
+                  <p className="font-medium">Editar en Editor</p>
+                  <p className="text-sm opacity-80">Click para abrir</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
+                  {template.name}
+                </h3>
+                {template.templateKey && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">
+                    🏠 Preset
+                  </span>
+                )}
+              </div>
+              
+              <p className="text-gray-600 text-xs mb-3 line-clamp-2">
+                {template.description}
+              </p>
+              
+              {/* Category Badge */}
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                  {categories.find(c => c.id === template.category)?.name}
+                </span>
+                
+                {/* Quick Actions */}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownloadTemplate(template.id);
+                    }}
+                    className="p-1 h-8 w-8"
+                  >
+                    <FiDownload className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {filteredTemplates.length === 0 && (
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiImage className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No se encontraron templates
           </h3>
           <p className="text-yellow-700 text-sm">
             The template IDs shown above are placeholder examples. To make this fully functional, 

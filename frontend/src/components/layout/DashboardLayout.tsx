@@ -14,6 +14,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  
+  // Safely get user context - handle case where it might not be available during SSR
+  let setUser: ((user: any) => void) | null = null;
+  try {
+    const userContext = useUser();
+    setUser = userContext.setUser;
+  } catch (error) {
+    // User context not available during SSR - this is expected
+    console.log('User context not available during SSR');
+  }
 
   const navigationItems = useMemo(() => [
     {
@@ -93,10 +104,94 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     );
   }
 
-  // Not authenticated
-  if (!user) {
-    return null;
-  }
+    if (profileMenuOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [profileMenuOpen]);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  }, [pathname, mobileMenuOpen]);
+
+  const navigation = [
+    {
+      name: 'Dashboard',
+      href: '/',
+      icon: FiHome,
+      description: 'Vista general del proyecto'
+    },
+    {
+      name: 'Templates',
+      href: '/templates',
+      icon: FiGrid,
+      description: 'Galería de plantillas'
+    },
+    {
+      name: 'Flyers',
+      href: '/flyers',
+      icon: FiImage,
+      description: 'Diseños de volantes'
+    },
+    {
+      name: 'Propuestas',
+      href: '/proposal',
+      icon: FiFileText,
+      description: 'Gestión de propuestas'
+    },
+    {
+      name: 'Calendario',
+      href: '/calendar',
+      icon: FiCalendar,
+      description: 'Planificación de proyectos'
+    },
+    {
+      name: 'Configuración',
+      href: '/settings',
+      icon: FiSettings,
+      description: 'Ajustes del sistema'
+    }
+  ];
+
+  const toggleSidebar = () => {
+    if (!isMobile) {
+      setSidebarCollapsed(!sidebarCollapsed);
+    }
+  };
+  
+  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
+  const toggleProfileMenu = () => setProfileMenuOpen(!profileMenuOpen);
+
+  const handleLogout = () => {
+    // Clear authentication data
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+    
+    // Update user context if available
+    if (setUser) {
+      setUser(null);
+    }
+    
+    // Close the profile menu
+    setProfileMenuOpen(false);
+    
+    // Redirect to login page
+    router.push('/login');
+  };
+
+  const handleProfileClick = () => {
+    // Navigate to profile page
+    router.push('/change-userinfo');
+    setProfileMenuOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden flex">

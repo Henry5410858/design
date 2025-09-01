@@ -1,5 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
+
+// This page should be statically generated
+export const dynamic = 'auto';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FiUpload, FiSave, FiType, FiImage, FiCheck, FiDroplet } from 'react-icons/fi';
 

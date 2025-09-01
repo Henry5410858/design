@@ -1,10 +1,14 @@
 "use client";
 import { useEffect, useState } from 'react';
+
+// This page should be statically generated
+export const dynamic = 'auto';
 import FlyerEditor from '../../components/flyers/FlyerEditor';
 import Image from 'next/image';
 import { useUser } from '../../context/UserContext';
 import { FiPlus, FiSearch, FiFilter, FiEdit3, FiTrash2, FiEye, FiArrowLeft } from 'react-icons/fi';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import { withContextPreservation, safeAsync } from '../../utils/contextManager';
 
 type Flyer = {
   _id: string;
@@ -17,7 +21,15 @@ type Flyer = {
 };
 
 export default function FlyersPage() {
-  const { user } = useUser();
+  // Safely get user context - handle case where it might not be available during SSR
+  let user: any = null;
+  try {
+    const userContext = useUser();
+    user = userContext.user;
+  } catch (error) {
+    // User context not available during SSR - this is expected
+    console.log('User context not available during SSR');
+  }
   const [flyers, setFlyers] = useState<Flyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingFlyer, setEditingFlyer] = useState<Flyer | null>(null);
@@ -27,18 +39,28 @@ export default function FlyersPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const perPage = 6;
 
-  const fetchFlyers = async () => {
+  const fetchFlyers = withContextPreservation(async () => {
     setLoading(true);
     try {
       const res = await fetch('http://localhost:4000/api/templates?category=flyers');
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
       const data = await res.json();
       setFlyers(data);
     } catch (error) {
       console.error('Error fetching flyers:', error);
+      // Set empty array as fallback
+      setFlyers([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, {
+    onError: (error) => {
+      console.error('Context-aware fetchFlyers failed:', error);
+      setLoading(false);
+    }
+  });
 
   useEffect(() => {
     fetchFlyers();
@@ -48,12 +70,16 @@ export default function FlyersPage() {
     setEditingFlyer(flyer);
   };
 
-  const handleSave = async (flyer: Partial<Flyer> & { _id?: string }) => {
+  const handleSave = withContextPreservation(async (flyer: Partial<Flyer> & { _id?: string }) => {
     const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     try {
       if (flyer._id) {
         // Update existing flyer
-        await fetch(`http://localhost:4000/api/templates/${flyer._id}`, {
+        const response = await fetch(`http://localhost:4000/api/templates/${flyer._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -61,9 +87,13 @@ export default function FlyersPage() {
           },
           body: JSON.stringify(flyer),
         });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update flyer: ${response.status}`);
+        }
       } else {
         // Create new flyer
-        await fetch('http://localhost:4000/api/templates', {
+        const response = await fetch('http://localhost:4000/api/templates', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -71,30 +101,56 @@ export default function FlyersPage() {
           },
           body: JSON.stringify(flyer),
         });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create flyer: ${response.status}`);
+        }
       }
+      
       setEditingFlyer(null);
-      fetchFlyers();
+      await fetchFlyers();
     } catch (error) {
       console.error('Error saving flyer:', error);
+      throw error; // Re-throw to be handled by context preservation
     }
-  };
+  }, {
+    onError: (error) => {
+      console.error('Context-aware handleSave failed:', error);
+    }
+  });
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = withContextPreservation(async (id: string) => {
     const token = localStorage.getItem('token');
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este volante?')) return;
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este volante?')) {
+      return;
+    }
     
     try {
-      await fetch(`http://localhost:4000/api/templates/${id}`, {
+      const response = await fetch(`http://localhost:4000/api/templates/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      fetchFlyers();
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete flyer: ${response.status}`);
+      }
+      
+      await fetchFlyers();
     } catch (error) {
       console.error('Error deleting flyer:', error);
+      throw error; // Re-throw to be handled by context preservation
     }
-  };
+  }, {
+    onError: (error) => {
+      console.error('Context-aware handleDelete failed:', error);
+    }
+  });
 
   // Filter and search
   const filteredFlyers = flyers.filter(flyer =>

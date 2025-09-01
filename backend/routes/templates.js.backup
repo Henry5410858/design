@@ -797,6 +797,101 @@ router.post('/:id/thumbnail', upload.single('thumbnail'), async (req, res) => {
   }
 });
 
+// POST /api/templates/save-design - Save design data as file and return filename
+router.post('/save-design', designUpload.single('designData'), async (req, res) => {
+  try {
+    let filename;
+    
+    if (req.file) {
+      // File upload method
+      filename = req.file.filename;
+      console.log('Design data file saved via upload:', filename);
+      console.log('File path:', req.file.path);
+    } else if (req.body.designData) {
+      // JSON data method (fallback)
+      const timestamp = Date.now();
+      const randomSuffix = Math.round(Math.random() * 1E9);
+      filename = `design-${timestamp}-${randomSuffix}.json`;
+      const filePath = path.resolve(__dirname, '../uploads/designs', filename);
+      
+      // Write the design data to file
+      fs.writeFileSync(filePath, JSON.stringify(req.body.designData, null, 2));
+      console.log('Design data saved via JSON:', filename);
+      console.log('File path:', filePath);
+    } else {
+      return res.status(400).json({ error: 'No design data provided (file or JSON)' });
+    }
+
+    // Return the filename that should be stored in the database
+    res.json({ 
+      success: true, 
+      filename: filename,
+      message: 'Design data saved successfully'
+    });
+  } catch (error) {
+    console.error('Error saving design data:', error);
+    res.status(500).json({ error: 'Failed to save design data' });
+  }
+});
+
+// GET /api/templates/design/:filename - Get design data from file
+router.get('/design/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.resolve(__dirname, '../uploads/designs', filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Design file not found' });
+    }
+
+    const designData = fs.readFileSync(filePath, 'utf8');
+    const parsedData = JSON.parse(designData);
+    
+    res.json({ 
+      success: true, 
+      designData: parsedData
+    });
+  } catch (error) {
+    console.error('Error reading design data:', error);
+    res.status(500).json({ error: 'Failed to read design data' });
+  }
+});
+
+// POST /api/templates/save-design-large - Handle very large design data
+router.post('/save-design-large', async (req, res) => {
+  try {
+    // This endpoint handles very large JSON payloads
+    const designData = req.body.designData;
+    
+    if (!designData) {
+      return res.status(400).json({ error: 'No design data provided' });
+    }
+
+    console.log('📊 Large design data received, size:', JSON.stringify(designData).length, 'bytes');
+
+    // Generate filename
+    const timestamp = Date.now();
+    const randomSuffix = Math.round(Math.random() * 1E9);
+    const filename = `design-large-${timestamp}-${randomSuffix}.json`;
+    const filePath = path.resolve(__dirname, '../uploads/designs', filename);
+
+    // Write the design data to file
+    fs.writeFileSync(filePath, JSON.stringify(designData, null, 2));
+    console.log('✅ Large design data saved as file:', filename);
+    console.log('📁 File path:', filePath);
+
+    res.json({
+      success: true,
+      filename: filename,
+      message: 'Large design data saved successfully',
+      size: JSON.stringify(designData).length
+    });
+  } catch (error) {
+    console.error('❌ Error saving large design data:', error);
+    res.status(500).json({ error: 'Failed to save large design data' });
+  }
+});
+
 // POST /api/templates/upload-file - Upload general files
 router.post('/upload-file', generalUpload.single('file'), async (req, res) => {
   try {

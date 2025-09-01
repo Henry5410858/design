@@ -13,13 +13,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Fix static generation issues
-  output: 'standalone',
-  // Handle static generation errors gracefully
-  onDemandEntries: {
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
-  },
+  // Removed proxy configuration - using port 4000 directly
 };
 
 module.exports = nextConfig;

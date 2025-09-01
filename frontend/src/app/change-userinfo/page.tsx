@@ -1,7 +1,11 @@
 'use client';
 import { useState } from 'react';
+
+// Force dynamic rendering for this page
+export const dynamic = 'auto';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCamera, FiSave, FiEdit3, FiShield, FiKey, FiBell, FiGlobe, FiStar, FiCheck } from 'react-icons/fi';
+import { withContextPreservation, createContextAwarePromise } from '../../utils/contextManager';
 
 interface UserProfile {
   id: string;
@@ -66,19 +70,39 @@ export default function ChangeUserInfoPage() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = withContextPreservation(async () => {
     setIsSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setMessage({ type: 'success', text: 'Perfil actualizado exitosamente' });
-      setIsEditing(false);
+      // Simulate API call with context-aware promise
+      await createContextAwarePromise<void>(
+        (resolve) => {
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        },
+        {
+          onError: (error) => {
+            console.error('API call failed:', error);
+            setMessage({ type: 'error', text: 'Error al actualizar el perfil' });
+          },
+          onSuccess: () => {
+            setMessage({ type: 'success', text: 'Perfil actualizado exitosamente' });
+            setIsEditing(false);
+          }
+        }
+      );
     } catch (error) {
       setMessage({ type: 'error', text: 'Error al actualizar el perfil' });
     } finally {
       setIsSaving(false);
     }
-  };
+  }, {
+    onError: (error) => {
+      console.error('Context-aware handleSave failed:', error);
+      setMessage({ type: 'error', text: 'Error al actualizar el perfil' });
+      setIsSaving(false);
+    }
+  });
 
   const handleCancel = () => {
     // Reset to original values

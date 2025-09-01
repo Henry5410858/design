@@ -679,8 +679,8 @@ export default function TemplateEditor({ id }: { id: string }) {
       
       // Create PDF with selected dimensions
       const pdf = new jsPDF({ 
-        orientation: 'portrait', 
-        unit: pdfUnit, 
+        orientation: 'portrait' as const, 
+        unit: pdfUnit as any, 
         format: pdfFormat
       });
       
