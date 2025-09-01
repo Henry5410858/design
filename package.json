@@ -6,6 +6,8 @@
     "dev": "concurrently \"npm run frontend\" \"npm run backend\""
   },
   "dependencies": {
-    "concurrently": "^9.2.0"
+    "@types/fabric": "^5.3.10",
+    "concurrently": "^9.2.0",
+    "fabric": "^6.7.1"
   }
 }

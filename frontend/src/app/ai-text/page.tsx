@@ -14,7 +14,7 @@ export default function AITextPage() {
     
     setLoading(true);
     try {
-      const response = await fetch('/api/ai-text', {
+      const response = await fetch('http://localhost:4000/api/ai-text', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

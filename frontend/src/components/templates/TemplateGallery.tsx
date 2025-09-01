@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { FiEdit3, FiDownload, FiFilter, FiGrid, FiImage, FiFileText, FiVideo, FiSmartphone, FiMonitor, FiShare2, FiBookOpen } from 'react-icons/fi';
@@ -9,6 +10,8 @@ export interface Template {
   category: 'social-posts' | 'stories' | 'flyers' | 'banners' | 'badges' | 'documents';
   thumbnail: string;
   description: string;
+  editorType?: 'flyer' | 'social' | 'story' | 'badge' | 'banner' | 'document' | 'brochure';
+  templateKey?: string; // For real estate templates
 }
 
 interface TemplateGalleryProps {
@@ -22,6 +25,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   onEditTemplate,
   onDownloadTemplate
 }) => {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<'all' | Template['category']>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -35,7 +39,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     { id: 'documents', name: 'Documentos', icon: <FiBookOpen /> }
   ];
 
-  // Sample templates for each category
+  // Enhanced templates with editor types and template keys
   const sampleTemplates: Template[] = [
     // Social Posts
     {
@@ -43,14 +47,18 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'IG/FB Square Post',
       category: 'social-posts',
       thumbnail: '/api/placeholder/400/300',
-      description: 'Post cuadrado optimizado para Instagram y Facebook'
+      description: 'Post cuadrado optimizado para Instagram y Facebook',
+      editorType: 'social',
+      templateKey: 'luxuryHouse'
     },
     {
       id: '2',
       name: 'Post Promocional',
       category: 'social-posts',
       thumbnail: '/api/placeholder/400/300',
-      description: 'Diseño atractivo para promociones en redes sociales'
+      description: 'Diseño atractivo para promociones en redes sociales',
+      editorType: 'social',
+      templateKey: 'modernFamily'
     },
 
     // Stories
@@ -59,14 +67,18 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'IG/FB/WSP Story',
       category: 'stories',
       thumbnail: '/api/placeholder/400/700',
-      description: 'Story vertical para Instagram, Facebook y WhatsApp'
+      description: 'Story vertical para Instagram, Facebook y WhatsApp',
+      editorType: 'story',
+      templateKey: 'dreamHome'
     },
     {
       id: '4',
       name: 'Story Promocional',
       category: 'stories',
       thumbnail: '/api/placeholder/400/700',
-      description: 'Story con elementos promocionales atractivos'
+      description: 'Story con elementos promocionales atractivos',
+      editorType: 'story',
+      templateKey: 'cityRealEstate'
     },
 
     // Flyers
@@ -75,14 +87,18 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'Marketplace Flyer',
       category: 'flyers',
       thumbnail: '/api/placeholder/400/300',
-      description: 'Flyer optimizado para marketplace y ventas'
+      description: 'Flyer optimizado para marketplace y ventas',
+      editorType: 'flyer',
+      templateKey: 'luxuryHouse'
     },
     {
       id: '6',
       name: 'Flyer Evento',
       category: 'flyers',
       thumbnail: '/api/placeholder/400/300',
-      description: 'Flyer para eventos y conferencias'
+      description: 'Flyer para eventos y conferencias',
+      editorType: 'flyer',
+      templateKey: 'modernFamily'
     },
 
     // Banners
@@ -91,46 +107,58 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       name: 'FB Feed Banner',
       category: 'banners',
       thumbnail: '/api/placeholder/400/200',
-      description: 'Banner optimizado para Facebook Feed'
+      description: 'Banner optimizado para Facebook Feed',
+      editorType: 'banner',
+      templateKey: 'cityRealEstate'
     },
     {
       id: '8',
       name: 'Banner Web',
       category: 'banners',
       thumbnail: '/api/placeholder/400/200',
-      description: 'Banner para sitios web y landing pages'
+      description: 'Banner para sitios web y landing pages',
+      editorType: 'banner',
+      templateKey: 'modernFamily'
     },
 
     // Badges
     {
       id: '9',
-      name: 'Digital Badge',
+      name: 'Badge Vendido',
       category: 'badges',
-      thumbnail: '/api/placeholder/300/300',
-      description: 'Badge digital para certificaciones y logros'
+      thumbnail: '/api/placeholder/400/400',
+      description: 'Badge para propiedades vendidas',
+      editorType: 'badge',
+      templateKey: 'luxuryHouse'
     },
     {
       id: '10',
-      name: 'Visual Card',
+      name: 'Badge Reservado',
       category: 'badges',
-      thumbnail: '/api/placeholder/300/300',
-      description: 'Tarjeta visual para presentaciones'
+      thumbnail: '/api/placeholder/400/400',
+      description: 'Badge para propiedades reservadas',
+      editorType: 'badge',
+      templateKey: 'modernFamily'
     },
 
     // Documents
     {
       id: '11',
-      name: 'Brochure Simple',
+      name: 'Brochure Trifold',
       category: 'documents',
-      thumbnail: '/api/placeholder/400/600',
-      description: 'Brochure de una página simple y elegante'
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Brochure profesional trifold para villas',
+      editorType: 'brochure',
+      templateKey: 'trifoldBrochure'
     },
     {
       id: '12',
-      name: 'Documento 1 Página',
+      name: 'Documento Propiedad',
       category: 'documents',
-      thumbnail: '/api/placeholder/400/600',
-      description: 'Documento de una página para presentaciones'
+      thumbnail: '/api/placeholder/400/300',
+      description: 'Documento detallado de propiedad',
+      editorType: 'document',
+      templateKey: 'dreamHome'
     }
   ];
 
@@ -148,31 +176,36 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   });
 
   const handleEditTemplate = (template: Template) => {
-    // Route to the correct specialized editor based on category
-    const categoryRoute = template.category.replace('-', '/');
-    window.location.href = `/editor/${categoryRoute}/${template.id}`;
+    if (template.editorType && template.templateKey) {
+      // Navigate to the unified editor with template information
+      router.push(`/editor?type=${template.editorType}&template=${template.templateKey}&id=${template.id}`);
+    } else {
+      // Fallback to default editor
+      router.push(`/editor?type=${template.category === 'social-posts' ? 'social' : template.category === 'documents' ? 'document' : template.category.slice(0, -1)}&id=${template.id}`);
+    }
   };
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Biblioteca de Templates
+            Galería de Templates
           </h1>
-          <p className="text-gray-600 text-lg">
-            Diseños profesionales para todos tus proyectos
+          <p className="text-gray-600">
+            Selecciona un template para comenzar a diseñar o crea uno desde cero
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center space-x-3">
           <Button
-            variant="secondary"
-            leftIcon={<FiDownload />}
-            onClick={() => {/* Batch export functionality */}}
+            variant="primary"
+            onClick={() => router.push('/editor?type=flyer&id=new')}
+            className="flex items-center space-x-2"
           >
-            Exportar Todo
+            <FiEdit3 className="w-4 h-4" />
+            <span>Crear Nuevo Diseño</span>
           </Button>
         </div>
       </div>
@@ -243,7 +276,8 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
                     <FiEdit3 className="w-6 h-6" />
                   </div>
-                  <p className="font-medium">Editar en Canva</p>
+                  <p className="font-medium">Editar en Editor</p>
+                  <p className="text-sm opacity-80">Click para abrir</p>
                 </div>
               </div>
             </div>
@@ -254,6 +288,11 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
                   {template.name}
                 </h3>
+                {template.templateKey && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">
+                    🏠 Preset
+                  </span>
+                )}
               </div>
               
               <p className="text-gray-600 text-xs mb-3 line-clamp-2">

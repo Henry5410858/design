@@ -7,7 +7,13 @@ const fs = require('fs');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+
+// Increase payload size limits
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+// Increase raw body size limit for file uploads
+app.use(express.raw({ limit: '100mb' }));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/designcenter', {
@@ -27,6 +33,9 @@ app.use('/api/templates', require('./routes/templates'));
 const brandKitRouter = require('./routes/brandKit');
 app.use('/api/brand-kit', brandKitRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/files', express.static(path.join(__dirname, 'uploads/files')));
+app.use('/uploads/images', express.static(path.join(__dirname, 'uploads/images')));
+app.use('/uploads/designs', express.static(path.join(__dirname, 'uploads/designs')));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

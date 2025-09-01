@@ -13,6 +13,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Removed proxy configuration - using port 4000 directly
 };
 
 module.exports = nextConfig;
