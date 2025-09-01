@@ -1,5 +1,8 @@
 'use client';
 import TemplateGallery from '../../components/templates/TemplateGallery';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function TemplateGalleryPage() {

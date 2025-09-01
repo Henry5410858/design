@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useState } from 'react';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 import FlyerEditor from '../../components/flyers/FlyerEditor';
 import Image from 'next/image';
 import { useUser } from '../../context/UserContext';

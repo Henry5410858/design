@@ -1,5 +1,8 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 import UnifiedEditor from '../../components/editors/UnifiedEditor';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 

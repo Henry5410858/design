@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // Mock user plans - in a real app, this would come from a database
 // These represent actual user subscription plans, not template-based plans
 const mockUserPlans: Record<string, 'Free' | 'Premium' | 'Ultra-Premium'> = {

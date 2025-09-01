@@ -1026,7 +1026,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // Apply brand logo
   const applyBrandLogo = () => {
     if (canvas && brandKit.logo) {
-      fabric.Image.fromURL(brandKit.logo, (img: fabric.Image) => {
+      fabric.Image.fromURL(brandKit.logo).then((img: any) => {
         img.set({
           left: 50,
           top: 50,
@@ -1319,7 +1319,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 scaleY: obj.scaleY || 1,
                 angle: obj.angle || obj.rotation || 0,
                 selectable: true,
-                editable: true
+                hasControls: true
               });
               canvas.add(polygon);
               console.log(`✅ Polygon object loaded`);
@@ -1338,7 +1338,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 scaleY: obj.scaleY || 1,
                 angle: obj.angle || obj.rotation || 0,
                 selectable: true,
-                editable: true
+                hasControls: true
               });
               canvas.add(path);
               console.log(`✅ Path object loaded`);

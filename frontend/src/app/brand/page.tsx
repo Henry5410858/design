@@ -1,5 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FiUpload, FiSave, FiType, FiImage, FiCheck, FiDroplet } from 'react-icons/fi';
 
