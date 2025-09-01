@@ -34,7 +34,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { setUser } = useUser();
+  
+  // Safely get user context - handle case where it might not be available during SSR
+  let setUser: ((user: any) => void) | null = null;
+  try {
+    const userContext = useUser();
+    setUser = userContext.setUser;
+  } catch (error) {
+    // User context not available during SSR - this is expected
+    console.log('User context not available during SSR');
+  }
 
   // Check if device is mobile
   useEffect(() => {
@@ -125,11 +134,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   const handleLogout = () => {
     // Clear authentication data
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
     
-    // Update user context
-    setUser(null);
+    // Update user context if available
+    if (setUser) {
+      setUser(null);
+    }
     
     // Close the profile menu
     setProfileMenuOpen(false);

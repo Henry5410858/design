@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Force dynamic rendering for this route
-export const dynamic = 'force-dynamic';
+// This route should be statically generated
+export const dynamic = 'auto';
 
 // Mock user plans - in a real app, this would come from a database
 // These represent actual user subscription plans, not template-based plans

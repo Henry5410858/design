@@ -2,7 +2,7 @@
 import { useState } from 'react';
 
 // Force dynamic rendering for this page
-export const dynamic = 'force-dynamic';
+export const dynamic = 'auto';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCamera, FiSave, FiEdit3, FiShield, FiKey, FiBell, FiGlobe, FiStar, FiCheck } from 'react-icons/fi';
 

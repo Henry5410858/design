@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from 'react';
 
-// Force dynamic rendering for this page
-export const dynamic = 'force-dynamic';
+// This page should be statically generated
+export const dynamic = 'auto';
 import FlyerEditor from '../../components/flyers/FlyerEditor';
 import Image from 'next/image';
 import { useUser } from '../../context/UserContext';
@@ -20,7 +20,15 @@ type Flyer = {
 };
 
 export default function FlyersPage() {
-  const { user } = useUser();
+  // Safely get user context - handle case where it might not be available during SSR
+  let user: any = null;
+  try {
+    const userContext = useUser();
+    user = userContext.user;
+  } catch (error) {
+    // User context not available during SSR - this is expected
+    console.log('User context not available during SSR');
+  }
   const [flyers, setFlyers] = useState<Flyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingFlyer, setEditingFlyer] = useState<Flyer | null>(null);

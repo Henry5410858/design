@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 // Force dynamic rendering for this page
-export const dynamic = 'force-dynamic';
+export const dynamic = 'auto';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FiZap, FiCopy, FiRefreshCw, FiStar } from 'react-icons/fi';
 

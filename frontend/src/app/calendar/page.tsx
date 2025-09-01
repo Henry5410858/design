@@ -1,7 +1,7 @@
 'use client';
 
 // Force dynamic rendering for this page
-export const dynamic = 'force-dynamic';
+export const dynamic = 'auto';
 
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FiCalendar, FiPlus, FiClock, FiMapPin, FiUsers, FiTag, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
