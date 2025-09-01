@@ -15,6 +15,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setIsClient(true);
   }, []);
 
+  
   useEffect(() => {
     if (!isClient) return;
     
