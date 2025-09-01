@@ -491,3 +491,4 @@ export default function Dashboard() {
     </DashboardLayout>
   );
 }
+export const dynamic = "force-dynamic"; 

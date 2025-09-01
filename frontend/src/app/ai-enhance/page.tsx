@@ -5,6 +5,7 @@ import { useState } from 'react';
 export const dynamic = 'auto';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FiUpload, FiImage, FiZap, FiDownload, FiRefreshCw } from 'react-icons/fi';
+import { createContextAwarePromise, safeAsync } from '../../utils/contextManager';
 
 export default function AIEnhancePage() {
   const [file, setFile] = useState<File | null>(null);
@@ -27,10 +28,34 @@ export default function AIEnhancePage() {
     if (!file) return;
     
     setEnhancing(true);
-    // Simulate AI enhancement process
-    setTimeout(() => {
-      setEnhancing(false);
-    }, 3000);
+    
+    // Use context-aware promise to preserve execution context
+    await safeAsync(
+      () => createContextAwarePromise<void>(
+        (resolve) => {
+          setTimeout(() => {
+            setEnhancing(false);
+            resolve();
+          }, 3000);
+        },
+        {
+          onError: (error) => {
+            console.error('AI enhancement failed:', error);
+            setEnhancing(false);
+          },
+          onSuccess: () => {
+            console.log('AI enhancement completed successfully');
+          }
+        }
+      ),
+      undefined,
+      {
+        onError: (error) => {
+          console.error('Safe async operation failed:', error);
+          setEnhancing(false);
+        }
+      }
+    );
   };
 
   return (
