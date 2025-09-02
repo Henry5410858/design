@@ -7,7 +7,7 @@ import FlyerEditor from '../../components/flyers/FlyerEditor';
 import Image from 'next/image';
 import { useUser } from '../../context/UserContext';
 import { FiPlus, FiSearch, FiFilter, FiEdit3, FiTrash2, FiEye, FiArrowLeft } from 'react-icons/fi';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import { withContextPreservation, safeAsync } from '../../utils/contextManager';
 
 type Flyer = {
@@ -162,8 +162,8 @@ export default function FlyersPage() {
 
   if (editingFlyer) {
     return (
-      <DashboardLayout>
-        <div className="max-w-7xl mx-auto">
+      <AppLayout>
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="mb-6">
             <button
               onClick={() => setEditingFlyer(null)}
@@ -176,13 +176,13 @@ export default function FlyersPage() {
           </div>
           <FlyerEditor flyer={editingFlyer} onSave={handleSave} onCancel={() => setEditingFlyer(null)} />
         </div>
-      </DashboardLayout>
+      </AppLayout>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+    <AppLayout>
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Volantes</h1>
@@ -328,6 +328,6 @@ export default function FlyersPage() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

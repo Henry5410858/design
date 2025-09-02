@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import { FiImage, FiDownload, FiEdit3, FiEye, FiPlus, FiShare2, FiType, FiDroplet } from 'react-icons/fi';
 
 interface BrandAsset {
@@ -68,8 +68,8 @@ export default function BrandingPage() {
   });
 
   return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+    <AppLayout>
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -277,6 +277,6 @@ export default function BrandingPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

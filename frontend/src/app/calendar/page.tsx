@@ -3,13 +3,13 @@
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
 
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import { FiCalendar, FiPlus, FiClock, FiMapPin, FiUsers, FiTag, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 export default function CampaignCalendarPage() {
   return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+    <AppLayout>
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Calendario de Campañas</h1>
@@ -178,6 +178,6 @@ export default function CampaignCalendarPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

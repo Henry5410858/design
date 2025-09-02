@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import { FiGrid, FiImage, FiEdit3, FiDownload, FiTrash2, FiEye, FiSearch, FiFilter, FiPlus, FiStar, FiClock, FiFolder } from 'react-icons/fi';
 
 interface Design {
@@ -108,8 +108,8 @@ export default function MyDesignsPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+    <AppLayout>
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -429,6 +429,6 @@ export default function MyDesignsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

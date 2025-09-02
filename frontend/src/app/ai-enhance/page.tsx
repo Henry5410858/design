@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 // This page should be statically generated
 export const dynamic = 'auto';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import { FiUpload, FiImage, FiZap, FiDownload, FiRefreshCw } from 'react-icons/fi';
 import { createContextAwarePromise, safeAsync } from '../../utils/contextManager';
 
@@ -59,8 +59,8 @@ export default function AIEnhancePage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
+    <AppLayout>
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl mb-6 shadow-lg">
@@ -230,6 +230,6 @@ export default function AIEnhancePage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useTheme } from '@/context/ThemeContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const pathname = usePathname();
+  const { theme } = useTheme();
 
   const navigationItems = [
     {
@@ -83,27 +85,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
       {/* Sidebar */}
       <div className={`
-        fixed top-0 left-0 h-full bg-gray-900 border-r border-gray-700 z-50
+        fixed top-0 left-0 h-full z-50
+        ${theme === 'dark' ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} 
+        border-r
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:z-auto
         w-64 flex-shrink-0
       `}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+        <div className={`flex items-center justify-between p-6 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white text-lg font-bold">🎨</span>
             </div>
-            <h1 className="text-xl font-black text-white">RedDragon</h1>
+            <h1 className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>RedDragon</h1>
           </div>
           
           {/* Mobile Close Button */}
           <button
             onClick={onToggle}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
+            className={`lg:hidden p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
           >
-            <span className="text-gray-400 text-xl">✕</span>
+            <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-xl`}>✕</span>
           </button>
         </div>
 
@@ -116,15 +120,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               className={`
                 group flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200
                 ${isActive(item.href) 
-                  ? 'bg-blue-600/20 border border-blue-500/30 text-blue-300' 
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  ? 'bg-blue-600/20 border border-blue-500/30 text-blue-600' 
+                  : theme === 'dark' 
+                    ? 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }
               `}
             >
               <span className="text-xl">{item.icon}</span>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">{item.name}</div>
-                <div className="text-xs text-gray-500 group-hover:text-gray-400 truncate">
+                <div className={`text-xs truncate ${theme === 'dark' ? 'text-gray-500 group-hover:text-gray-400' : 'text-gray-500 group-hover:text-gray-600'}`}>
                   {item.description}
                 </div>
               </div>
@@ -133,22 +139,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-700">
+        <div className={`p-4 border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
           {/* Theme Toggle */}
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-gray-400">Theme</span>
+            <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Theme</span>
             <ThemeToggle />
           </div>
           
           {/* User Info */}
-          <div className="bg-gray-800 rounded-lg p-3">
+          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'} rounded-lg p-3`}>
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-bold">U</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white truncate">Usuario Demo</div>
-                <div className="text-xs text-gray-400">Premium Plan</div>
+                <div className={`text-sm font-medium truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Usuario Demo</div>
+                <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Premium Plan</div>
               </div>
             </div>
           </div>

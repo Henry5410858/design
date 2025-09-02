@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import { FiZap, FiCopy, FiRefreshCw, FiStar } from 'react-icons/fi';
 
 export default function AITextPage() {
@@ -41,25 +41,25 @@ export default function AITextPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
+    <AppLayout>
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl mb-6 shadow-lg">
             <FiZap className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          <h1 className="text-3xl font-bold text-white mb-4">
             Generador de Texto con IA
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
             Genera títulos creativos y contenido para tus volantes con asistencia de IA
           </p>
         </div>
         
         {/* Main Form */}
-        <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-soft mb-8">
+        <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-soft mb-8">
           <div className="mb-6">
-            <label htmlFor="flyerType" className="block text-lg font-medium text-gray-700 mb-3">
+            <label htmlFor="flyerType" className="block text-lg font-medium text-white mb-3">
               ¿Qué tipo de volante estás creando?
             </label>
             <input
@@ -68,7 +68,7 @@ export default function AITextPage() {
               value={flyerType}
               onChange={(e) => setFlyerType(e.target.value)}
               placeholder="ej., Venta de Verano, Gran Apertura, Oferta Especial, Lanzamiento de Producto"
-              className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-xl text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
+              className="w-full px-6 py-4 bg-gray-700 border border-gray-600 rounded-xl text-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
             />
           </div>
           
@@ -93,9 +93,9 @@ export default function AITextPage() {
         
         {/* Results */}
         {headlines.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-soft overflow-hidden">
-            <div className="bg-gradient-to-r from-brand-primary/5 to-brand-secondary/5 px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <div className="bg-gray-800 rounded-2xl border border-gray-700 shadow-soft overflow-hidden">
+            <div className="bg-gradient-to-r from-brand-primary/10 to-brand-secondary/10 px-6 py-4 border-b border-gray-700">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                 <FiStar className="w-5 h-5 text-brand-primary" />
                 Títulos Generados
               </h3>
@@ -106,10 +106,10 @@ export default function AITextPage() {
                 {headlines.map((headline, index) => (
                   <div
                     key={index}
-                    className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-brand-primary/30 transition-colors duration-200 group hover:-translate-y-1"
+                    className="bg-gray-700 rounded-xl p-4 border border-gray-600 hover:border-brand-primary/30 transition-colors duration-200 group hover:-translate-y-1"
                   >
                     <div className="flex items-start justify-between">
-                      <p className="text-lg text-gray-900 font-medium leading-relaxed">
+                      <p className="text-lg text-white font-medium leading-relaxed">
                         {headline}
                       </p>
                       <button
@@ -124,11 +124,11 @@ export default function AITextPage() {
                 ))}
               </div>
               
-              <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="mt-6 pt-6 border-t border-gray-700">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => setHeadlines([])}
-                    className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors duration-200"
+                    className="flex-1 px-4 py-2 border border-gray-600 text-gray-300 rounded-xl font-medium hover:bg-gray-700 transition-colors duration-200"
                   >
                     Limpiar Resultados
                   </button>
@@ -145,12 +145,12 @@ export default function AITextPage() {
         )}
 
         {/* Tips Section */}
-        <div className="mt-12 bg-gradient-to-r from-brand-primary/5 to-brand-secondary/5 rounded-2xl p-8 border border-brand-primary/20">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="mt-12 bg-gradient-to-r from-brand-primary/10 to-brand-secondary/10 rounded-2xl p-8 border border-brand-primary/30">
+          <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
             <FiZap className="w-5 h-5 text-brand-primary" />
             Consejos Profesionales
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
             <div className="flex items-start gap-2">
               <div className="w-2 h-2 bg-brand-primary rounded-full mt-2 flex-shrink-0"></div>
               <p>Sé específico sobre tu oferta o evento para mejores resultados</p>
@@ -170,6 +170,6 @@ export default function AITextPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

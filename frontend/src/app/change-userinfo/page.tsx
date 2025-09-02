@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCamera, FiSave, FiEdit3, FiShield, FiKey, FiBell, FiGlobe, FiStar, FiCheck } from 'react-icons/fi';
 import { withContextPreservation, createContextAwarePromise } from '../../utils/contextManager';
 
@@ -133,8 +133,8 @@ export default function ChangeUserInfoPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
+    <AppLayout>
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -547,6 +547,6 @@ export default function ChangeUserInfoPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 
 // This page should be statically generated
 export const dynamic = 'auto';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import AppLayout from '../../components/layout/AppLayout';
 import { FiUpload, FiSave, FiType, FiImage, FiCheck, FiDroplet } from 'react-icons/fi';
 
 interface BrandKit {
@@ -125,17 +125,17 @@ export default function BrandPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
+      <AppLayout>
+        <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
         </div>
-      </DashboardLayout>
+      </AppLayout>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+    <AppLayout>
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Kit de Marca</h1>
@@ -495,6 +495,6 @@ export default function BrandPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

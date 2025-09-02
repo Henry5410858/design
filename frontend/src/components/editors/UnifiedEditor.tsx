@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { FiImage, FiType, FiSquare, FiDownload, FiSave, FiRotateCcw, FiRotateCw, FiTrash2, FiCopy, FiLayers, FiMove, FiZoomIn, FiZoomOut, FiFileText, FiMinus, FiPlus, FiEdit3 } from 'react-icons/fi';
+import { FiImage, FiType, FiSquare, FiDownload, FiSave, FiRotateCcw, FiRotateCw, FiTrash2, FiCopy, FiLayers, FiMove, FiZoomIn, FiZoomOut, FiFileText, FiMinus, FiPlus, FiEdit3, FiDroplet } from 'react-icons/fi';
 import { useUser } from '@/context/UserContext';
 import * as fabric from 'fabric';
 import { jsPDF } from 'jspdf';
@@ -26,6 +26,12 @@ interface EditorObject {
   shape?: string;
   rotation?: number;
   zIndex?: number;
+  opacity?: number;
+  stroke?: string;
+  strokeWidth?: number;
+  strokeLineCap?: string;
+  strokeLineJoin?: string;
+  shadow?: any;
 }
 
 interface HistoryState {
@@ -76,6 +82,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // Drag and resize state
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isDragOver, setIsDragOver] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [resizeTarget, setResizeTarget] = useState<string | null>(null);
@@ -558,17 +565,48 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // Save canvas state to history
   const saveCanvasToHistory = useCallback(() => {
     if (canvas) {
+      // Get the current state of all objects from the Fabric.js canvas
+      const canvasObjects = canvas.getObjects();
       const canvasState = canvas.toJSON();
+      
+      // Convert Fabric.js objects to our EditorObject format
+      const currentObjects: EditorObject[] = canvasObjects.map((obj: fabric.Object) => ({
+        id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
+        type: (obj.type === 'text' || obj.type === 'i-text' ? 'text' : 
+               obj.type === 'image' ? 'image' : 
+               obj.type === 'placeholder' ? 'placeholder' : 'shape') as 'text' | 'image' | 'shape' | 'placeholder',
+        x: obj.left || 0,
+        y: obj.top || 0,
+        width: obj.width || 100,
+        height: obj.height || 100,
+        content: (obj as any).text || '',
+        color: (obj as any).fill || '#000000',
+        fontSize: (obj as any).fontSize || 16,
+        fontFamily: (obj as any).fontFamily || 'Arial',
+        rotation: obj.angle || 0,
+        zIndex: (obj as any).zIndex || 0,
+        // Include opacity and other properties
+        opacity: obj.opacity || 1,
+        stroke: (obj as any).stroke || 'transparent',
+        strokeWidth: (obj as any).strokeWidth || 0,
+        strokeLineCap: (obj as any).strokeLineCap || 'butt',
+        strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
+        shadow: (obj as any).shadow || null
+      }));
+      
       const newHistory = history.slice(0, historyIndex + 1);
       newHistory.push({
-        objects: objects,
+        objects: currentObjects,
         backgroundColor: backgroundColor,
         backgroundImage: backgroundImage
       });
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
+      
+      // Update the React state to match the canvas state
+      setObjects(currentObjects);
     }
-  }, [canvas, history, historyIndex, objects, backgroundColor, backgroundImage]);
+  }, [canvas, history, historyIndex, backgroundColor, backgroundImage]);
   
   // Get current canvas dimensions
   const getCurrentCanvasSize = (): CanvasSize => {
@@ -591,27 +629,141 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   
   // Undo function
   const undo = useCallback(() => {
-    if (historyIndex > 0) {
+    if (historyIndex > 0 && canvas) {
       const newIndex = historyIndex - 1;
       const state = history[newIndex];
-      setObjects(state.objects);
+      
+      // Clear canvas and restore objects
+      canvas.clear();
+      
+      // Restore background
       setBackgroundColor(state.backgroundColor);
       setBackgroundImage(state.backgroundImage || null);
+      
+      // Restore objects to canvas with all their properties
+      state.objects.forEach((obj: EditorObject) => {
+        let fabricObj: fabric.Object;
+        
+        if (obj.type === 'text') {
+          fabricObj = new fabric.IText(obj.content || 'Texto', {
+            left: obj.x,
+            top: obj.y,
+            fontSize: obj.fontSize || 16,
+            fontFamily: obj.fontFamily || 'Arial',
+            fill: obj.color || '#000000',
+            opacity: obj.opacity || 1
+          });
+        } else if (obj.type === 'image') {
+          fabricObj = new fabric.Rect({
+            left: obj.x,
+            top: obj.y,
+            width: obj.width || 100,
+            height: obj.height || 100,
+            fill: obj.color || '#000000',
+            opacity: obj.opacity || 1,
+            stroke: obj.stroke || 'transparent',
+            strokeWidth: obj.strokeWidth || 0,
+            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
+            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
+          });
+        } else {
+          // Shape
+          fabricObj = new fabric.Rect({
+            left: obj.x,
+            top: obj.y,
+            width: obj.width || 100,
+            height: obj.height || 100,
+            fill: obj.color || '#000000',
+            opacity: obj.opacity || 1,
+            stroke: obj.stroke || 'transparent',
+            strokeWidth: obj.strokeWidth || 0,
+            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
+            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
+          });
+        }
+        
+        // Set additional properties
+        if (obj.rotation) fabricObj.set('angle', obj.rotation);
+        if (obj.shadow) fabricObj.set('shadow', obj.shadow);
+        (fabricObj as any).id = obj.id;
+        
+        canvas.add(fabricObj);
+      });
+      
+      canvas.renderAll();
+      setObjects(state.objects);
       setHistoryIndex(newIndex);
     }
-  }, [history, historyIndex, history]);
+  }, [history, historyIndex, canvas]);
   
   // Redo function
   const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
+    if (historyIndex < history.length - 1 && canvas) {
       const newIndex = historyIndex + 1;
       const state = history[newIndex];
-      setObjects(state.objects);
+      
+      // Clear canvas and restore objects
+      canvas.clear();
+      
+      // Restore background
       setBackgroundColor(state.backgroundColor);
       setBackgroundImage(state.backgroundImage || null);
+      
+      // Restore objects to canvas with all their properties
+      state.objects.forEach((obj: EditorObject) => {
+        let fabricObj: fabric.Object;
+        
+        if (obj.type === 'text') {
+          fabricObj = new fabric.IText(obj.content || 'Texto', {
+            left: obj.x,
+            top: obj.y,
+            fontSize: obj.fontSize || 16,
+            fontFamily: obj.fontFamily || 'Arial',
+            fill: obj.color || '#000000',
+            opacity: obj.opacity || 1
+          });
+        } else if (obj.type === 'image') {
+          fabricObj = new fabric.Rect({
+            left: obj.x,
+            top: obj.y,
+            width: obj.width || 100,
+            height: obj.height || 100,
+            fill: obj.color || '#000000',
+            opacity: obj.opacity || 1,
+            stroke: obj.stroke || 'transparent',
+            strokeWidth: obj.strokeWidth || 0,
+            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
+            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
+          });
+        } else {
+          // Shape
+          fabricObj = new fabric.Rect({
+            left: obj.x,
+            top: obj.y,
+            width: obj.width || 100,
+            height: obj.height || 100,
+            fill: obj.color || '#000000',
+            opacity: obj.opacity || 1,
+            stroke: obj.stroke || 'transparent',
+            strokeWidth: obj.strokeWidth || 0,
+            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
+            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
+          });
+        }
+        
+        // Set additional properties
+        if (obj.rotation) fabricObj.set('angle', obj.rotation);
+        if (obj.shadow) fabricObj.set('shadow', obj.shadow);
+        (fabricObj as any).id = obj.id;
+        
+        canvas.add(fabricObj);
+      });
+      
+      canvas.renderAll();
+      setObjects(state.objects);
       setHistoryIndex(newIndex);
     }
-  }, [history, historyIndex, history]);
+  }, [history, historyIndex, canvas]);
   
   // Helper function to ensure objects are within canvas boundaries
   const ensureObjectInBounds = (obj: fabric.Object, canvas: fabric.Canvas) => {
@@ -1218,7 +1370,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                scaleY: obj.scaleY || 1,
                angle: obj.angle || obj.rotation || 0,
                width: obj.width || undefined,
-               height: obj.height || undefined
+               height: obj.height || undefined,
+               opacity: obj.opacity || 1,
+               stroke: obj.stroke || 'transparent',
+               strokeWidth: obj.strokeWidth || 0,
+               strokeLineCap: obj.strokeLineCap || 'butt',
+               strokeLineJoin: obj.strokeLineJoin || 'miter',
+               shadow: obj.shadow || null
              });
             canvas.add(text);
             console.log(`✅ Text object loaded: "${obj.text || obj.content}"`);
@@ -1235,7 +1393,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   scaleX: obj.scaleX || 1,
                   scaleY: obj.scaleY || 1,
                   angle: obj.angle || obj.rotation || 0,
-                  selectable: true
+                  selectable: true,
+                  opacity: obj.opacity || 1,
+                  stroke: obj.stroke || 'transparent',
+                  strokeWidth: obj.strokeWidth || 0,
+                  strokeLineCap: obj.strokeLineCap || 'butt',
+                  strokeLineJoin: obj.strokeLineJoin || 'miter',
+                  shadow: obj.shadow || null
                 });
                 canvas.add(fabricImage);
                 canvas.renderAll();
@@ -1262,7 +1426,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               scaleX: obj.scaleX || 1,
               scaleY: obj.scaleY || 1,
               angle: obj.angle || obj.rotation || 0,
-              selectable: true
+              selectable: true,
+              opacity: obj.opacity || 1,
+              shadow: obj.shadow || null
             });
             canvas.add(rect);
             console.log(`✅ Rectangle object loaded with rx: ${obj.rx}, ry: ${obj.ry}`);
@@ -1281,7 +1447,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               scaleX: obj.scaleX || 1,
               scaleY: obj.scaleY || 1,
               angle: obj.angle || obj.rotation || 0,
-              selectable: true
+              selectable: true,
+              opacity: obj.opacity || 1,
+              shadow: obj.shadow || null
             });
             canvas.add(circle);
             console.log(`✅ Circle object loaded with radius: ${obj.radius}`);
@@ -1301,7 +1469,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               scaleX: obj.scaleX || 1,
               scaleY: obj.scaleY || 1,
               angle: obj.angle || obj.rotation || 0,
-              selectable: true
+              selectable: true,
+              opacity: obj.opacity || 1,
+              shadow: obj.shadow || null
             });
             canvas.add(triangle);
             console.log(`✅ Triangle object loaded`);
@@ -1315,11 +1485,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 fill: obj.fill || obj.color || '#3b82f6',
                 stroke: obj.stroke || obj.borderColor || 'transparent',
                 strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
+                strokeLineCap: obj.strokeLineCap || 'butt',
+                strokeLineJoin: obj.strokeLineJoin || 'miter',
                 scaleX: obj.scaleX || 1,
                 scaleY: obj.scaleY || 1,
                 angle: obj.angle || obj.rotation || 0,
                 selectable: true,
-                hasControls: true
+                hasControls: true,
+                opacity: obj.opacity || 1,
+                shadow: obj.shadow || null
               });
               canvas.add(polygon);
               console.log(`✅ Polygon object loaded`);
@@ -1334,11 +1508,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 fill: obj.fill || obj.color || '#3b82f6',
                 stroke: obj.stroke || obj.borderColor || 'transparent',
                 strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
+                strokeLineCap: obj.strokeLineCap || 'butt',
+                strokeLineJoin: obj.strokeLineJoin || 'miter',
                 scaleX: obj.scaleX || 1,
                 scaleY: obj.scaleY || 1,
                 angle: obj.angle || obj.rotation || 0,
                 selectable: true,
-                hasControls: true
+                hasControls: true,
+                opacity: obj.opacity || 1,
+                shadow: obj.shadow || null
               });
               canvas.add(path);
               console.log(`✅ Path object loaded`);
@@ -1754,6 +1932,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDragOver(true);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -1772,6 +1951,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     } else {
       alert('Por favor arrastra un archivo de imagen válido.');
     }
+    setIsDragOver(false);
   };
 
   // Simple test image upload for debugging
@@ -2115,6 +2295,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             scaleX: obj.scaleX || 1,
             scaleY: obj.scaleY || 1,
             angle: obj.angle || 0,
+            opacity: obj.opacity || 1,
+            strokeWidth: (obj as any).strokeWidth || 0,
+            strokeLineCap: (obj as any).strokeLineCap || 'butt',
+            strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
+            shadow: (obj as any).shadow || null,
             isBackground: (obj as any).isBackground || false
           };
           
@@ -2127,7 +2312,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               fontFamily: textObj.fontFamily || 'Arial',
               fontWeight: textObj.fontWeight || 'normal',
               textAlign: textObj.textAlign || 'left',
-              text: textObj.text || ''
+              text: textObj.text || '',
+              opacity: textObj.opacity || 1,
+              strokeWidth: textObj.strokeWidth || 0,
+              strokeLineCap: textObj.strokeLineCap || 'butt',
+              strokeLineJoin: textObj.strokeLineJoin || 'miter',
+              shadow: textObj.shadow || null
             };
           }
           
@@ -2138,9 +2328,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               ...baseObj,
               rx: rectObj.rx || 0,  // Rounded corner radius X
               ry: rectObj.ry || 0,  // Rounded corner radius Y
+              opacity: rectObj.opacity || 1,
               strokeWidth: rectObj.strokeWidth || 0,
               strokeLineCap: rectObj.strokeLineCap || 'butt',
-              strokeLineJoin: rectObj.strokeLineJoin || 'miter'
+              strokeLineJoin: rectObj.strokeLineJoin || 'miter',
+              shadow: rectObj.shadow || null
             };
           }
           
@@ -2150,9 +2342,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             return {
               ...baseObj,
               radius: circleObj.radius || 0,
+              opacity: circleObj.opacity || 1,
               strokeWidth: circleObj.strokeWidth || 0,
               strokeLineCap: circleObj.strokeLineCap || 'butt',
-              strokeLineJoin: circleObj.strokeLineJoin || 'miter'
+              strokeLineJoin: circleObj.strokeLineJoin || 'miter',
+              shadow: circleObj.shadow || null
             };
           }
           
@@ -2161,9 +2355,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             const triangleObj = obj as fabric.Triangle;
             return {
               ...baseObj,
+              opacity: triangleObj.opacity || 1,
               strokeWidth: triangleObj.strokeWidth || 0,
               strokeLineCap: triangleObj.strokeLineCap || 'butt',
-              strokeLineJoin: triangleObj.strokeLineJoin || 'miter'
+              strokeLineJoin: triangleObj.strokeLineJoin || 'miter',
+              shadow: triangleObj.shadow || null
             };
           }
           
@@ -2173,9 +2369,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             return {
               ...baseObj,
               points: polygonObj.points || [],
+              opacity: polygonObj.opacity || 1,
               strokeWidth: polygonObj.strokeWidth || 0,
               strokeLineCap: polygonObj.strokeLineCap || 'butt',
-              strokeLineJoin: polygonObj.strokeLineJoin || 'miter'
+              strokeLineJoin: polygonObj.strokeLineJoin || 'miter',
+              shadow: polygonObj.shadow || null
             };
           }
           
@@ -2185,9 +2383,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             return {
               ...baseObj,
               path: pathObj.path || '',
+              opacity: pathObj.opacity || 1,
               strokeWidth: pathObj.strokeWidth || 0,
               strokeLineCap: pathObj.strokeLineCap || 'butt',
-              strokeLineJoin: pathObj.strokeLineJoin || 'miter'
+              strokeLineJoin: pathObj.strokeLineJoin || 'miter',
+              shadow: pathObj.shadow || null
             };
           }
           
@@ -2699,7 +2899,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         </div>
 
         {/* Secondary Toolbar with Tabs */}
-        <div className="bg-white rounded-2xl shadow-lg mb-6 w-full max-w-none min-w-0 h-fit max-h-none">
+        <div className="bg-white rounded-2xl shadow-lg mb-6 w-full min-w-[800px] h-fit max-h-none">
           {/* Tab Navigation */}
           <div className="flex border-b border-gray-200">
             <button
@@ -2778,6 +2978,21 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             </button>
             )}
             
+            {/* Brand Kit Tab */}
+            <button
+              onClick={() => setActiveTab('brandKit')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'brandKit'
+                  ? 'border-blue-500 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <FiDroplet className="w-4 h-4" />
+                <span>Marca</span>
+              </div>
+            </button>
+            
             {/* Real Estate Elements Tab */}
             <button
               onClick={() => setActiveTab('realEstate')}
@@ -2795,10 +3010,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           </div>
           
           {/* Tab Content */}
-          <div className="p-4 overflow-hidden">
+          <div className="p-4 overflow-hidden min-h-[150px]">
             {/* Elements Tab */}
             {activeTab === 'elements' && (
-              <div className="space-y-4">
+              <div className="space-y-3 min-h-[120px]">
                 <div className="flex items-center space-x-4">
                   <span className="text-sm font-medium text-gray-700">Agregar:</span>
                   <button
@@ -2833,7 +3048,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
             {/* Background Tab */}
             {activeTab === 'background' && (
-              <div className="space-y-4">
+              <div className="space-y-3 min-h-[120px]">
                 {/* Background Color Picker */}
                 <div className="flex items-center space-x-4">
                   <span className="text-sm font-medium text-gray-700">Color de Fondo:</span>
@@ -2885,7 +3100,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
             {/* Templates Tab */}
             {activeTab === 'templates' && (
-              <div className="space-y-4">
+              <div className="space-y-3 min-h-[120px]">
                 <div className="flex items-center space-x-4">
                   <span className="text-sm font-medium text-gray-700">Elementos:</span>
                   <button
@@ -2902,7 +3117,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
             {/* Real Estate Elements Tab */}
             {activeTab === 'realEstate' && (
-              <div className="space-y-4">
+              <div className="space-y-3 min-h-[120px]">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-gray-900">Elementos de Bienes Raíces</h4>
                   <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
@@ -2956,7 +3171,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
             {/* Format Tab */}
             {activeTab === 'format' && selectedObject && (selectedObject.type === 'rect' || selectedObject.type === 'circle' || selectedObject.type === 'triangle' || selectedObject.type === 'polygon' || selectedObject.type === 'path') && (
-              <div className="space-y-4">
+              <div className="space-y-3 min-h-[120px]">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-gray-900">Formato del Objeto</h4>
                   <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
@@ -2964,11 +3179,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-8 gap-2">
                   {/* Fill Color (Content Color) */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Color de Relleno</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Relleno</label>
+                    <div className="flex items-center space-x-1">
                       <input
                         type="color"
                         value={(selectedObject.fill as string) || '#000000'}
@@ -2979,7 +3194,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                        className="w-6 h-6 rounded border border-gray-300 cursor-pointer"
                       />
                       <input
                         type="text"
@@ -2992,15 +3207,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                           }
                         }}
                         placeholder="#000000"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
                   
                   {/* Stroke Color (Border Color) */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Color del Borde</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Borde</label>
+                    <div className="flex items-center space-x-1">
                       <input
                         type="color"
                         value={(selectedObject.stroke as string) || '#000000'}
@@ -3011,7 +3226,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                        className="w-6 h-6 rounded border border-gray-300 cursor-pointer"
                       />
                       <input
                         type="text"
@@ -3024,15 +3239,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                           }
                         }}
                         placeholder="#000000"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
                   
                   {/* Stroke Width (Border Width) */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ancho del Borde</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Ancho</label>
+                    <div className="flex items-center space-x-1">
                       <input
                         type="range"
                         min="0"
@@ -3046,9 +3261,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        className="flex-1 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
                       />
-                      <span className="text-sm text-gray-600 min-w-[3rem] text-center">
+                      <span className="text-xs text-gray-600 min-w-[2rem] text-center">
                         {(selectedObject.strokeWidth as number) || 0}
                       </span>
                     </div>
@@ -3056,8 +3271,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                   {/* Opacity */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Opacidad</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Opacidad</label>
+                    <div className="flex items-center space-x-1">
                       <input
                         type="range"
                         min="0"
@@ -3071,20 +3286,16 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        className="flex-1 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
                       />
-                      <span className="text-sm text-gray-600 min-w-[3rem] text-center">
+                      <span className="text-xs text-gray-600 min-w-[2rem] text-center">
                         {((selectedObject.opacity as number) || 1).toFixed(1)}
                       </span>
                     </div>
                   </div>
-                </div>
-                
-                {/* Additional Formatting Options */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                   {/* Stroke Line Cap */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Estilo del Borde</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Estilo</label>
                     <select
                       value={(selectedObject.strokeLineCap as string) || 'butt'}
                       onChange={(e) => {
@@ -3094,7 +3305,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                           saveCanvasToHistory();
                         }
                       }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="butt">Recto</option>
                       <option value="round">Redondeado</option>
@@ -3104,7 +3315,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                   {/* Stroke Line Join */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Unión del Borde</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Unión</label>
                     <select
                       value={(selectedObject.strokeLineJoin as string) || 'miter'}
                       onChange={(e) => {
@@ -3114,7 +3325,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                           saveCanvasToHistory();
                         }
                       }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="miter">Angular</option>
                       <option value="round">Redondeado</option>
@@ -3124,8 +3335,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                   {/* Shadow */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Sombra</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Sombra</label>
+                    <div className="flex items-center space-x-1">
                       <input
                         type="checkbox"
                         checked={!!(selectedObject as any).shadow}
@@ -3147,13 +3358,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                         }}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-600">Activar Sombra</span>
+                      <span className="text-xs text-gray-600">Activar</span>
                     </div>
                   </div>
                   
                   {/* Reset to Default */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Restablecer</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Restablecer</label>
                     <button
                       onClick={() => {
                         if (selectedObject) {
@@ -3168,9 +3379,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                           saveCanvasToHistory();
                         }
                       }}
-                      className="w-full px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                      className="w-full px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
                     >
-                      Restablecer Valores
+                      Reset
                     </button>
                   </div>
                 </div>
@@ -3199,9 +3410,18 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               </div>
             )}
             
+            {/* Brand Kit Tab */}
+            {activeTab === 'brandKit' && (
+              <div className="space-y-3 min-h-[120px]">
+                <div className="text-center text-gray-500 py-8">
+                  <p className="text-sm">Brand Kit content will be added here</p>
+                </div>
+              </div>
+            )}
+            
             {/* Text Properties Tab */}
             {activeTab === 'text' && selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text') && (
-              <div className="space-y-4">
+              <div className="space-y-3 min-h-[120px]">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-gray-900">Propiedades del Texto</h4>
                   <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
@@ -3209,10 +3429,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-8 gap-2">
                   {/* Font Family */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Fuente</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Fuente</label>
                     <select
                       value={(selectedObject as fabric.IText).fontFamily || 'Arial'}
                       onChange={(e) => {
@@ -3222,7 +3442,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                           saveCanvasToHistory();
                         }
                       }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
                       {fontFamilies.slice(0, 8).map(font => (
                         <option key={font} value={font}>{font}</option>
@@ -3232,8 +3452,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                   {/* Font Size */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Tamaño</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Tamaño</label>
+                    <div className="flex items-center space-x-1">
                       <input
                         type="range"
                         min="8"
@@ -3246,9 +3466,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        className="flex-1 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
                       />
-                      <span className="text-sm text-gray-600 min-w-[3rem] text-center">
+                      <span className="text-xs text-gray-600 min-w-[2rem] text-center">
                         {(selectedObject as fabric.IText).fontSize || 48}
                       </span>
                     </div>
@@ -3256,7 +3476,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                                   {/* Font Weight */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Peso</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Peso</label>
                   <select
                     value={(selectedObject as fabric.IText).fontWeight || 'normal'}
                     onChange={(e) => {
@@ -3266,7 +3486,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                         saveCanvasToHistory();
                       }
                     }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="100">100 - Thin</option>
                     <option value="200">200 - Extra Light</option>
@@ -3282,8 +3502,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                   {/* Text Color */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Color</label>
+                    <div className="flex items-center space-x-1">
                       <input
                         type="color"
                         value={(selectedObject as fabric.IText).fill as string || '#000000'}
@@ -3294,7 +3514,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                        className="w-6 h-6 rounded border border-gray-300 cursor-pointer"
                       />
                       <input
                         type="text"
@@ -3307,18 +3527,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                           }
                         }}
                         placeholder="#000000"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
-                </div>
-                
-                {/* Additional Font Styling Options */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                   {/* Font Style (Italic) */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Estilo</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Estilo</label>
+                    <div className="flex items-center space-x-1">
                       <button
                         onClick={() => {
                           if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
@@ -3329,7 +3545,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                        className={`px-2 py-1 text-xs rounded border transition-colors ${
                           (selectedObject as fabric.IText).fontStyle === 'italic'
                             ? 'border-blue-500 bg-blue-50 text-blue-700'
                             : 'border-gray-300 hover:border-gray-400'
@@ -3351,7 +3567,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                        className={`px-2 py-1 text-xs rounded border transition-colors ${
                           (selectedObject as any).textDecoration?.includes('underline')
                             ? 'border-blue-500 bg-blue-50 text-blue-700'
                             : 'border-gray-300 hover:border-gray-400'
@@ -3373,7 +3589,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                        className={`px-2 py-1 text-xs rounded border transition-colors ${
                           (selectedObject as any).textDecoration?.includes('line-through')
                             ? 'border-blue-500 bg-blue-50 text-blue-700'
                             : 'border-gray-300 hover:border-gray-400'
@@ -3387,8 +3603,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                   {/* Text Alignment */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Alineación</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Alineación</label>
+                    <div className="flex items-center space-x-1">
                       {[
                         { value: 'left', label: 'Izquierda', icon: '⫷' },
                         { value: 'center', label: 'Centro', icon: '⫸' },
@@ -3403,14 +3619,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                               saveCanvasToHistory();
                             }
                           }}
-                          className={`p-2 rounded-lg border-2 transition-colors ${
+                          className={`p-1 rounded border transition-colors ${
                             (selectedObject as fabric.IText).textAlign === align.value
                               ? 'border-blue-500 bg-blue-50 text-blue-700'
                               : 'border-gray-300 hover:border-gray-400'
                           }`}
                           title={align.label}
                         >
-                          <div className="text-lg">{align.icon}</div>
+                          <div className="text-sm">{align.icon}</div>
                           <div className="text-xs">{align.label}</div>
                         </button>
                       ))}
@@ -3419,8 +3635,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                   {/* Letter Spacing */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Espaciado</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Espaciado</label>
+                    <div className="flex items-center space-x-1">
                       <input
                         type="range"
                         min="-5"
@@ -3434,9 +3650,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        className="flex-1 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
                       />
-                      <span className="text-sm text-gray-600 min-w-[3rem] text-center">
+                      <span className="text-xs text-gray-600 min-w-[2rem] text-center">
                         {(selectedObject as fabric.IText).charSpacing || 0}
                       </span>
                     </div>
@@ -3444,8 +3660,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                   {/* Line Height */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Altura de Línea</label>
-                    <div className="flex items-center space-x-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Altura de Línea</label>
+                    <div className="flex items-center space-x-1">
                       <input
                         type="range"
                         min="0.5"
@@ -3459,9 +3675,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             saveCanvasToHistory();
                           }
                         }}
-                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        className="flex-1 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
                       />
-                      <span className="text-sm text-gray-600 min-w-[3rem] text-center">
+                      <span className="text-xs text-gray-600 min-w-[2rem] text-center">
                         {((selectedObject as fabric.IText).lineHeight || 1.16).toFixed(1)}
                       </span>
                     </div>
@@ -3537,575 +3753,26 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
             {/* Collapsible Sidebar Content */}
             <div className={`space-y-6 ${sidebarCollapsed ? 'hidden' : 'block'}`}>
-            {/* Quick Actions */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    console.log('Canvas state:', canvas);
-                    console.log('File input ref:', fileInputRef.current);
-                    if (canvas) {
-                      console.log('Canvas dimensions:', canvas.getWidth(), 'x', canvas.getHeight());
-                      console.log('Canvas objects:', canvas.getObjects());
-                    }
-                  }}
-                  className="w-full flex items-center space-x-3 p-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors"
-                >
-                  <span className="text-yellow-800 font-medium">🔍 Debug Canvas</span>
-                </button>
-                
-                <button
-                  onClick={() => {
-                    if (canvas) {
-                      canvas.clear();
-                      canvas.renderAll();
-                      saveCanvasToHistory();
-                    }
-                  }}
-                  className="w-full flex items-center space-x-3 p-3 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                >
-                  <span className="text-red-800 font-medium">🗑️ Limpiar Canvas</span>
-                </button>
-                
-                <button
-                  onClick={() => {
-                    if (canvas) {
-                      const objects = canvas.getObjects();
-                      console.log('📊 Canvas Objects:', objects.length);
-                      objects.forEach((obj, index) => {
-                        console.log(`Object ${index}:`, obj.type, obj);
-                      });
-                    }
-                  }}
-                  className="w-full flex items-center space-x-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                >
-                  <span className="text-blue-800 font-medium">📊 Info Canvas</span>
-                </button>
-                
-                <button
-                  onClick={testImageUpload}
-                  className="w-full flex items-center space-x-3 p-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
-                >
-                  <span className="text-orange-800 font-medium">🧪 Test Image</span>
-                </button>
-                
-                {/* Test background image button */}
-                <button
-                  onClick={testBackgroundImage}
-                  className="w-full flex items-center space-x-3 p-3 bg-pink-50 hover:bg-pink-100 rounded-lg transition-colors"
-                >
-                  <span className="text-pink-800 font-medium">🎨 Test Background</span>
-                </button>
-                
-
-                
-                <button
-                  onClick={addImagePlaceholder}
-                  className="w-full flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <FiLayers className="w-5 h-5 text-gray-600" />
-                  <span className="text-gray-800 font-medium">Marcador de Imagen</span>
-                </button>
-              </div>
-            </div>
-            
 
             
-            {/* Decorative Elements */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Elementos Decorativos</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => addDecorativeElement('circle')}
-                  className="w-full flex items-center space-x-3 p-3 bg-pink-50 hover:bg-pink-100 rounded-lg transition-colors"
-                >
-                  <span className="text-2xl">⭕</span>
-                  <span className="text-pink-800 font-medium">Círculo</span>
-                </button>
-                
-                <button
-                  onClick={() => addDecorativeElement('line')}
-                  className="w-full flex items-center space-x-3 p-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
-                >
-                  <span className="text-2xl">➖</span>
-                  <span className="text-indigo-800 font-medium">Línea</span>
-                </button>
-                
-                <button
-                  onClick={() => addDecorativeElement('rectangle')}
-                  className="w-full flex items-center space-x-3 p-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
-                >
-                  <span className="text-2xl">▬</span>
-                  <span className="text-orange-800 font-medium">Rectángulo</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Background Settings */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Fondo</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color de Fondo</label>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="color"
-                      value={backgroundColor}
-                      onChange={(e) => handleBackgroundColorChange(e.target.value)}
-                      className="w-16 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                    />
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={backgroundColor}
-                        onChange={(e) => handleBackgroundColorChange(e.target.value)}
-                        placeholder="#ffffff"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      />
-                    </div>
-                  </div>
-                  <p className="mt-2 text-xs text-gray-500">
-                    Selecciona un color o ingresa el código hexadecimal
-                  </p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Imagen de Fondo</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBackgroundImageChange}
-                    className="w-full text-sm text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                  <p className="mt-2 text-xs text-gray-500">
-                    Selecciona una imagen para usar como fondo del canvas
-                  </p>
-                  {/* Test background button */}
-                  <button
-                    onClick={testBackgroundImage}
-                    className="mt-2 w-full px-3 py-2 bg-pink-100 text-pink-800 rounded-lg hover:bg-pink-200 text-sm"
-                  >
-                    🧪 Probar Fondo
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Object Properties */}
-            {selectedId && (
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Propiedades del Objeto</h3>
-                <div className="space-y-4">
-                  <button
-                    onClick={duplicateSelectedObject}
-                    className="w-full flex items-center justify-center space-x-2 p-2 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-800"
-                    title="Duplicar (Ctrl+D)"
-                  >
-                    <FiCopy className="w-4 h-4" />
-                    <span>Duplicar</span>
-                  </button>
-                  
-                  <button
-                    onClick={deleteSelectedObject}
-                    className="w-full flex items-center justify-center space-x-2 p-2 bg-red-50 hover:bg-red-100 rounded-lg text-red-800"
-                    title="Eliminar (Delete)"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                    <span>Eliminar</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Debug Panel - Show what's selected */}
-            {selectedObject && (
-              <div className="bg-gray-100 rounded-2xl shadow-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Debug Info</h3>
-                <div className="text-xs text-gray-600 space-y-1">
-                  <div>Type: {selectedObject.type}</div>
-                  <div>ID: {selectedId}</div>
-                  <div>Selected: {selectedObject ? 'Yes' : 'No'}</div>
-                </div>
-              </div>
-            )}
-
-            {/* Test Image Upload Panel */}
-            <div className="bg-blue-50 rounded-2xl shadow-lg p-4">
-              <h4 className="text-sm font-semibold text-blue-700 mb-2">Test Image Upload</h4>
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    if (fileInputRef.current) {
-                      fileInputRef.current.click();
-                    }
-                  }}
-                  className="w-full bg-blue-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                >
-                  📁 Test Background Image Upload
-                </button>
-                <p className="text-xs text-blue-600">
-                  Click to test background image upload
-                </p>
-                <button
-                  onClick={() => {
-                    // Create a fake file input event for testing
-                    const fakeEvent = {
-                      target: { files: [new File([''], 'test.png', { type: 'image/png' })] }
-                    } as unknown as React.ChangeEvent<HTMLInputElement>;
-                    handleBackgroundImageChange(fakeEvent);
-                  }}
-                  className="w-full bg-green-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-600 transition-colors"
-                >
-                  🧪 Test Background Image Function
-                </button>
-                <button
-                  onClick={() => {
-                    // Test loading a template with background image
-                    console.log('🧪 Testing template loading with background image...');
-                    const testTemplate = {
-                      backgroundColor: '#ffffff',
-                      backgroundImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-                      canvasSize: '1200x1800',
-                      objects: []
-                    };
-                    loadTemplateFromData('test', testTemplate);
-                  }}
-                  className="w-full bg-purple-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-600 transition-colors"
-                >
-                  🧪 Test Template Loading
-                </button>
-                <button
-                  onClick={() => {
-                    // Test text editing functionality
-                    console.log('🧪 Testing text editing...');
-                    if (canvas) {
-                      const allObjects = canvas.getObjects();
-                      const textObjects = allObjects.filter(obj => obj.type === 'text' || obj.type === 'i-text');
-                      
-                      if (textObjects.length > 0) {
-                        const firstText = textObjects[0] as fabric.IText;
-                        console.log('📝 First text object:', firstText.text);
-                        const isInTextarea = document.activeElement?.tagName === 'TEXTAREA';
-                        alert(`Text object found: "${firstText.text}"\n\nTry editing it in the textarea!\n\nCanvas Text Editing: ${isCanvasTextEditing ? 'ACTIVE' : 'INACTIVE'}\nTextarea Focused: ${isInTextarea ? 'YES' : 'NO'}\n\n💡 Backspace will work in textarea, but not on canvas!`);
-                      } else {
-                        console.log('❌ No text objects found');
-                        alert('No text objects found. Add some text first!');
-                      }
-                    }
-                  }}
-                  className="w-full bg-orange-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-orange-600 transition-colors"
-                >
-                  🧪 Test Text Editing
-                </button>
-                
-                {/* Text Editing Status Indicator */}
-                <div className={`w-full px-3 py-2 rounded-lg text-sm text-center font-medium ${
-                  isCanvasTextEditing 
-                    ? 'bg-red-100 text-red-700 border border-red-300' 
-                    : 'bg-green-100 text-green-700 border border-green-300'
-                }`}>
-                  {isCanvasTextEditing ? '🔒 Canvas Text Editing: ACTIVE' : '🔓 Canvas Text Editing: INACTIVE'}
-                </div>
-              </div>
-            </div>
 
 
-            {selectedObject && (() => {
-              console.log('🔍 Selected object type:', selectedObject.type);
-              console.log('🔍 Selected object:', selectedObject);
-              return selectedObject.type === 'text' || selectedObject.type === 'i-text';
-            })() && (
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Propiedades del Texto</h3>
-                <div className="space-y-4">
-                  {/* Text Content */}
-                  <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Contenido del Texto</label>
-                    <div className="text-xs text-gray-500 mb-2">
-                      💡 <strong>Nota:</strong> El backspace funciona normalmente aquí. Solo está deshabilitado cuando editas texto directamente en el canvas.
-                    </div>
-                    <textarea
-                      value={(selectedObject as fabric.IText).text || ''}
-                      onChange={(e) => {
-                        if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                          const newText = e.target.value;
-                          
-                          // Prevent completely empty text
-                          if (newText.length === 0) {
-                            (selectedObject as fabric.IText).set('text', ' ');
-                          } else {
-                            (selectedObject as fabric.IText).set('text', newText);
-                          }
-                          
-                          canvas?.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
-                      placeholder="Escribe tu texto aquí..."
-                    />
-                  </div>
 
-                  {/* Font Family */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Fuente</label>
-                    <select
-                      value={(selectedObject as fabric.IText).fontFamily || 'Arial'}
-                      onChange={(e) => {
-                        if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                          (selectedObject as fabric.IText).set('fontFamily', e.target.value);
-                          canvas?.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    >
-                      {fontFamilies.map(font => (
-                        <option key={font} value={font}>{font}</option>
-                      ))}
-                    </select>
-                    {/* Font Preview */}
-                    <div className="mt-2 p-2 bg-gray-50 rounded-lg text-center">
-                      <span 
-                        className="text-lg"
-                        style={{ 
-                          fontFamily: (selectedObject as fabric.IText).fontFamily || 'Arial',
-                          fontSize: '16px'
-                        }}
-                      >
-                        AaBbCcDdEeFf
-                      </span>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {(selectedObject as fabric.IText).fontFamily || 'Arial'}
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Font Size */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tamaño de Fuente: {(selectedObject as fabric.IText).fontSize || 48}px
-                    </label>
-                    <div className="space-y-2">
-                      <input
-                        type="range"
-                        min="8"
-                        max="200"
-                        value={(selectedObject as fabric.IText).fontSize || 48}
-                        onChange={(e) => {
-                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                            (selectedObject as fabric.IText).set('fontSize', parseInt(e.target.value));
-                            canvas?.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>8px</span>
-                        <span>100px</span>
-                        <span>200px</span>
-                      </div>
-                      {/* Quick Font Size Presets */}
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {[12, 16, 24, 32, 48, 64, 96].map(size => (
-                          <button
-                            key={size}
-                            onClick={() => {
-                              if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                                (selectedObject as fabric.IText).set('fontSize', size);
-                                canvas?.renderAll();
-                                saveCanvasToHistory();
-                              }
-                            }}
-                            className={`px-2 py-1 text-xs rounded border transition-colors ${
-                              (selectedObject as fabric.IText).fontSize === size
-                                ? 'bg-blue-500 text-white border-blue-500'
-                                : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                            }`}
-                          >
-                            {size}px
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <input
-                      type="number"
-                      min="8"
-                      max="200"
-                      value={(selectedObject as fabric.IText).fontSize || 48}
-                      onChange={(e) => {
-                        if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                          (selectedObject as fabric.IText).set('fontSize', parseInt(e.target.value));
-                          canvas?.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm mt-2"
-                    />
-                  </div>
 
-                  {/* Text Color */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Color del Texto</label>
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="color"
-                        value={(selectedObject as fabric.IText).fill as string || '#000000'}
-                        onChange={(e) => {
-                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                            (selectedObject as fabric.IText).set('fill', e.target.value);
-                            canvas?.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="w-16 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                      />
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={(selectedObject as fabric.IText).fill as string || '#000000'}
-                          onChange={(e) => {
-                            if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                              (selectedObject as fabric.IText).set('fill', e.target.value);
-                              canvas?.renderAll();
-                              saveCanvasToHistory();
-                            }
-                          }}
-                          placeholder="#000000"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Font Weight */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Estilo de Fuente</label>
-                    <select
-                      value={(selectedObject as fabric.IText).fontWeight || 'normal'}
-                      onChange={(e) => {
-                        if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                          (selectedObject as fabric.IText).set('fontWeight', e.target.value);
-                          canvas?.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    >
-                      <option value="normal">Normal</option>
-                      <option value="bold">Negrita</option>
-                      <option value="100">100 - Thin</option>
-                      <option value="200">200 - Extra Light</option>
-                      <option value="300">300 - Light</option>
-                      <option value="400">400 - Regular</option>
-                      <option value="500">500 - Medium</option>
-                      <option value="600">600 - Semi Bold</option>
-                      <option value="700">700 - Bold</option>
-                      <option value="800">800 - Extra Bold</option>
-                      <option value="900">900 - Black</option>
-                    </select>
-                  </div>
 
-                  {/* Text Alignment */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Alineación</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { value: 'left', label: 'Izquierda', icon: '⫷' },
-                        { value: 'center', label: 'Centro', icon: '⫸' },
-                        { value: 'right', label: 'Derecha', icon: '⫹' }
-                      ].map(align => (
-                        <button
-                          key={align.value}
-                          onClick={() => {
-                            if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                              (selectedObject as fabric.IText).set('textAlign', align.value as 'left' | 'center' | 'right');
-                              canvas?.renderAll();
-                              saveCanvasToHistory();
-                            }
-                          }}
-                          className={`p-2 rounded-lg border-2 transition-colors ${
-                            (selectedObject as fabric.IText).textAlign === align.value
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-gray-300 hover:border-gray-400'
-                          }`}
-                          title={align.label}
-                        >
-                          <div className="text-lg">{align.icon}</div>
-                          <div className="text-xs">{align.label}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Brand Kit Controls */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Kit de Marca</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo de Marca</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                          setBrandKit(prev => ({ ...prev, logo: e.target?.result as string }));
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                  {brandKit.logo && (
-                    <button
-                      onClick={applyBrandLogo}
-                      className="mt-2 w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                    >
-                      Aplicar Logo
-                    </button>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Colores de Marca</label>
-                  <div className="grid grid-cols-3 gap-2 mb-2">
-                    <button
-                      onClick={() => setBrandKit(prev => ({ ...prev, colors: { ...prev.colors, primary: '#00525b' } }))}
-                      className="w-full h-8 rounded border-2 border-gray-300"
-                      style={{ backgroundColor: '#00525b' }}
-                      title="Color Primario"
-                    />
-                    <button
-                      onClick={() => setBrandKit(prev => ({ ...prev, colors: { ...prev.colors, secondary: '#01aac7' } }))}
-                      className="w-full h-8 rounded border-2 border-gray-300"
-                      style={{ backgroundColor: '#01aac7' }}
-                      title="Color Secundario"
-                    />
-                    <button
-                      onClick={() => setBrandKit(prev => ({ ...prev, colors: { ...prev.colors, accent: '#32e0c5' } }))}
-                      className="w-full h-8 rounded border-2 border-gray-300"
-                      style={{ backgroundColor: '#32e0c5' }}
-                      title="Color de Acento"
-                    />
-                  </div>
-                  <button
-                    onClick={applyBrandKitColors}
-                    className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
-                  >
-                    Aplicar Colores
-                  </button>
-                </div>
-              </div>
-            </div>
+
+
+
+
+
+
+
+
+
+
+
             </div> {/* Close collapsible sidebar content */}
           </div>
           
@@ -4124,98 +3791,36 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 >
                   <canvas
                     ref={canvasRef}
+                    width={getCurrentCanvasSize().width}
+                    height={getCurrentCanvasSize().height}
                     className="block"
-                    style={{ 
-                      width: getCurrentCanvasSize().width, 
-                      height: getCurrentCanvasSize().height
-                    }}
                   />
                   
                   {/* Canvas Boundary Indicator */}
-                  <div className="absolute inset-0 pointer-events-none border-2 border-blue-200 border-dashed opacity-50"></div>
+                  <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-50"></div>
                   
                   {/* Drag and drop overlay */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                    <div className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg text-sm">
-                      Arrastra imágenes aquí
+                  {isDragOver && (
+                    <div className="absolute inset-0 bg-blue-100 bg-opacity-50 flex items-center justify-center">
+                      <div className="text-blue-600 font-medium">Suelta la imagen aquí</div>
                     </div>
-                  </div>
+                  )}
                   
                   {/* Canvas Size Indicator */}
-                  <div className="absolute top-2 right-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs text-gray-600 font-mono">
+                  <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
                     {getCurrentCanvasSize().width} × {getCurrentCanvasSize().height}
                   </div>
                 </div>
               </div>
               
               {/* Upload instructions */}
-              <div className="mt-4 text-center text-sm text-gray-600">
-                <p>💡 <strong>Consejo:</strong> Haz clic en "Imagen" en el panel izquierdo o arrastra y suelta imágenes directamente en el canvas</p>
+              <div className="mt-4 text-center text-sm text-gray-500">
+                Arrastra y suelta imágenes aquí o usa el botón de subir
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Hidden file input for image uploads */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleBackgroundImageChange}
-        className="hidden"
-      />
-
-      {/* Custom CSS for slider */}
-      <style jsx>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          border: 2px solid #ffffff;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .slider::-moz-range-thumb {
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          border: 2px solid #ffffff;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-      `}</style>
-
-      {/* Shape Selector Modal */}
-      {showShapeSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Seleccionar Forma</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {shapeTypes.map((shape) => (
-                <button
-                  key={shape.id}
-                  onClick={() => addShape(shape.id)}
-                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 flex flex-col items-center space-y-2"
-                >
-                  <div className="text-2xl">{shape.icon}</div>
-                  <span className="text-sm font-medium text-gray-700">{shape.name}</span>
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowShapeSelector(false)}
-              className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
-}
+};

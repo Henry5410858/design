@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
+import { useTheme } from '@/context/ThemeContext';
 import { FiEdit3, FiDownload, FiFilter, FiGrid, FiImage, FiFileText, FiVideo, FiSmartphone, FiMonitor, FiShare2, FiBookOpen } from 'react-icons/fi';
 
 export interface Template {
@@ -26,6 +27,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   onDownloadTemplate
 }) => {
   const router = useRouter();
+  const { theme } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState<'all' | Template['category']>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -190,10 +192,10 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             Galería de Templates
           </h1>
-          <p className="text-gray-600">
+          <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
             Selecciona un template para comenzar a diseñar o crea uno desde cero
           </p>
         </div>
@@ -221,7 +223,9 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                 selectedCategory === category.id
                   ? 'bg-brand-primary text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : theme === 'dark' 
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
               {category.icon}
@@ -238,7 +242,11 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               placeholder="Buscar templates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-primary focus:shadow-sm transition-all duration-200"
+              className={`w-full pl-10 pr-4 py-2 rounded-xl focus:outline-none focus:border-brand-primary focus:shadow-sm transition-all duration-200 ${
+                theme === 'dark' 
+                  ? 'bg-gray-800 border border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
             />
             <FiFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           </div>
@@ -256,22 +264,30 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             onClick={() => handleEditTemplate(template)}
           >
             {/* Thumbnail */}
-            <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+            <div className={`relative aspect-[4/3] overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
+              <div className={`w-full h-full flex items-center justify-center ${
+                theme === 'dark' 
+                  ? 'bg-gradient-to-br from-gray-700 to-gray-800' 
+                  : 'bg-gradient-to-br from-gray-50 to-gray-100'
+              }`}>
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                    {template.category === 'stories' ? <FiSmartphone className="w-6 h-6 text-gray-600" /> :
-                     template.category === 'documents' ? <FiBookOpen className="w-6 h-6 text-gray-600" /> :
-                     template.category === 'banners' ? <FiMonitor className="w-6 h-6 text-gray-600" /> :
-                     template.category === 'badges' ? <FiImage className="w-6 h-6 text-gray-600" /> :
-                     <FiImage className="w-6 h-6 text-gray-600" />}
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                    theme === 'dark' ? 'bg-white/20' : 'bg-gray-200'
+                  }`}>
+                    {template.category === 'stories' ? <FiSmartphone className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} /> :
+                     template.category === 'documents' ? <FiBookOpen className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} /> :
+                     template.category === 'banners' ? <FiMonitor className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} /> :
+                     template.category === 'badges' ? <FiImage className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} /> :
+                     <FiImage className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />}
                   </div>
-                  <span className="text-gray-500 text-sm font-medium">{template.name}</span>
+                  <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{template.name}</span>
                 </div>
               </div>
               
               {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center ${
+                theme === 'dark' ? 'bg-black/60' : 'bg-black/40'
+              }`}>
                 <div className="text-center text-white">
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
                     <FiEdit3 className="w-6 h-6" />
@@ -285,7 +301,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             {/* Content */}
             <div className="p-4">
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
+                <h3 className={`font-semibold text-sm line-clamp-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                   {template.name}
                 </h3>
                 {template.templateKey && (
@@ -295,13 +311,17 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 )}
               </div>
               
-              <p className="text-gray-600 text-xs mb-3 line-clamp-2">
+              <p className={`text-xs mb-3 line-clamp-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                 {template.description}
               </p>
               
               {/* Category Badge */}
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 text-gray-300' 
+                    : 'bg-gray-200 text-gray-700'
+                }`}>
                   {categories.find(c => c.id === template.category)?.name}
                 </span>
                 
@@ -328,13 +348,13 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       {/* Empty State */}
       {filteredTemplates.length === 0 && (
         <div className="text-center py-16">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <FiImage className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-white mb-2">
             No se encontraron templates
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-300">
             Intenta ajustar los filtros o la búsqueda
           </p>
         </div>
