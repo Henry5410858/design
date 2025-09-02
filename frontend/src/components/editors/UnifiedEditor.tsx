@@ -2320,37 +2320,51 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         const template = await response.json();
         console.log('✅ Template metadata loaded from database:', template);
         
-        // If template has a design file, check if it exists first
+        // Check for template-specific design file first
+        const templateFilename = `${templateKey}-design.json`;
+        console.log('📁 Checking template-specific design file:', templateFilename);
+        const fileExists = await checkDesignFileExists(templateFilename);
+        
+        if (fileExists) {
+          console.log('✅ Template-specific design file exists, loading...');
+          const designResponse = await fetch(`http://localhost:4000/api/templates/design/${templateFilename}`);
+          if (designResponse.ok) {
+            const designData = await designResponse.json();
+            console.log('🎨 Design data loaded from template file:', designData);
+            await loadTemplateFromData(templateKey, designData);
+            return;
+          }
+        } else {
+          console.log('📋 Template-specific design file not found, checking database...');
+        }
+        
+        // If template has a design file in database, check if it exists
         if (template.designFilename) {
-          console.log('📁 Checking design file:', template.designFilename);
+          console.log('📁 Checking database design file:', template.designFilename);
           const fileExists = await checkDesignFileExists(template.designFilename);
           
           if (fileExists) {
-            console.log('✅ Design file exists, loading...');
+            console.log('✅ Database design file exists, loading...');
             const designResponse = await fetch(`http://localhost:4000/api/templates/design/${template.designFilename}`);
             if (designResponse.ok) {
               const designData = await designResponse.json();
-              console.log('🎨 Design data loaded from file:', designData);
+              console.log('🎨 Design data loaded from database file:', designData);
               await loadTemplateFromData(templateKey, designData);
               return;
             }
           } else {
-            console.warn('⚠️ Design file does not exist:', template.designFilename);
+            console.warn('⚠️ Database design file does not exist:', template.designFilename);
             console.log('🔄 Falling back to template data from database...');
             
             // Clean up the orphaned design file reference
             await cleanupOrphanedDesignFile(templateKey);
           }
-          
-          // Fallback to loading from template data if design file doesn't exist
-          await loadTemplateFromData(templateKey, template);
-          return;
-        } else {
-          // No design file specified, load from template data
-          console.log('📋 No design file specified, loading from template data...');
-          await loadTemplateFromData(templateKey, template);
-          return;
         }
+        
+        // Fallback to loading from template data
+        console.log('📋 Loading from template data...');
+        await loadTemplateFromData(templateKey, template);
+        return;
       }
     } catch (error) {
       console.warn('⚠️ Failed to load template from database, falling back to constant:', error);
@@ -3598,43 +3612,72 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       console.log('📋 Design data prepared:', designData);
       
-      // If editing a template, update the template in the database
-      if (templateKey) {
-        console.log('🏠 Updating template in database:', templateKey);
+      // Check if data is too big and automatically use modular saving
+      const dataSize = getDataSize(designData);
+      console.log('📊 Design data size:', dataSize, 'bytes');
+      
+      if (dataSize > 1000000) { // 1MB threshold
+        console.log('🚨 Large data detected, automatically using modular saving...');
+        
         try {
-          // First, save the full design data as a file
-          console.log('💾 Saving design data as file...');
+          // Use the modular save system for large data
+          const saveOptions: SaveOptions = {
+            includeMetadata: true,
+            separateFiles: true,
+            compressData: false
+          };
           
-          // Use JSON method instead of FormData for better reliability
-          console.log('📤 Sending design data as JSON to backend...');
-          console.log('📊 Design data size:', getDataSize(designData), 'bytes');
+          const saveResult = await saveDesignToFiles(designData as any, saveOptions);
           
-          // Check if data is too large and optimize if needed
-          let dataToSave = designData;
-          let isOptimized = false;
-          
-          if (exceedsSizeLimit(designData, 500000)) {
-            console.log('⚠️ Data too large, optimizing...');
-            const optimization = optimizeDesignData(designData as any, 500000);
-            dataToSave = optimization.optimized;
-            isOptimized = optimization.isMinimal;
-            console.log('🗜️ Data optimized:', {
-              originalSize: optimization.originalSize,
-              optimizedSize: optimization.optimizedSize,
-              reduction: `${Math.round((1 - optimization.optimizedSize / optimization.originalSize) * 100)}%`
-            });
+          if (saveResult.success) {
+            console.log('✅ Large design saved to separate files:', saveResult.files);
+            const optimizationMessage = saveResult.optimized ? ' (datos optimizados)' : '';
+            alert(`Diseño grande guardado exitosamente en ${saveResult.files.length} archivos${optimizationMessage}!\n📊 Tamaño: ${Math.round(dataSize / 1024)}KB`);
+            return; // Exit early, don't continue with regular save
+          } else {
+            console.warn('⚠️ Modular save failed, falling back to regular save:', saveResult.error);
           }
-          
-          const fileResponse = await fetch('http://localhost:4000/api/templates/save-design', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              designData: dataToSave,
-              templateKey: templateKey // Include template key for individual file naming
-            })
+        } catch (modularError) {
+          console.warn('⚠️ Modular save error, falling back to regular save:', modularError);
+        }
+      }
+      
+      // Always try to save to backend first (for both templates and new designs)
+      console.log('💾 Saving design data to backend...');
+      try {
+        // Check if data is too large and optimize if needed
+        let dataToSave = designData;
+        let isOptimized = false;
+        
+        if (exceedsSizeLimit(designData, 500000)) {
+          console.log('⚠️ Data too large, optimizing...');
+          const optimization = optimizeDesignData(designData as any, 500000);
+          dataToSave = optimization.optimized;
+          isOptimized = optimization.isMinimal;
+          console.log('🗜️ Data optimized:', {
+            originalSize: optimization.originalSize,
+            optimizedSize: optimization.optimizedSize,
+            reduction: `${Math.round((1 - optimization.optimizedSize / optimization.originalSize) * 100)}%`
           });
+        }
+        
+        // Create filename (template-specific if templateKey exists, otherwise generic)
+        const filename = templateKey 
+          ? `${templateKey}-design.json`
+          : `design-${id}-${Date.now()}.json`;
+        console.log('📁 Saving to file:', filename);
+        
+        const fileResponse = await fetch('http://localhost:4000/api/templates/save-design', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            designData: dataToSave,
+            templateKey: templateKey || null,
+            filename: filename
+          })
+        });
           
           console.log('📡 File response status:', fileResponse.status);
           console.log('📡 File response headers:', Object.fromEntries(fileResponse.headers.entries()));
@@ -3649,50 +3692,57 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           const designFilename = fileResult.filename;
           console.log('✅ Design data saved as file:', designFilename);
           
-          // Now update the template in database with just the filename and essential metadata
-          const templateUpdateData = {
-            designFilename: designFilename, // Store only the filename
-            backgroundColor: designData.backgroundColor,
-            backgroundImage: designData.backgroundImage,
-            canvasSize: designData.canvasSize,
-            updatedAt: new Date().toISOString()
-          };
-          
-          console.log('📋 Template update data (minimal):', templateUpdateData);
-          
-          // Update template in database via API
-          const response = await fetch(`http://localhost:4000/api/templates/by-key/${templateKey}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(templateUpdateData)
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            console.log('✅ Template updated successfully in database:', templateKey);
-            console.log('📋 Database response:', result);
-            console.log('💾 Design data saved as file:', designFilename);
-            console.log('💾 Template updated in database successfully');
+          // If editing a template, update the template in database
+          if (templateKey) {
+            console.log('🏠 Updating template in database:', templateKey);
+            const templateUpdateData = {
+              designFilename: filename, // Store the filename
+              backgroundColor: designData.backgroundColor,
+              backgroundImage: designData.backgroundImage,
+              canvasSize: designData.canvasSize,
+              updatedAt: new Date().toISOString()
+            };
             
-            // Show success message to user
-            const optimizationMessage = isOptimized ? '\n🗜️ Datos optimizados para reducir tamaño' : '';
-            alert(`✅ Template "${templateKey}" actualizado exitosamente!\n📁 Datos guardados en: ${designFilename}${optimizationMessage}`);
+            console.log('📋 Template update data (minimal):', templateUpdateData);
+            
+            // Update template in database via API
+            const response = await fetch(`http://localhost:4000/api/templates/by-key/${templateKey}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(templateUpdateData)
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              console.log('✅ Template updated successfully in database:', templateKey);
+              console.log('📋 Database response:', result);
+              console.log('💾 Design data saved as file:', designFilename);
+              console.log('💾 Template updated in database successfully');
+              
+              // Show success message to user
+              const optimizationMessage = isOptimized ? '\n🗜️ Datos optimizados para reducir tamaño' : '';
+              alert(`✅ Template "${templateKey}" actualizado exitosamente!\n📁 Datos guardados en: ${filename}${optimizationMessage}`);
+            } else {
+              const errorData = await response.json();
+              console.error('❌ Failed to update template in database:', errorData);
+              throw new Error(`Database update failed: ${errorData.error || 'Unknown error'}`);
+            }
           } else {
-            const errorData = await response.json();
-            console.error('❌ Failed to update template in database:', errorData);
-            throw new Error(`Database update failed: ${errorData.error || 'Unknown error'}`);
+            // For new designs (no templateKey), just show success message
+            console.log('✅ New design saved as file:', designFilename);
+            const optimizationMessage = isOptimized ? '\n🗜️ Datos optimizados para reducir tamaño' : '';
+            alert(`✅ Diseño guardado exitosamente!\n📁 Datos guardados en: ${filename}${optimizationMessage}`);
           }
-        } catch (templateError) {
-          console.error('❌ Error updating template in database:', templateError);
-          console.error('❌ Template error details:', templateError);
+        } catch (backendError) {
+          console.error('❌ Error saving to backend:', backendError);
+          console.error('❌ Backend error details:', backendError);
           
-          // Show error to user - no fallback to localStorage
-          const errorMessage = templateError instanceof Error ? templateError.message : 'Database update failed';
-          alert(`Error updating template: ${errorMessage}`);
+          // Show error to user and fall back to localStorage
+          const errorMessage = backendError instanceof Error ? backendError.message : 'Backend save failed';
+          console.log('🔄 Falling back to localStorage due to backend error...');
         }
-      }
       
       // Try to save to localStorage with quota management and optimization
       console.log('💾 Saving to localStorage...');
@@ -3813,60 +3863,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   };
 
-  // Save design using modular approach (new method)
-  const saveDesignModular = async () => {
-    console.log('🚀 Modular save button clicked!');
-    console.log('🎨 Canvas exists:', !!canvas);
-    console.log('🆔 Design ID:', id);
-    console.log('📝 Editor Type:', editorTypeState);
-    
-    if (!canvas) {
-      console.error('❌ Canvas is not ready');
-      alert('El canvas no está listo. Espera un momento e intenta nuevamente.');
-      return;
-    }
 
-    try {
-      console.log('📊 Building design data...');
-      
-      // Build design data using the new modular system
-      const designData = buildDesignData(
-        canvas,
-        id,
-        editorTypeState,
-        canvasSize,
-        backgroundColor,
-        backgroundImage,
-        templateKey || null,
-        { includeMetadata: true, separateFiles: true }
-      );
-      
-      console.log('💾 Design data built:', designData);
-      console.log('📊 Design data size:', JSON.stringify(designData).length, 'bytes');
-      console.log('🔢 Number of objects:', designData.objects.length);
-      
-      // Save to separate files
-      const saveOptions: SaveOptions = {
-        includeMetadata: true,
-        separateFiles: true,
-        compressData: false
-      };
-      
-      const saveResult = await saveDesignToFiles(designData, saveOptions);
-      
-      if (saveResult.success) {
-        console.log('✅ Design saved to files successfully:', saveResult.files);
-        const optimizationMessage = saveResult.optimized ? ' (datos optimizados para reducir tamaño)' : '';
-        alert(`Diseño guardado exitosamente en ${saveResult.files.length} archivos${optimizationMessage}!`);
-      } else {
-        console.error('❌ Failed to save design:', saveResult.error);
-        alert(`Error al guardar el diseño: ${saveResult.error}`);
-      }
-    } catch (error) {
-      console.error('❌ Error saving design:', error);
-      alert('Error al guardar el diseño. Intenta nuevamente.');
-    }
-  };
 
   // Download design
   const downloadDesign = (format: 'PNG' | 'PDF') => {
@@ -4097,20 +4094,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               <button
                 onClick={async () => await saveDesign()}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                title="Guardar Diseño (Ctrl+S)"
+                title="Guardar Diseño (Ctrl+S) - Automático: separa archivos si es muy grande"
               >
                 <FiSave className="w-4 h-4" />
                 <span className="hidden sm:inline">Guardar</span>
               </button>
               
-              <button
-                onClick={async () => await saveDesignModular()}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                title="Guardar en Archivos Separados"
-              >
-                <FiSave className="w-4 h-4" />
-                <span className="hidden sm:inline">Guardar Modular</span>
-              </button>
+
               
               <button
                 onClick={() => downloadDesign('PNG')}

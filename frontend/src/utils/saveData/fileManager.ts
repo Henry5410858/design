@@ -10,7 +10,11 @@ export const saveDesignToFiles = async (
     const files: string[] = [];
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substr(2, 9);
-    const baseFilename = `design-${timestamp}-${randomSuffix}`;
+    
+    // Use template-specific filename if templateKey is provided, otherwise use timestamp
+    const baseFilename = designData.templateKey 
+      ? `${designData.templateKey}-design-${timestamp}-${randomSuffix}`
+      : `design-${timestamp}-${randomSuffix}`;
     
     console.log('📊 Original data size:', getDataSize(designData), 'bytes');
     

@@ -485,9 +485,18 @@ router.post('/save-design', designUpload.single('designData'), async (req, res) 
       console.log('File path:', req.file.path);
     } else if (req.body.designData) {
       // JSON data method (fallback)
-      const timestamp = Date.now();
-      const randomSuffix = Math.round(Math.random() * 1E9);
-      filename = `design-${timestamp}-${randomSuffix}.json`;
+      if (req.body.filename) {
+        // Use custom filename if provided
+        filename = req.body.filename;
+        console.log('Using custom filename:', filename);
+      } else {
+        // Generate timestamp-based filename as fallback
+        const timestamp = Date.now();
+        const randomSuffix = Math.round(Math.random() * 1E9);
+        filename = `design-${timestamp}-${randomSuffix}.json`;
+        console.log('Generated timestamp filename:', filename);
+      }
+      
       const filePath = path.resolve(__dirname, '../uploads/designs', filename);
       
       // Write the design data to file
