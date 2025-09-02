@@ -7,7 +7,7 @@ import AppLayout from '@/components/layout/AppLayout';
 export default function HomePage() {
   return (
     <AppLayout>
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-6xl font-black text-white mb-8">
             🎨 RedDragon

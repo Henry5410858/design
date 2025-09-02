@@ -1,9 +1,6 @@
 'use client';
 import TemplateGallery from '../../components/templates/TemplateGallery';
-import AppLayout from '../../components/layout/AppLayout';
-
-// Force dynamic rendering for this page
-export const dynamic = 'auto';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function TemplateGalleryPage() {
   const handleDownloadTemplate = (templateId: string) => {
@@ -12,12 +9,10 @@ export default function TemplateGalleryPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <TemplateGallery 
-          onDownloadTemplate={handleDownloadTemplate}
-        />
-      </div>
-    </AppLayout>
+    <DashboardLayout>
+      <TemplateGallery 
+        onDownloadTemplate={handleDownloadTemplate}
+      />
+    </DashboardLayout>
   );
 }

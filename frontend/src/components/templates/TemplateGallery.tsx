@@ -5,30 +5,27 @@ import Button from '../ui/Button';
 import { useTheme } from '@/context/ThemeContext';
 import { FiEdit3, FiDownload, FiFilter, FiGrid, FiImage, FiFileText, FiVideo, FiSmartphone, FiMonitor, FiShare2, FiBookOpen } from 'react-icons/fi';
 
-export interface Template {
+interface TemplateItem {
   id: string;
   name: string;
-  category: 'social-posts' | 'stories' | 'flyers' | 'banners' | 'badges' | 'documents';
-  thumbnail: string;
+  category: string;
+  dimensions: string;
   description: string;
+  thumbnail: string;
   editorType?: 'flyer' | 'social' | 'story' | 'badge' | 'banner' | 'document' | 'brochure';
   templateKey?: string; // For real estate templates
 }
 
 interface TemplateGalleryProps {
-  templates?: Template[];
-  onEditTemplate?: (templateId: string) => void;
-  onDownloadTemplate: (templateId: string) => void;
+  onDownloadTemplate?: (templateId: string) => void;
 }
 
 const TemplateGallery: React.FC<TemplateGalleryProps> = ({
-  templates = [],
-  onEditTemplate,
   onDownloadTemplate
 }) => {
   const router = useRouter();
   const { theme } = useTheme();
-  const [selectedCategory, setSelectedCategory] = useState<'all' | Template['category']>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | TemplateItem['category']>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const categories = [
@@ -42,12 +39,13 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   ];
 
   // Enhanced templates with editor types and template keys
-  const sampleTemplates: Template[] = [
+  const sampleTemplates: TemplateItem[] = [
     // Social Posts
     {
       id: '1',
       name: 'IG/FB Square Post',
       category: 'social-posts',
+      dimensions: '1080x1080',
       thumbnail: '/api/placeholder/400/300',
       description: 'Post cuadrado optimizado para Instagram y Facebook',
       editorType: 'social',
@@ -57,17 +55,18 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '2',
       name: 'Post Promocional',
       category: 'social-posts',
+      dimensions: '1080x1080',
       thumbnail: '/api/placeholder/400/300',
       description: 'Diseño atractivo para promociones en redes sociales',
       editorType: 'social',
       templateKey: 'modernFamily'
     },
-
-    // Stories
+    // Story Templates
     {
       id: '3',
       name: 'IG/FB/WSP Story',
       category: 'stories',
+      dimensions: '1080x1920',
       thumbnail: '/api/placeholder/400/700',
       description: 'Story vertical para Instagram, Facebook y WhatsApp',
       editorType: 'story',
@@ -77,13 +76,13 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '4',
       name: 'Story Promocional',
       category: 'stories',
+      dimensions: '1080x1920',
       thumbnail: '/api/placeholder/400/700',
       description: 'Story con elementos promocionales atractivos',
       editorType: 'story',
       templateKey: 'cityRealEstate'
     },
-
-    // Flyers
+    // Flyer Templates
     {
       id: '5',
       name: 'Marketplace Flyer',
@@ -102,8 +101,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       editorType: 'flyer',
       templateKey: 'modernFamily'
     },
-
-    // Banners
+    // Banner Templates
     {
       id: '7',
       name: 'FB Feed Banner',
@@ -122,8 +120,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       editorType: 'banner',
       templateKey: 'modernFamily'
     },
-
-    // Badges
+    // Badge Templates
     {
       id: '9',
       name: 'Badge Vendido',
@@ -142,8 +139,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       editorType: 'badge',
       templateKey: 'modernFamily'
     },
-
-    // Documents
+    // Brochure Templates
     {
       id: '11',
       name: 'Brochure Trifold',
@@ -164,11 +160,15 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     }
   ];
 
-  // Use provided templates or fall back to sample templates
-  const allTemplates = templates.length > 0 ? templates : sampleTemplates;
+  // Function to open Canva editor with specific template
+  const openCanvaEditor = (templateId: string) => {
+    // Direct link to Canva editor with template
+    const canvaUrl = `https://www.canva.com/design/${templateId}`;
+    window.open(canvaUrl, '_blank');
+  };
 
   // Ensure templates is always an array and filter safely
-  const safeTemplates = Array.isArray(allTemplates) ? allTemplates : [];
+  const safeTemplates = Array.isArray(sampleTemplates) ? sampleTemplates : [];
   
   const filteredTemplates = safeTemplates.filter(template => {
     const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
@@ -177,7 +177,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     return matchesCategory && matchesSearch;
   });
 
-  const handleEditTemplate = (template: Template) => {
+  const handleEditTemplate = (template: TemplateItem) => {
     if (template.editorType && template.templateKey) {
       // Navigate to the unified editor with template information
       router.push(`/editor?type=${template.editorType}&template=${template.templateKey}&id=${template.id}`);
@@ -219,7 +219,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           {categories.map(category => (
             <button
               key={category.id}
-              onClick={() => setSelectedCategory(category.id as 'all' | Template['category'])}
+              onClick={() => setSelectedCategory(category.id as 'all' | TemplateItem['category'])}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                 selectedCategory === category.id
                   ? 'bg-brand-primary text-white shadow-md'
@@ -228,8 +228,8 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              {category.icon}
               {category.name}
+              {category.icon}
             </button>
           ))}
         </div>
@@ -251,7 +251,6 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             <FiFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           </div>
         </div>
-      </div>
 
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -332,7 +331,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDownloadTemplate(template.id);
+                      onDownloadTemplate?.(template.id);
                     }}
                     className="p-1 h-8 w-8"
                   >
