@@ -1,73 +1,102 @@
 import { DesignData, ObjectData, SaveOptions } from './types';
-import { compressDesignData, createMinimalDesignData, exceedsSizeLimit, getDataSize, chunkObjects } from './compression';
+import { getDataSize, exceedsSizeLimit, optimizeDesignData, chunkObjects } from './dataOptimizer';
 
-// Save design data to separate files
+// Save design data to separate files with automatic optimization
 export const saveDesignToFiles = async (
   designData: DesignData,
   options: SaveOptions = {}
-): Promise<{ success: boolean; files: string[]; error?: string }> => {
+): Promise<{ success: boolean; files: string[]; error?: string; optimized?: boolean }> => {
   try {
     const files: string[] = [];
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substr(2, 9);
     const baseFilename = `design-${timestamp}-${randomSuffix}`;
     
+    console.log('📊 Original data size:', getDataSize(designData), 'bytes');
+    
+    // Optimize data if needed
+    const optimization = optimizeDesignData(designData, 500000); // 500KB limit
+    const processedData = optimization.optimized;
+    
+    if (optimization.isMinimal) {
+      console.log('🗜️ Data optimized:', {
+        originalSize: optimization.originalSize,
+        optimizedSize: optimization.optimizedSize,
+        reduction: `${Math.round((1 - optimization.optimizedSize / optimization.originalSize) * 100)}%`
+      });
+    }
+    
     // 1. Save main design metadata
     const metadataFile = `${baseFilename}-metadata.json`;
     const metadataData = {
-      id: designData.id,
-      editorType: designData.editorType,
-      canvasSize: designData.canvasSize,
-      backgroundColor: designData.backgroundColor,
-      backgroundImage: designData.backgroundImage,
-      templateKey: designData.templateKey,
-      metadata: designData.metadata,
-      objectCount: designData.objects.length
+      id: processedData.id,
+      editorType: processedData.editorType,
+      canvasSize: processedData.canvasSize,
+      backgroundColor: processedData.backgroundColor,
+      backgroundImage: processedData.backgroundImage,
+      templateKey: processedData.templateKey,
+      metadata: processedData.metadata,
+      objectCount: processedData.objects.length,
+      optimized: optimization.isMinimal,
+      originalSize: optimization.originalSize
     };
     
     await saveToFile(metadataFile, metadataData);
     files.push(metadataFile);
     
-    // 2. Save objects data
+    // 2. Save objects data (with chunking if too large)
     const objectsFile = `${baseFilename}-objects.json`;
-    await saveToFile(objectsFile, designData.objects);
-    files.push(objectsFile);
+    if (exceedsSizeLimit(processedData.objects, 200000)) {
+      // Split objects into chunks
+      const chunks = chunkObjects(processedData.objects, 25);
+      console.log(`📦 Splitting ${processedData.objects.length} objects into ${chunks.length} chunks`);
+      
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkFile = `${baseFilename}-objects-chunk-${i + 1}.json`;
+        await saveToFile(chunkFile, chunks[i]);
+        files.push(chunkFile);
+      }
+    } else {
+      await saveToFile(objectsFile, processedData.objects);
+      files.push(objectsFile);
+    }
     
-    // 3. Save text objects separately (if any)
-    const textObjects = designData.objects.filter(obj => obj.type === 'text' || obj.type === 'i-text');
-    if (textObjects.length > 0) {
+    // 3. Save text objects separately (if any and not too large)
+    const textObjects = processedData.objects.filter(obj => obj.type === 'text' || obj.type === 'i-text');
+    if (textObjects.length > 0 && !exceedsSizeLimit(textObjects, 100000)) {
       const textFile = `${baseFilename}-text.json`;
       await saveToFile(textFile, textObjects);
       files.push(textFile);
     }
     
-    // 4. Save image objects separately (if any)
-    const imageObjects = designData.objects.filter(obj => obj.type === 'image');
-    if (imageObjects.length > 0) {
+    // 4. Save image objects separately (if any and not too large)
+    const imageObjects = processedData.objects.filter(obj => obj.type === 'image');
+    if (imageObjects.length > 0 && !exceedsSizeLimit(imageObjects, 100000)) {
       const imageFile = `${baseFilename}-images.json`;
       await saveToFile(imageFile, imageObjects);
       files.push(imageFile);
     }
     
-    // 5. Save shape objects separately (if any)
-    const shapeObjects = designData.objects.filter(obj => 
+    // 5. Save shape objects separately (if any and not too large)
+    const shapeObjects = processedData.objects.filter(obj => 
       ['rect', 'circle', 'triangle', 'polygon', 'path'].includes(obj.type)
     );
-    if (shapeObjects.length > 0) {
+    if (shapeObjects.length > 0 && !exceedsSizeLimit(shapeObjects, 100000)) {
       const shapeFile = `${baseFilename}-shapes.json`;
       await saveToFile(shapeFile, shapeObjects);
       files.push(shapeFile);
     }
     
-    // 6. Save line objects separately (if any)
-    const lineObjects = designData.objects.filter(obj => obj.type === 'line');
-    if (lineObjects.length > 0) {
+    // 6. Save line objects separately (if any and not too large)
+    const lineObjects = processedData.objects.filter(obj => obj.type === 'line');
+    if (lineObjects.length > 0 && !exceedsSizeLimit(lineObjects, 100000)) {
       const lineFile = `${baseFilename}-lines.json`;
       await saveToFile(lineFile, lineObjects);
       files.push(lineFile);
     }
     
-    return { success: true, files };
+    console.log(`✅ Saved design in ${files.length} files${optimization.isMinimal ? ' (optimized)' : ''}`);
+    return { success: true, files, optimized: optimization.isMinimal };
   } catch (error) {
     console.error('Error saving design to files:', error);
     return { 

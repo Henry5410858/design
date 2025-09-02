@@ -4,7 +4,7 @@ import { FiImage, FiType, FiSquare, FiDownload, FiSave, FiRotateCcw, FiRotateCw,
 import { useUser } from '@/context/UserContext';
 import * as fabric from 'fabric';
 import { jsPDF } from 'jspdf';
-import { buildDesignData, saveDesignToFiles, SaveOptions } from '@/utils/saveData';
+import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
 
 interface UnifiedEditorProps {
   id: string;
@@ -2273,6 +2273,42 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   };
 
+  // Check if design file exists
+  const checkDesignFileExists = async (filename: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/templates/design/${filename}`);
+      return response.ok;
+    } catch (error) {
+      console.warn('⚠️ Error checking design file existence:', error);
+      return false;
+    }
+  };
+
+  // Clean up orphaned design file reference from database
+  const cleanupOrphanedDesignFile = async (templateKey: string) => {
+    try {
+      console.log('🧹 Cleaning up orphaned design file reference for template:', templateKey);
+      const response = await fetch(`http://localhost:4000/api/templates/by-key/${templateKey}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          designFilename: null, // Remove the orphaned filename
+          updatedAt: new Date().toISOString()
+        })
+      });
+      
+      if (response.ok) {
+        console.log('✅ Orphaned design file reference cleaned up');
+      } else {
+        console.warn('⚠️ Failed to clean up orphaned design file reference');
+      }
+    } catch (error) {
+      console.warn('⚠️ Error cleaning up orphaned design file reference:', error);
+    }
+  };
+
   // Load template preset
   const loadTemplate = async (templateKey: string) => {
     console.log('🚀 loadTemplate called with key:', templateKey);
@@ -2284,24 +2320,36 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         const template = await response.json();
         console.log('✅ Template metadata loaded from database:', template);
         
-        // If template has a design file, load the design data from it
+        // If template has a design file, check if it exists first
         if (template.designFilename) {
-          console.log('📁 Loading design from file:', template.designFilename);
-          const designResponse = await fetch(`http://localhost:4000/api/templates/design/${template.designFilename}`);
-          if (designResponse.ok) {
-            const designData = await designResponse.json();
-            console.log('🎨 Design data loaded from file:', designData);
-            await loadTemplateFromData(templateKey, designData);
-            return;
+          console.log('📁 Checking design file:', template.designFilename);
+          const fileExists = await checkDesignFileExists(template.designFilename);
+          
+          if (fileExists) {
+            console.log('✅ Design file exists, loading...');
+            const designResponse = await fetch(`http://localhost:4000/api/templates/design/${template.designFilename}`);
+            if (designResponse.ok) {
+              const designData = await designResponse.json();
+              console.log('🎨 Design data loaded from file:', designData);
+              await loadTemplateFromData(templateKey, designData);
+              return;
+            }
           } else {
-            console.error('❌ Failed to load design file:', designResponse.status);
-            alert('Error al cargar el archivo de diseño de la plantilla.');
-            return;
+            console.warn('⚠️ Design file does not exist:', template.designFilename);
+            console.log('🔄 Falling back to template data from database...');
+            
+            // Clean up the orphaned design file reference
+            await cleanupOrphanedDesignFile(templateKey);
           }
+          
+          // Fallback to loading from template data if design file doesn't exist
+          await loadTemplateFromData(templateKey, template);
+          return;
         } else {
-          // Fallback to loading from template data if no design file
-        await loadTemplateFromData(templateKey, template);
-        return;
+          // No design file specified, load from template data
+          console.log('📋 No design file specified, loading from template data...');
+          await loadTemplateFromData(templateKey, template);
+          return;
         }
       }
     } catch (error) {
@@ -3541,8 +3589,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           
           return baseObj;
         }),
+        metadata: {
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          version: '1.0.0'
+        }
       };
       
       console.log('📋 Design data prepared:', designData);
@@ -3556,7 +3607,23 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           
           // Use JSON method instead of FormData for better reliability
           console.log('📤 Sending design data as JSON to backend...');
-          console.log('📊 Design data size:', JSON.stringify(designData).length, 'bytes');
+          console.log('📊 Design data size:', getDataSize(designData), 'bytes');
+          
+          // Check if data is too large and optimize if needed
+          let dataToSave = designData;
+          let isOptimized = false;
+          
+          if (exceedsSizeLimit(designData, 500000)) {
+            console.log('⚠️ Data too large, optimizing...');
+            const optimization = optimizeDesignData(designData as any, 500000);
+            dataToSave = optimization.optimized;
+            isOptimized = optimization.isMinimal;
+            console.log('🗜️ Data optimized:', {
+              originalSize: optimization.originalSize,
+              optimizedSize: optimization.optimizedSize,
+              reduction: `${Math.round((1 - optimization.optimizedSize / optimization.originalSize) * 100)}%`
+            });
+          }
           
           const fileResponse = await fetch('http://localhost:4000/api/templates/save-design', {
             method: 'POST',
@@ -3564,7 +3631,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              designData: designData,
+              designData: dataToSave,
               templateKey: templateKey // Include template key for individual file naming
             })
           });
@@ -3610,7 +3677,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             console.log('💾 Template updated in database successfully');
             
             // Show success message to user
-            alert(`✅ Template "${templateKey}" actualizado exitosamente!\n📁 Datos guardados en: ${designFilename}`);
+            const optimizationMessage = isOptimized ? '\n🗜️ Datos optimizados para reducir tamaño' : '';
+            alert(`✅ Template "${templateKey}" actualizado exitosamente!\n📁 Datos guardados en: ${designFilename}${optimizationMessage}`);
           } else {
             const errorData = await response.json();
             console.error('❌ Failed to update template in database:', errorData);
@@ -3626,7 +3694,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         }
       }
       
-      // Try to save to localStorage with quota management
+      // Try to save to localStorage with quota management and optimization
       console.log('💾 Saving to localStorage...');
       const savedDesigns = JSON.parse(localStorage.getItem('savedDesigns') || '[]');
       console.log('📚 Existing saved designs:', savedDesigns.length);
@@ -3643,12 +3711,41 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       const existingIndex = savedDesigns.findIndex((d: any) => d.id === id);
       console.log('🔍 Existing design index:', existingIndex);
       
+      // Optimize data for localStorage if needed
+      let dataToSave = designData;
+      let isOptimized = false;
+      
+                      if (exceedsSizeLimit(designData, 200000)) { // 200KB limit for localStorage
+        console.log('⚠️ Data too large for localStorage, optimizing...');
+        
+        // For very large data, use ultra-minimal optimization
+        if (getDataSize(designData) > 1000000) { // 1MB or more
+          console.log('🚨 Very large data detected, using ultra-minimal optimization...');
+          dataToSave = createUltraMinimalDesignData(designData as any);
+          isOptimized = true;
+          console.log('🗜️ Ultra-minimal data created for localStorage:', {
+            originalSize: getDataSize(designData),
+            optimizedSize: getDataSize(dataToSave),
+            reduction: `${Math.round((1 - getDataSize(dataToSave) / getDataSize(designData)) * 100)}%`
+          });
+        } else {
+          const optimization = optimizeDesignData(designData as any, 200000);
+          dataToSave = optimization.optimized;
+          isOptimized = optimization.isMinimal;
+          console.log('🗜️ Data optimized for localStorage:', {
+            originalSize: optimization.originalSize,
+            optimizedSize: optimization.optimizedSize,
+            reduction: `${Math.round((1 - optimization.optimizedSize / optimization.originalSize) * 100)}%`
+          });
+        }
+      }
+      
       if (existingIndex >= 0) {
-        savedDesigns[existingIndex] = designData;
-        console.log('✅ Diseño actualizado:', designData.id);
+        savedDesigns[existingIndex] = dataToSave;
+        console.log('✅ Diseño actualizado:', dataToSave.id);
       } else {
-        savedDesigns.push(designData);
-        console.log('✅ Nuevo diseño guardado:', designData.id);
+        savedDesigns.push(dataToSave);
+        console.log('✅ Nuevo diseño guardado:', dataToSave.id);
       }
       
       // Try to save with error handling for quota
@@ -3661,9 +3758,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         if (templateKey) {
           message = `Template "${templateKey}" actualizado exitosamente!`;
         } else if (existingIndex >= 0) {
-          message = `Diseño "${designData.id}" actualizado exitosamente!`;
+          message = `Diseño "${dataToSave.id}" actualizado exitosamente!`;
         } else {
-          message = `Nuevo diseño "${designData.id}" guardado exitosamente!`;
+          message = `Nuevo diseño "${dataToSave.id}" guardado exitosamente!`;
+        }
+        
+        if (isOptimized) {
+          message += '\n🗜️ Datos optimizados para reducir tamaño';
         }
         
         alert(message);
@@ -3673,46 +3774,36 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log('💾 Design saved successfully. Default template managed in database.');
         
       } catch (quotaError) {
-        console.error('❌ Quota exceeded, trying to save with reduced data...');
+        console.error('❌ Quota exceeded, trying to save with ultra-minimal data...');
         
-                 // Try saving without some data to reduce size
-         const reducedDesignData = {
-           ...designData,
-           // Remove some properties to reduce size
-           objects: designData.objects.map(obj => {
-             const baseReduced = {
-               id: obj.id,
-               type: obj.type,
-               left: obj.left,
-               top: obj.top,
-               width: obj.width,
-               height: obj.height,
-               fill: obj.fill
-             };
-             
-             // Add text properties only if it's a text object
-             if (obj.type === 'text' || obj.type === 'i-text') {
-               return {
-                 ...baseReduced,
-                 text: (obj as any).text || '',
-                 fontSize: (obj as any).fontSize || 48,
-                 fontFamily: (obj as any).fontFamily || 'Arial'
-               };
-             }
-             
-             return baseReduced;
-           })
-         };
+        // Use the ultra-minimal optimization system
+        const ultraMinimalData = createUltraMinimalDesignData(designData as any);
+        const ultraMinimalSize = getDataSize(ultraMinimalData);
+        const originalSize = getDataSize(designData);
+        
+        console.log('🗜️ Ultra-minimal data created:', {
+          originalSize: originalSize,
+          optimizedSize: ultraMinimalSize,
+          reduction: `${Math.round((1 - ultraMinimalSize / originalSize) * 100)}%`
+        });
+        
+        // If even ultra-minimal data is too large, skip localStorage entirely
+        if (ultraMinimalSize > 50000) { // 50KB limit
+          console.log('⚠️ Even ultra-minimal data is too large, skipping localStorage...');
+          alert(`Diseño demasiado grande para localStorage (${Math.round(originalSize / 1024)}KB).\n💾 Los datos se guardaron en el servidor pero no localmente.\n🗜️ Reducción intentada: ${Math.round((1 - ultraMinimalSize / originalSize) * 100)}%`);
+          console.log('✅ Design saved to server only, skipped localStorage due to size');
+          return; // Exit without trying localStorage
+        }
         
         // Clear all old designs and save only this one
         localStorage.clear();
-        localStorage.setItem('savedDesigns', JSON.stringify([reducedDesignData]));
+        localStorage.setItem('savedDesigns', JSON.stringify([ultraMinimalData]));
         
-        alert(`Diseño guardado con datos reducidos debido a limitaciones de espacio.`);
-        console.log('💾 Diseño guardado con datos reducidos:', reducedDesignData);
+        alert(`Diseño guardado con datos ultra-minimales debido a limitaciones de espacio.\n🗜️ Reducción: ${Math.round((1 - ultraMinimalSize / originalSize) * 100)}%\n📝 Solo se guardaron los primeros 5 objetos.`);
+        console.log('💾 Diseño guardado con datos ultra-minimales:', ultraMinimalData);
         
         // Note: Default template is now managed in database, not localStorage
-        console.log('✅ Reduced design saved successfully. Default template managed in database.');
+        console.log('✅ Ultra-minimal design saved successfully. Default template managed in database.');
       }
       
     } catch (error) {
@@ -3765,7 +3856,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       if (saveResult.success) {
         console.log('✅ Design saved to files successfully:', saveResult.files);
-        alert(`Diseño guardado exitosamente en ${saveResult.files.length} archivos!`);
+        const optimizationMessage = saveResult.optimized ? ' (datos optimizados para reducir tamaño)' : '';
+        alert(`Diseño guardado exitosamente en ${saveResult.files.length} archivos${optimizationMessage}!`);
       } else {
         console.error('❌ Failed to save design:', saveResult.error);
         alert(`Error al guardar el diseño: ${saveResult.error}`);
