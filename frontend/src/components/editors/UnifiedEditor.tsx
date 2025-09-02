@@ -4,6 +4,7 @@ import { FiImage, FiType, FiSquare, FiDownload, FiSave, FiRotateCcw, FiRotateCw,
 import { useUser } from '@/context/UserContext';
 import * as fabric from 'fabric';
 import { jsPDF } from 'jspdf';
+import { buildDesignData, saveDesignToFiles, SaveOptions } from '@/utils/saveData';
 
 interface UnifiedEditorProps {
   id: string;
@@ -3721,6 +3722,60 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   };
 
+  // Save design using modular approach (new method)
+  const saveDesignModular = async () => {
+    console.log('🚀 Modular save button clicked!');
+    console.log('🎨 Canvas exists:', !!canvas);
+    console.log('🆔 Design ID:', id);
+    console.log('📝 Editor Type:', editorTypeState);
+    
+    if (!canvas) {
+      console.error('❌ Canvas is not ready');
+      alert('El canvas no está listo. Espera un momento e intenta nuevamente.');
+      return;
+    }
+
+    try {
+      console.log('📊 Building design data...');
+      
+      // Build design data using the new modular system
+      const designData = buildDesignData(
+        canvas,
+        id,
+        editorTypeState,
+        canvasSize,
+        backgroundColor,
+        backgroundImage,
+        templateKey || null,
+        { includeMetadata: true, separateFiles: true }
+      );
+      
+      console.log('💾 Design data built:', designData);
+      console.log('📊 Design data size:', JSON.stringify(designData).length, 'bytes');
+      console.log('🔢 Number of objects:', designData.objects.length);
+      
+      // Save to separate files
+      const saveOptions: SaveOptions = {
+        includeMetadata: true,
+        separateFiles: true,
+        compressData: false
+      };
+      
+      const saveResult = await saveDesignToFiles(designData, saveOptions);
+      
+      if (saveResult.success) {
+        console.log('✅ Design saved to files successfully:', saveResult.files);
+        alert(`Diseño guardado exitosamente en ${saveResult.files.length} archivos!`);
+      } else {
+        console.error('❌ Failed to save design:', saveResult.error);
+        alert(`Error al guardar el diseño: ${saveResult.error}`);
+      }
+    } catch (error) {
+      console.error('❌ Error saving design:', error);
+      alert('Error al guardar el diseño. Intenta nuevamente.');
+    }
+  };
+
   // Download design
   const downloadDesign = (format: 'PNG' | 'PDF') => {
     if (canvas) {
@@ -3954,6 +4009,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               >
                 <FiSave className="w-4 h-4" />
                 <span className="hidden sm:inline">Guardar</span>
+              </button>
+              
+              <button
+                onClick={async () => await saveDesignModular()}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                title="Guardar en Archivos Separados"
+              >
+                <FiSave className="w-4 h-4" />
+                <span className="hidden sm:inline">Guardar Modular</span>
               </button>
               
               <button
