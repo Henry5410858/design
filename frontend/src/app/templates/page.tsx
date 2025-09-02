@@ -1,6 +1,6 @@
 'use client';
 import TemplateGallery from '../../components/templates/TemplateGallery';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import AppLayout from '../../components/layout/AppLayout';
 
 export default function TemplateGalleryPage() {
   const handleDownloadTemplate = (templateId: string) => {
@@ -9,10 +9,10 @@ export default function TemplateGalleryPage() {
   };
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <TemplateGallery 
         onDownloadTemplate={handleDownloadTemplate}
       />
-    </DashboardLayout>
+    </AppLayout>
   );
 }

@@ -87,6 +87,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '5',
       name: 'Marketplace Flyer',
       category: 'flyers',
+      dimensions: '1200x1800',
       thumbnail: '/api/placeholder/400/300',
       description: 'Flyer optimizado para marketplace y ventas',
       editorType: 'flyer',
@@ -96,6 +97,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '6',
       name: 'Flyer Evento',
       category: 'flyers',
+      dimensions: '1200x1800',
       thumbnail: '/api/placeholder/400/300',
       description: 'Flyer para eventos y conferencias',
       editorType: 'flyer',
@@ -106,6 +108,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '7',
       name: 'FB Feed Banner',
       category: 'banners',
+      dimensions: '1200x630',
       thumbnail: '/api/placeholder/400/200',
       description: 'Banner optimizado para Facebook Feed',
       editorType: 'banner',
@@ -115,6 +118,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '8',
       name: 'Banner Web',
       category: 'banners',
+      dimensions: '1200x630',
       thumbnail: '/api/placeholder/400/200',
       description: 'Banner para sitios web y landing pages',
       editorType: 'banner',
@@ -125,6 +129,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '9',
       name: 'Badge Vendido',
       category: 'badges',
+      dimensions: '400x400',
       thumbnail: '/api/placeholder/400/400',
       description: 'Badge para propiedades vendidas',
       editorType: 'badge',
@@ -134,6 +139,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '10',
       name: 'Badge Reservado',
       category: 'badges',
+      dimensions: '400x400',
       thumbnail: '/api/placeholder/400/400',
       description: 'Badge para propiedades reservadas',
       editorType: 'badge',
@@ -144,6 +150,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '11',
       name: 'Brochure Trifold',
       category: 'documents',
+      dimensions: '1200x1800',
       thumbnail: '/api/placeholder/400/300',
       description: 'Brochure profesional trifold para villas',
       editorType: 'brochure',
@@ -153,6 +160,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       id: '12',
       name: 'Documento Propiedad',
       category: 'documents',
+      dimensions: '1200x1800',
       thumbnail: '/api/placeholder/400/300',
       description: 'Documento detallado de propiedad',
       editorType: 'document',
@@ -251,6 +259,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             <FiFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           </div>
         </div>
+      </div>
 
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

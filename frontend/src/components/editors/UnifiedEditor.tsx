@@ -73,7 +73,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const [showFontSelector, setShowFontSelector] = useState(false);
   const [canvasDisplayScale, setCanvasDisplayScale] = useState(1);
   const [activeTab, setActiveTab] = useState('elements');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   
   // History and undo/redo
   const [history, setHistory] = useState<HistoryState[]>([]);
@@ -246,8 +246,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     ]
   };
 
-  // Font families
+  // Font families - 100+ fonts available
   const fontFamilies = [
+    // System Fonts
     'Arial',
     'Helvetica',
     'Times New Roman',
@@ -258,6 +259,18 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     'Impact',
     'Comic Sans MS',
     'Courier New',
+    'Palatino',
+    'Garamond',
+    'Bookman',
+    'Avant Garde',
+    'Helvetica Neue',
+    'Geneva',
+    'Lucida Grande',
+    'Lucida Sans Unicode',
+    'MS Sans Serif',
+    'MS Serif',
+    
+    // Google Fonts - Sans Serif
     'Roboto',
     'Open Sans',
     'Lato',
@@ -267,10 +280,988 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     'Source Sans Pro',
     'Ubuntu',
     'Noto Sans',
-    'Playfair Display',
+    'Nunito',
+    'Raleway',
+    'PT Sans',
+    'Droid Sans',
+    'Fira Sans',
+    'Oswald',
+    'Lora',
     'Merriweather',
+    'Playfair Display',
+    'Crimson Text',
+    'Libre Baskerville',
+    
+    // Google Fonts - Display & Decorative
+    'Bebas Neue',
+    'Anton',
+    'Righteous',
+    'Fredoka One',
+    'Bungee',
+    'Lobster',
+    'Pacifico',
+    'Dancing Script',
+    'Great Vibes',
+    'Satisfy',
+    'Kaushan Script',
+    'Amatic SC',
+    'Caveat',
+    'Indie Flower',
+    'Permanent Marker',
+    'Shadows Into Light',
+    'Yellowtail',
+    'Lobster Two',
+    'Chewy',
+    'Fredoka',
+    
+    // Google Fonts - Monospace
+    'Roboto Mono',
+    'Source Code Pro',
+    'Fira Code',
+    'JetBrains Mono',
+    'Inconsolata',
+    'Space Mono',
+    'Cousine',
+    'PT Mono',
+    'Overpass Mono',
+    'IBM Plex Mono',
+    
+    // Google Fonts - Serif
+    'Crimson Text',
+    'Libre Baskerville',
+    'Lora',
+    'Merriweather',
+    'Playfair Display',
     'PT Serif',
-    'Crimson Text'
+    'Source Serif Pro',
+    'Crimson Pro',
+    'EB Garamond',
+    'Libre Caslon Text',
+    
+    // Google Fonts - Handwriting
+    'Kalam',
+    'Caveat',
+    'Indie Flower',
+    'Shadows Into Light',
+    'Dancing Script',
+    'Satisfy',
+    'Great Vibes',
+    'Kaushan Script',
+    'Amatic SC',
+    'Permanent Marker',
+    
+    // Google Fonts - Display
+    'Bebas Neue',
+    'Anton',
+    'Righteous',
+    'Fredoka One',
+    'Bungee',
+    'Lobster',
+    'Pacifico',
+    'Yellowtail',
+    'Lobster Two',
+    'Chewy',
+    
+    // Additional Popular Fonts
+    'Work Sans',
+    'DM Sans',
+    'Manrope',
+    'Epilogue',
+    'Sora',
+    'Plus Jakarta Sans',
+    'Figtree',
+    'Outfit',
+    'Space Grotesk',
+    'Cabinet Grotesk',
+    'Satoshi',
+    'Clash Display',
+    'Chillax',
+    'General Sans',
+    'Geist',
+    'Inter Tight',
+    'Instrument Sans',
+    'Red Hat Display',
+    'Red Hat Text',
+    'IBM Plex Sans',
+    'IBM Plex Serif',
+    'Recursive',
+    'JetBrains Sans',
+    'Overpass',
+    'Public Sans',
+    'Rubik',
+    'Quicksand',
+    'Mukti',
+    'Titillium Web',
+    'Exo',
+    'Orbitron',
+    'Rajdhani',
+    'Abril Fatface',
+    'Crete Round',
+    'Fjalla One',
+    'Francois One',
+    'Josefin Sans',
+    'Josefin Slab',
+    'Kanit',
+    'Maven Pro',
+    'Muli',
+    'Nunito Sans',
+    'PT Sans Caption',
+    'Quattrocento',
+    'Quattrocento Sans',
+    'Rokkitt',
+    'Slabo 27px',
+    'Slabo 13px',
+    'Varela',
+    'Varela Round',
+    'Yanone Kaffeesatz',
+    'Zilla Slab',
+    'Archivo',
+    'Archivo Black',
+    'Archivo Narrow',
+    'Asap',
+    'Asap Condensed',
+    'Barlow',
+    'Barlow Condensed',
+    'Barlow Semi Condensed',
+    'Cabin',
+    'Cabin Condensed',
+    'Cabin Sketch',
+    'Cantarell',
+    'Cardo',
+    'Chivo',
+    'Comfortaa',
+    'Cormorant',
+    'Cormorant Garamond',
+    'Cormorant Infant',
+    'Cormorant SC',
+    'Cormorant Unicase',
+    'Crimson Pro',
+    'DM Mono',
+    'DM Serif Display',
+    'DM Serif Text',
+    'Encode Sans',
+    'Encode Sans Condensed',
+    'Encode Sans Expanded',
+    'Encode Sans Semi Condensed',
+    'Encode Sans Semi Expanded',
+    'Exo 2',
+    'Fira Sans Condensed',
+    'Fira Sans Extra Condensed',
+    'Fjalla One',
+    'Francois One',
+    'Hind',
+    'Hind Madurai',
+    'Hind Siliguri',
+    'Hind Vadodara',
+    'Inconsolata',
+    'Josefin Sans',
+    'Josefin Slab',
+    'Kanit',
+    'Karla',
+    'Libre Franklin',
+    'Maven Pro',
+    'Muli',
+    'Nunito Sans',
+    'Oxygen',
+    'Oxygen Mono',
+    'PT Sans Caption',
+    'PT Sans Narrow',
+    'Quattrocento',
+    'Quattrocento Sans',
+    'Rokkitt',
+    'Slabo 27px',
+    'Slabo 13px',
+    'Source Code Pro',
+    'Space Mono',
+    'Titillium Web',
+    'Varela',
+    'Varela Round',
+    'Work Sans',
+    'Yanone Kaffeesatz',
+    'Zilla Slab',
+    'Zilla Slab Highlight',
+    
+    // Additional Google Fonts - Part 1
+    'Acme',
+    'Alegreya',
+    'Alegreya Sans',
+    'Alegreya SC',
+    'Aleo',
+    'Allerta',
+    'Allerta Stencil',
+    'Allura',
+    'Almendra',
+    'Almendra Display',
+    'Almendra SC',
+    'Amarante',
+    'Amaranth',
+    'Amatic SC',
+    'Amethysta',
+    'Anaheim',
+    'Andada',
+    'Andika',
+    'Angkor',
+    'Annie Use Your Telescope',
+    'Anonymous Pro',
+    'Antic',
+    'Antic Didone',
+    'Antic Slab',
+    'Anton',
+    'Arapey',
+    'Arbutus',
+    'Arbutus Slab',
+    'Architects Daughter',
+    'Archivo Black',
+    'Archivo Narrow',
+    'Arimo',
+    'Arizonia',
+    'Armata',
+    'Artifika',
+    'Arvo',
+    'Asap',
+    'Asap Condensed',
+    'Asset',
+    'Astloch',
+    'Asul',
+    'Atomic Age',
+    'Aubrey',
+    'Audiowide',
+    'Autour One',
+    'Average',
+    'Average Sans',
+    'Averia Gruesa Libre',
+    'Averia Libre',
+    'Averia Sans Libre',
+    'Averia Serif Libre',
+    'Bad Script',
+    'Balthazar',
+    'Bangers',
+    'Basic',
+    'Battambang',
+    'Baumans',
+    'Bayon',
+    'Belgrano',
+    'Belleza',
+    'BenchNine',
+    'Bentham',
+    'Berkshire Swash',
+    'Bevan',
+    'Bigelow Rules',
+    'Bigshot One',
+    'Bilbo',
+    'Bilbo Swash Caps',
+    'Biryani',
+    'Bitter',
+    'Black Ops One',
+    'Bokor',
+    'Bonbon',
+    'Boogaloo',
+    'Bowlby One',
+    'Bowlby One SC',
+    'Brawler',
+    'Bree Serif',
+    'Bubblegum Sans',
+    'Bubbler One',
+    'Buda',
+    'Buenard',
+    'Butcherman',
+    'Butterfly Kids',
+    'Cabin',
+    'Cabin Condensed',
+    'Cabin Sketch',
+    'Caesar Dressing',
+    'Cagliostro',
+    'Calligraffitti',
+    'Cambay',
+    'Cambo',
+    'Candal',
+    'Cantarell',
+    'Cantata One',
+    'Cantora One',
+    'Capriola',
+    'Cardo',
+    'Carme',
+    'Carrois Gothic',
+    'Carrois Gothic SC',
+    'Carter One',
+    'Caudex',
+    'Caveat',
+    'Caveat Brush',
+    'Cedarville Cursive',
+    'Ceviche One',
+    'Changa One',
+    'Chango',
+    'Chau Philomene One',
+    'Chela One',
+    'Chelsea Market',
+    'Chenla',
+    'Cherry Cream Soda',
+    'Cherry Swash',
+    'Chewy',
+    'Chicle',
+    'Chivo',
+    'Cinzel',
+    'Cinzel Decorative',
+    'Clicker Script',
+    'Coda',
+    'Coda Caption',
+    'Codystar',
+    'Combo',
+    'Comfortaa',
+    'Coming Soon',
+    'Concert One',
+    'Condiment',
+    'Content',
+    'Contrail One',
+    'Convergence',
+    'Cookie',
+    'Copse',
+    'Corben',
+    'Courgette',
+    'Cousine',
+    'Coustard',
+    'Covered By Your Grace',
+    'Crafty Girls',
+    'Creepster',
+    'Crete Round',
+    'Crimson Text',
+    'Croissant One',
+    'Crushed',
+    'Cuprum',
+    'Cutive',
+    'Cutive Mono',
+    'Damion',
+    'Dancing Script',
+    'Dangrek',
+    'Dawning of a New Day',
+    'Days One',
+    'Dekko',
+    'Delius',
+    'Delius Swash Caps',
+    'Delius Unicase',
+    'Della Respira',
+    'Denk One',
+    'Devonshire',
+    'Dhurjati',
+    'Didact Gothic',
+    'Diplomata',
+    'Diplomata SC',
+    'Domine',
+    'Donegal One',
+    'Doppio One',
+    'Dorsa',
+    'Dosis',
+    'Dr Sugiyama',
+    'Droid Sans',
+    'Droid Sans Mono',
+    'Droid Serif',
+    'Duru Sans',
+    'Dynalight',
+    'EB Garamond',
+    'Eagle Lake',
+    'Eater',
+    'Economica',
+    'Ek Mukta',
+    'Electrolize',
+    'Elsie',
+    'Elsie Swash Caps',
+    'Emblema One',
+    'Emilys Candy',
+    'Engagement',
+    'Englebert',
+    'Enriqueta',
+    'Erica One',
+    'Esteban',
+    'Euphoria Script',
+    'Ewert',
+    'Exo',
+    'Exo 2',
+    'Expletus Sans',
+    'Fanwood Text',
+    'Fascinate',
+    'Fascinate Inline',
+    'Faster One',
+    'Fasthand',
+    'Fauna One',
+    'Federant',
+    'Federo',
+    'Felipa',
+    'Fenix',
+    'Finger Paint',
+    'Fira Mono',
+    'Fira Sans',
+    'Fira Sans Condensed',
+    'Fira Sans Extra Condensed',
+    'Fjalla One',
+    'Fjord One',
+    'Flamenco',
+    'Flavors',
+    'Fondamento',
+    'Fontdiner Swanky',
+    'Forum',
+    'Francois One',
+    'Freckle Face',
+    'Fredericka the Great',
+    'Fredoka One',
+    'Freehand',
+    'Fresca',
+    'Frijole',
+    'Fruktur',
+    'Fugaz One',
+    'GFS Didot',
+    'GFS Neohellenic',
+    'Gabriela',
+    'Gafata',
+    'Galdeano',
+    'Galindo',
+    'Gentium Basic',
+    'Gentium Book Basic',
+    'Geo',
+    'Geostar',
+    'Geostar Fill',
+    'Germania One',
+    'Gidugu',
+    'Gilda Display',
+    'Give You Glory',
+    'Glass Antiqua',
+    'Glegoo',
+    'Gloria Hallelujah',
+    'Goblin One',
+    'Gochi Hand',
+    'Gorditas',
+    'Goudy Bookletter 1911',
+    'Graduate',
+    'Grand Hotel',
+    'Gravitas One',
+    'Great Vibes',
+    'Griffy',
+    'Gruppo',
+    'Gudea',
+    'Gurajada',
+    'Habibi',
+    'Halant',
+    'Hammersmith One',
+    'Hanalei',
+    'Hanalei Fill',
+    'Handlee',
+    'Hanuman',
+    'Happy Monkey',
+    'Harmattan',
+    'Headland One',
+    'Heebo',
+    'Henny Penny',
+    'Herr Von Muellerhoff',
+    'Hind',
+    'Hind Guntur',
+    'Hind Madurai',
+    'Hind Siliguri',
+    'Hind Vadodara',
+    'Holtwood One SC',
+    'Homemade Apple',
+    'Homenaje',
+    'Iceberg',
+    'Iceland',
+    'Imprima',
+    'Inconsolata',
+    'Inder',
+    'Indie Flower',
+    'Inika',
+    'Inknut Antiqua',
+    'Irish Grover',
+    'Istok Web',
+    'Italiana',
+    'Italianno',
+    'Itim',
+    'Jacques Francois',
+    'Jacques Francois Shadow',
+    'Jaldi',
+    'Jim Nightshade',
+    'Jockey One',
+    'Jolly Lodger',
+    'Jomhuria',
+    'Josefin Sans',
+    'Josefin Slab',
+    'Joti One',
+    'Judson',
+    'Julee',
+    'Julius Sans One',
+    'Junge',
+    'Jura',
+    'Just Another Hand',
+    'Just Me Again Down Here',
+    'Kadwa',
+    'Kalam',
+    'Kameron',
+    'Kanit',
+    'Kantumruy',
+    'Karla',
+    'Karma',
+    'Katibeh',
+    'Kaushan Script',
+    'Kavivanar',
+    'Kavoon',
+    'Kdam Thmor',
+    'Keania One',
+    'Kelly Slab',
+    'Kenia',
+    'Khand',
+    'Khmer',
+    'Khula',
+    'Kite One',
+    'Knewave',
+    'Kotta One',
+    'Koulen',
+    'Kranky',
+    'Kreon',
+    'Kristi',
+    'Krona One',
+    'Kumar One',
+    'Kumar One Outline',
+    'Kurale',
+    'La Belle Aurore',
+    'Laila',
+    'Lakki Reddy',
+    'Lalezar',
+    'Lancelot',
+    'Lateef',
+    'Lato',
+    'League Script',
+    'Leckerli One',
+    'Ledger',
+    'Lekton',
+    'Lemon',
+    'Lemonada',
+    'Libre Baskerville',
+    'Libre Caslon Text',
+    'Libre Franklin',
+    'Life Savers',
+    'Lilita One',
+    'Lily Script One',
+    'Limelight',
+    'Linden Hill',
+    'Lobster',
+    'Lobster Two',
+    'Londrina Outline',
+    'Londrina Shadow',
+    'Londrina Sketch',
+    'Londrina Solid',
+    'Lora',
+    'Love Ya Like A Sister',
+    'Loved by the King',
+    'Lovers Quarrel',
+    'Luckiest Guy',
+    'Lusitana',
+    'Lustria',
+    'Macondo',
+    'Macondo Swash Caps',
+    'Mada',
+    'Magra',
+    'Maiden Orange',
+    'Maitree',
+    'Mako',
+    'Mallanna',
+    'Mandali',
+    'Marcellus',
+    'Marcellus SC',
+    'Marck Script',
+    'Margarine',
+    'Marko One',
+    'Marmelad',
+    'Martel',
+    'Martel Sans',
+    'Marvel',
+    'Mate',
+    'Mate SC',
+    'Maven Pro',
+    'McLaren',
+    'Meddon',
+    'MedievalSharp',
+    'Medula One',
+    'Meera Inimai',
+    'Megrim',
+    'Meie Script',
+    'Merienda',
+    'Merienda One',
+    'Merriweather',
+    'Merriweather Sans',
+    'Metal',
+    'Metal Mania',
+    'Metamorphous',
+    'Metrophobic',
+    'Michroma',
+    'Milonga',
+    'Miltonian',
+    'Miltonian Tattoo',
+    'Miniver',
+    'Miriam Libre',
+    'Mirza',
+    'Miss Fajardose',
+    'Mitr',
+    'Modak',
+    'Modern Antiqua',
+    'Mogra',
+    'Molengo',
+    'Molle',
+    'Monda',
+    'Monofett',
+    'Monoton',
+    'Monsieur La Doulaise',
+    'Montaga',
+    'Montez',
+    'Montserrat',
+    'Montserrat Alternates',
+    'Montserrat Subrayada',
+    'Moul',
+    'Moulpali',
+    'Mountains of Christmas',
+    'Mouse Memoirs',
+    'Mr Bedfort',
+    'Mr Dafoe',
+    'Mr De Haviland',
+    'Mrs Saint Delafield',
+    'Mrs Sheppards',
+    'Mukti',
+    'Mukti Vaani',
+    'Muli',
+    'Mystery Quest',
+    'NTR',
+    'Neucha',
+    'Neuton',
+    'New Rocker',
+    'News Cycle',
+    'Niconne',
+    'Nixie One',
+    'Nobile',
+    'Nokora',
+    'Norican',
+    'Nosifer',
+    'Nothing You Could Do',
+    'Noticia Text',
+    'Noto Sans',
+    'Noto Sans HK',
+    'Noto Sans JP',
+    'Noto Sans KR',
+    'Noto Sans SC',
+    'Noto Sans TC',
+    'Noto Serif',
+    'Noto Serif JP',
+    'Noto Serif KR',
+    'Noto Serif SC',
+    'Noto Serif TC',
+    'Nova Cut',
+    'Nova Flat',
+    'Nova Mono',
+    'Nova Oval',
+    'Nova Round',
+    'Nova Script',
+    'Nova Slim',
+    'Nova Square',
+    'Numans',
+    'Nunito',
+    'Nunito Sans',
+    'Odor Mean Chey',
+    'Offside',
+    'Old Standard TT',
+    'Oldenburg',
+    'Oleo Script',
+    'Oleo Script Swash Caps',
+    'Open Sans',
+    'Open Sans Condensed',
+    'Oranienbaum',
+    'Orbitron',
+    'Oregano',
+    'Orienta',
+    'Original Surfer',
+    'Oswald',
+    'Over the Rainbow',
+    'Overlock',
+    'Overlock SC',
+    'Overpass',
+    'Overpass Mono',
+    'Ovo',
+    'Oxygen',
+    'Oxygen Mono',
+    'PT Mono',
+    'PT Sans',
+    'PT Sans Caption',
+    'PT Sans Narrow',
+    'PT Serif',
+    'PT Serif Caption',
+    'Pacifico',
+    'Padauk',
+    'Palanquin',
+    'Palanquin Dark',
+    'Pangolin',
+    'Paprika',
+    'Parisienne',
+    'Passero One',
+    'Passion One',
+    'Pathway Gothic One',
+    'Patrick Hand',
+    'Patrick Hand SC',
+    'Pattaya',
+    'Patua One',
+    'Pavanam',
+    'Paytone One',
+    'Peddana',
+    'Peralta',
+    'Permanent Marker',
+    'Petit Formal Script',
+    'Petrona',
+    'Philosopher',
+    'Piedra',
+    'Pinyon Script',
+    'Pirata One',
+    'Plaster',
+    'Play',
+    'Playball',
+    'Playfair Display',
+    'Playfair Display SC',
+    'Podkova',
+    'Poiret One',
+    'Poller One',
+    'Poly',
+    'Pompiere',
+    'Pontano Sans',
+    'Poppins',
+    'Port Lligat Sans',
+    'Port Lligat Slab',
+    'Pragati Narrow',
+    'Prata',
+    'Preahvihear',
+    'Press Start 2P',
+    'Pridi',
+    'Princess Sofia',
+    'Prociono',
+    'Prompt',
+    'Prosto One',
+    'Proza Libre',
+    'Puritan',
+    'Purple Purse',
+    'Quando',
+    'Quantico',
+    'Quattrocento',
+    'Quattrocento Sans',
+    'Questrial',
+    'Quicksand',
+    'Quintessential',
+    'Qwigley',
+    'Racing Sans One',
+    'Radley',
+    'Rajdhani',
+    'Rakkas',
+    'Raleway',
+    'Raleway Dots',
+    'Ramabhadra',
+    'Ramaraja',
+    'Rambla',
+    'Rammetto One',
+    'Ranchers',
+    'Rancho',
+    'Ranga',
+    'Rasa',
+    'Rationale',
+    'Ravi Prakash',
+    'Red Hat Display',
+    'Red Hat Text',
+    'Redressed',
+    'Reem Kufi',
+    'Reenie Beanie',
+    'Revalia',
+    'Rhodium Libre',
+    'Ribeye',
+    'Ribeye Marrow',
+    'Righteous',
+    'Risque',
+    'Roboto',
+    'Roboto Condensed',
+    'Roboto Mono',
+    'Roboto Slab',
+    'Rochester',
+    'Rock Salt',
+    'Rokkitt',
+    'Romanesco',
+    'Ropa Sans',
+    'Rosario',
+    'Rosarivo',
+    'Rouge Script',
+    'Rozha One',
+    'Rubik',
+    'Rubik Mono One',
+    'Ruda',
+    'Rufina',
+    'Ruge Boogie',
+    'Ruluko',
+    'Rum Raisin',
+    'Ruslan Display',
+    'Russo One',
+    'Ruthie',
+    'Rye',
+    'Sacramento',
+    'Sahitya',
+    'Sail',
+    'Saira',
+    'Saira Condensed',
+    'Saira Extra Condensed',
+    'Saira Semi Condensed',
+    'Salsa',
+    'Sanchez',
+    'Sancreek',
+    'Sansita',
+    'Sarabun',
+    'Sarala',
+    'Sarina',
+    'Sarpanch',
+    'Satisfy',
+    'Sawarabi Gothic',
+    'Sawarabi Mincho',
+    'Scada',
+    'Scheherazade',
+    'Schoolbell',
+    'Scope One',
+    'Seaweed Script',
+    'Secular One',
+    'Sedgwick Ave',
+    'Sedgwick Ave Display',
+    'Sevillana',
+    'Seymour One',
+    'Shadows Into Light',
+    'Shadows Into Light Two',
+    'Shanti',
+    'Share',
+    'Share Tech',
+    'Share Tech Mono',
+    'Shojumaru',
+    'Short Stack',
+    'Shrikhand',
+    'Siemreap',
+    'Sigmar One',
+    'Signika',
+    'Signika Negative',
+    'Simonetta',
+    'Sintony',
+    'Sirin Stencil',
+    'Six Caps',
+    'Skranji',
+    'Slabo 13px',
+    'Slabo 27px',
+    'Slackey',
+    'Smokum',
+    'Smythe',
+    'Sniglet',
+    'Snippet',
+    'Snowburst One',
+    'Sofadi One',
+    'Sofia',
+    'Sonsie One',
+    'Sorts Mill Goudy',
+    'Source Code Pro',
+    'Source Sans Pro',
+    'Source Serif Pro',
+    'Space Mono',
+    'Special Elite',
+    'Spectral',
+    'Spectral SC',
+    'Spicy Rice',
+    'Spinnaker',
+    'Spirax',
+    'Squada One',
+    'Sree Krushnadevaraya',
+    'Sriracha',
+    'Srisakdi',
+    'Stalemate',
+    'Stalinist One',
+    'Stardos Stencil',
+    'Stint Ultra Condensed',
+    'Stint Ultra Expanded',
+    'Stoke',
+    'Strait',
+    'Sue Ellen Francisco',
+    'Suez One',
+    'Sulphur Point',
+    'Sumana',
+    'Sunshiney',
+    'Supermercado One',
+    'Sura',
+    'Suranna',
+    'Suravaram',
+    'Suwannaphum',
+    'Swanky and Moo Moo',
+    'Syncopate',
+    'Tajawal',
+    'Tangerine',
+    'Taprom',
+    'Tauri',
+    'Taviraj',
+    'Teko',
+    'Telex',
+    'Tenali Ramakrishna',
+    'Tenor Sans',
+    'Text Me One',
+    'The Girl Next Door',
+    'Tienne',
+    'Tillana',
+    'Timmana',
+    'Tinos',
+    'Titan One',
+    'Titillium Web',
+    'Trade Winds',
+    'Trirong',
+    'Trocchi',
+    'Trochut',
+    'Trykker',
+    'Tulpen One',
+    'Ubuntu',
+    'Ubuntu Condensed',
+    'Ubuntu Mono',
+    'Ultra',
+    'Uncial Antiqua',
+    'Underdog',
+    'Unica One',
+    'UnifrakturCook',
+    'UnifrakturMaguntia',
+    'Unkempt',
+    'Unlock',
+    'Unna',
+    'VT323',
+    'Vampiro One',
+    'Varela',
+    'Varela Round',
+    'Vast Shadow',
+    'Vesper Libre',
+    'Viaoda Libre',
+    'Vibes',
+    'Vibur',
+    'Vidaloka',
+    'Viga',
+    'Voces',
+    'Volkhov',
+    'Vollkorn',
+    'Vollkorn SC',
+    'Voltaire',
+    'Waiting for the Sunrise',
+    'Wallpoet',
+    'Walter Turncoat',
+    'Warnes',
+    'Wellfleet',
+    'Wendy One',
+    'Wire One',
+    'Work Sans',
+    'Yanone Kaffeesatz',
+    'Yantramanav',
+    'Yatra One',
+    'Yellowtail',
+    'Yeon Sung',
+    'Yeseva One',
+    'Yesteryear',
+    'Yrsa',
+    'ZCOOL KuaiLe',
+    'ZCOOL QingKe HuangYou',
+    'ZCOOL XiaoWei',
+    'Zeyada',
+    'Zhi Mang Xing',
+    'Zilla Slab',
+    'Zilla Slab Highlight'
   ];
 
   // Shape types
@@ -911,88 +1902,66 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         // Create Fabric.js image from the loaded image
         const fabricImage = new fabric.Image(imgElement);
         
-        // Set properties after creation
+        // Set properties for a regular, interactive image object
         fabricImage.set({
           left: canvas.getWidth() / 2,
           top: canvas.getHeight() / 2,
           originX: 'center',
           originY: 'center',
-          selectable: false, // Background shouldn't be selectable
-          evented: false,    // Background shouldn't trigger events
-          lockMovementX: true, // Background shouldn't move
-          lockMovementY: true,
-          lockRotation: true,  // Background shouldn't rotate
-          lockScalingX: true,  // Background shouldn't scale
-          lockScalingY: true
+          selectable: true,    // Image should be selectable
+          evented: true,       // Image should trigger events
+          lockMovementX: false, // Image should be movable
+          lockMovementY: false,
+          lockRotation: false,  // Image should be rotatable
+          lockScalingX: false,  // Image should be scalable
+          lockScalingY: false,
+          cornerStyle: 'circle',
+          cornerColor: '#007bff',
+          cornerSize: 8,
+          transparentCorners: false
         });
         
-        // Scale image to fit canvas (cover mode) - REMOVED DUPLICATE
-        
-        // Remove any existing background image objects
-        const existingObjects = canvas.getObjects();
-        const backgroundObjects = existingObjects.filter(obj => 
-          (obj as any).isBackground === true
-        );
-        backgroundObjects.forEach(obj => canvas.remove(obj));
-        
-        // Mark this as a background image
-        (fabricImage as any).isBackground = true;
-        
-        // Set the image to cover the entire canvas
-        fabricImage.set({
-          left: 0,
-          top: 0,
-          originX: 'left',
-          originY: 'top',
-          selectable: false,
-          evented: false,
-          lockMovementX: true,
-          lockMovementY: true,
-          lockRotation: true,
-          lockScalingX: true,
-          lockScalingY: true
-        });
-        
-        // Scale to cover entire canvas
-        const canvasWidth = canvas.getWidth();
-        const canvasHeight = canvas.getHeight();
-        
+        // Scale image to reasonable size (max 300px width or height)
+        const maxSize = 300;
         if (fabricImage.width && fabricImage.height) {
           const imageWidth = fabricImage.width;
           const imageHeight = fabricImage.height;
           
-          // Scale to cover entire canvas (cover mode)
-          const scaleX = canvasWidth / imageWidth;
-          const scaleY = canvasHeight / imageHeight;
-          const scale = Math.max(scaleX, scaleY);
+          // Calculate scale to fit within maxSize while maintaining aspect ratio
+          const scale = Math.min(maxSize / imageWidth, maxSize / imageHeight);
           
           fabricImage.set({
             scaleX: scale,
             scaleY: scale
           });
           
-          console.log(`Background image scaled to cover canvas: scale ${scale}`);
+          console.log(`Image scaled to fit within ${maxSize}px: scale ${scale}`);
         }
         
-        // Add background image to canvas
+        // Add image to canvas
         canvas.add(fabricImage);
         
-        // Set canvas background to transparent
-        canvas.backgroundColor = 'transparent';
+        // Center the image on canvas using Fabric.js methods
+        fabricImage.set({
+          left: canvas.getWidth() / 2,
+          top: canvas.getHeight() / 2,
+          originX: 'center',
+          originY: 'center'
+        });
+        
+        // Make it the active object
+        canvas.setActiveObject(fabricImage);
         
         // Render the canvas
         canvas.renderAll();
-        
-        // Update state
-        setBackgroundImage(imageUrl);
         
         // Save to history
         if (typeof saveCanvasToHistory === 'function') {
           saveCanvasToHistory();
         }
         
-        console.log('✅ Background image set successfully');
-        console.log('🎨 Canvas objects after background:', canvas.getObjects());
+        console.log('✅ Image added successfully');
+        console.log('🎨 Canvas objects after adding image:', canvas.getObjects());
         console.log('📏 Canvas dimensions:', canvas.getWidth(), 'x', canvas.getHeight());
         
         // Clear the file input for future uploads
@@ -1065,6 +2034,82 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             resizable: true,
             hasControls: true,
             hasBorders: true
+          });
+          break;
+        case 'rectangle':
+          shape = new fabric.Rect({
+            left: 100,
+            top: 100,
+            width: 200,
+            height: 100,
+            fill: brandKit.colors?.secondary || '#01aac7',
+            selectable: true,
+            resizable: true,
+            hasControls: true,
+            hasBorders: true
+          });
+          break;
+        case 'line':
+          shape = new fabric.Line([50, 50, 250, 50], {
+            stroke: brandKit.colors?.primary || '#00525b',
+            strokeWidth: 3,
+            selectable: true,
+            resizable: true,
+            hasControls: true,
+            hasBorders: true,
+            lockScalingX: false,
+            lockScalingY: true,
+            lockUniScaling: true,
+            cornerStyle: 'circle',
+            cornerColor: '#00525b',
+            cornerSize: 8,
+            transparentCorners: false,
+            borderColor: '#00525b',
+            borderScaleFactor: 1
+          });
+          // Show only the middle controls and rotation
+          shape.setControlsVisibility({
+            mt: false, // middle top
+            mb: false, // middle bottom
+            ml: true,  // middle left
+            mr: true,  // middle right
+            tl: false, // top left
+            tr: false, // top right
+            bl: false, // bottom left
+            br: false, // bottom right
+            mtr: true  // rotation control
+          });
+          break;
+        case 'dashline':
+          shape = new fabric.Line([50, 50, 250, 50], {
+            stroke: brandKit.colors?.accent || '#32e0c5',
+            strokeWidth: 3,
+            strokeDashArray: [5, 5],
+            selectable: true,
+            resizable: true,
+            hasControls: true,
+            hasBorders: true,
+            lockScalingX: false,
+            lockScalingY: true,
+            lockUniScaling: true,
+            cornerStyle: 'circle',
+            cornerColor: '#32e0c5',
+            cornerSize: 8,
+            transparentCorners: false,
+            borderColor: '#32e0c5',
+            borderScaleFactor: 1
+          });
+          // Show only the middle controls and rotation
+          shape.setControlsVisibility({
+            mt: false, // middle top
+            mb: false, // middle bottom
+            ml: true,  // middle left
+            mr: true,  // middle right
+            tl: false, // top left
+            tr: false, // top right
+            bl: false, // bottom left
+            br: false, // bottom right
+            mtr: true  // rotation control
           });
           break;
         default:
@@ -1703,12 +2748,36 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           });
           break;
         case 'line':
-          element = new fabric.Line([100, 100, 200, 100], {
-            stroke: '#FFD700',
-            strokeWidth: 3,
+          element = new fabric.Line([obj.x1 || 100, obj.y1 || 100, obj.x2 || 200, obj.y2 || 100], {
+            stroke: obj.stroke || '#FFD700',
+            strokeWidth: obj.strokeWidth || 3,
+            strokeDashArray: obj.strokeDashArray || null,
             selectable: true,
+            resizable: true,
             hasControls: true,
-            hasBorders: true
+            hasBorders: true,
+            lockScalingX: false,
+            lockScalingY: true,
+            lockUniScaling: true,
+            cornerStyle: 'circle',
+            cornerColor: obj.stroke || '#FFD700',
+            cornerSize: 8,
+            transparentCorners: false,
+            borderColor: obj.stroke || '#FFD700',
+            borderScaleFactor: 1,
+            opacity: obj.opacity || 1
+          });
+          // Show only the middle controls and rotation
+          element.setControlsVisibility({
+            mt: false, // middle top
+            mb: false, // middle bottom
+            ml: true,  // middle left
+            mr: true,  // middle right
+            tl: false, // top left
+            tr: false, // top right
+            bl: false, // bottom left
+            br: false, // bottom right
+            mtr: true  // rotation control
           });
           break;
         case 'rectangle':
@@ -2244,9 +3313,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       } else if (e.key === 'Escape') {
         setSelectedId(null);
         setEditingTextId(null);
-      } else if (e.key === 'b') {
-        // Toggle sidebar with B key
-        setSidebarCollapsed(prev => !prev);
       }
     };
 
@@ -2318,6 +3384,39 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               strokeLineCap: textObj.strokeLineCap || 'butt',
               strokeLineJoin: textObj.strokeLineJoin || 'miter',
               shadow: textObj.shadow || null
+            };
+          }
+          
+          // Add image-specific properties
+          if (obj.type === 'image') {
+            const imageObj = obj as fabric.Image;
+            return {
+              ...baseObj,
+              src: (imageObj as any).src || (imageObj as any).getSrc() || '',
+              crossOrigin: (imageObj as any).crossOrigin || 'anonymous',
+              opacity: imageObj.opacity || 1,
+              strokeWidth: (imageObj as any).strokeWidth || 0,
+              strokeLineCap: (imageObj as any).strokeLineCap || 'butt',
+              strokeLineJoin: (imageObj as any).strokeLineJoin || 'miter',
+              shadow: (imageObj as any).shadow || null
+            };
+          }
+          
+          // Add line-specific properties
+          if (obj.type === 'line') {
+            const lineObj = obj as fabric.Line;
+            return {
+              ...baseObj,
+              x1: (lineObj as any).x1 || 0,
+              y1: (lineObj as any).y1 || 0,
+              x2: (lineObj as any).x2 || 0,
+              y2: (lineObj as any).y2 || 0,
+              strokeWidth: (lineObj as any).strokeWidth || 3,
+              strokeDashArray: (lineObj as any).strokeDashArray || null,
+              opacity: lineObj.opacity || 1,
+              strokeLineCap: (lineObj as any).strokeLineCap || 'butt',
+              strokeLineJoin: (lineObj as any).strokeLineJoin || 'miter',
+              shadow: (lineObj as any).shadow || null
             };
           }
           
@@ -2700,16 +3799,45 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           canvas.add(text);
           
         } else if (obj.type === 'image') {
-          // Create image object (placeholder for now)
-          const rect = new fabric.Rect({
-            left: obj.left || 0,
-            top: obj.top || 0,
-            width: obj.width || 100,
-            height: obj.height || 100,
-            fill: obj.fill || '#cccccc',
-            selectable: true
-          });
-          canvas.add(rect);
+          // Create image object from saved data
+          if (obj.src) {
+            fabric.Image.fromURL(obj.src, (img) => {
+              img.set({
+                left: obj.left || 0,
+                top: obj.top || 0,
+                scaleX: obj.scaleX || 1,
+                scaleY: obj.scaleY || 1,
+                angle: obj.angle || 0,
+                opacity: obj.opacity || 1,
+                selectable: true,
+                evented: true,
+                lockMovementX: false,
+                lockMovementY: false,
+                lockRotation: false,
+                lockScalingX: false,
+                lockScalingY: false,
+                cornerStyle: 'circle',
+                cornerColor: '#00525b',
+                cornerSize: 8,
+                transparentCorners: false,
+                borderColor: '#00525b',
+                borderScaleFactor: 1
+              });
+              canvas.add(img);
+              canvas.renderAll();
+            }, { crossOrigin: 'anonymous' });
+          } else {
+            // Fallback to placeholder if no src
+            const rect = new fabric.Rect({
+              left: obj.left || 0,
+              top: obj.top || 0,
+              width: obj.width || 100,
+              height: obj.height || 100,
+              fill: obj.fill || '#cccccc',
+              selectable: true
+            });
+            canvas.add(rect);
+          }
           
         } else if (obj.type === 'rect') {
           // Create rectangle
@@ -2898,6 +4026,95 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           </div>
         </div>
 
+        {/* Shape Selector Modal */}
+        {showShapeSelector && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+            onClick={() => setShowShapeSelector(false)}
+          >
+            <div 
+              className="bg-white rounded-2xl shadow-2xl p-6 mx-4 max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Seleccionar Forma</h3>
+                <button
+                  onClick={() => setShowShapeSelector(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  title="Cerrar selector de formas"
+                >
+                  <FiMinus className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {/* Rectangle */}
+                <button
+                  onClick={() => addShape('rectangle')}
+                  className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 group"
+                >
+                  <div className="w-16 h-12 bg-blue-500 rounded-sm mb-3 group-hover:bg-blue-600 transition-colors"></div>
+                  <span className="text-sm font-medium text-gray-700">Rectángulo</span>
+                </button>
+                
+                {/* Rounded Rectangle */}
+                <button
+                  onClick={() => addShape('rounded-rectangle')}
+                  className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition-all duration-200 group"
+                >
+                  <div className="w-16 h-12 bg-green-500 rounded-md mb-3 group-hover:bg-green-600 transition-colors"></div>
+                  <span className="text-sm font-medium text-gray-700">Rectángulo Redondeado</span>
+                </button>
+                
+                {/* Circle */}
+                <button
+                  onClick={() => addShape('circle')}
+                  className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition-all duration-200 group"
+                >
+                  <div className="w-16 h-16 bg-purple-500 rounded-full mb-3 group-hover:bg-purple-600 transition-colors"></div>
+                  <span className="text-sm font-medium text-gray-700">Círculo</span>
+                </button>
+                
+                {/* Triangle */}
+                <button
+                  onClick={() => addShape('triangle')}
+                  className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
+                >
+                  <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[16px] border-l-transparent border-r-transparent border-b-orange-500 mb-3 group-hover:border-b-orange-600 transition-colors"></div>
+                  <span className="text-sm font-medium text-gray-700">Triángulo</span>
+                </button>
+                
+                {/* Line */}
+                <button
+                  onClick={() => addShape('line')}
+                  className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-red-500 hover:bg-red-50 transition-all duration-200 group"
+                >
+                  <div className="w-16 h-1 bg-red-500 mb-3 group-hover:bg-red-600 transition-colors"></div>
+                  <span className="text-sm font-medium text-gray-700">Línea</span>
+                </button>
+                
+                {/* Dash Line */}
+                <button
+                  onClick={() => addShape('dashline')}
+                  className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all duration-200 group"
+                >
+                  <div className="w-16 h-1 bg-indigo-500 mb-3 group-hover:bg-indigo-600 transition-colors" style={{backgroundImage: 'repeating-linear-gradient(to right, currentColor 0px, currentColor 4px, transparent 4px, transparent 8px)'}}></div>
+                  <span className="text-sm font-medium text-gray-700">Línea Discontinua</span>
+                </button>
+              </div>
+              
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowShapeSelector(false)}
+                  className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Secondary Toolbar with Tabs */}
         <div className="bg-white rounded-2xl shadow-lg mb-6 w-full min-w-[800px] h-fit max-h-none">
           {/* Tab Navigation */}
@@ -2962,7 +4179,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             )}
             
             {/* Format Tab - Only show when shape object is selected */}
-            {selectedObject && (selectedObject.type === 'rect' || selectedObject.type === 'circle' || selectedObject.type === 'triangle' || selectedObject.type === 'polygon' || selectedObject.type === 'path') && (
+            {selectedObject && (selectedObject.type === 'rect' || selectedObject.type === 'circle' || selectedObject.type === 'triangle' || selectedObject.type === 'polygon' || selectedObject.type === 'path' || selectedObject.type === 'line') && (
             <button
               onClick={() => setActiveTab('format')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -3170,7 +4387,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             )}
             
             {/* Format Tab */}
-            {activeTab === 'format' && selectedObject && (selectedObject.type === 'rect' || selectedObject.type === 'circle' || selectedObject.type === 'triangle' || selectedObject.type === 'polygon' || selectedObject.type === 'path') && (
+            {activeTab === 'format' && selectedObject && (selectedObject.type === 'rect' || selectedObject.type === 'circle' || selectedObject.type === 'triangle' || selectedObject.type === 'polygon' || selectedObject.type === 'path' || selectedObject.type === 'line') && (
               <div className="space-y-3 min-h-[120px]">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-gray-900">Formato del Objeto</h4>
@@ -3397,7 +4614,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             )}
             
             {/* Invalid Tab State - Redirect to Elements */}
-            {activeTab === 'format' && selectedObject && !['rect', 'circle', 'triangle', 'polygon', 'path'].includes(selectedObject.type) && (
+            {activeTab === 'format' && selectedObject && !['rect', 'circle', 'triangle', 'polygon', 'path', 'line'].includes(selectedObject.type) && (
               <div className="text-center py-8 text-gray-500">
                 <FiEdit3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p className="text-sm">Este objeto no es una forma. Selecciona una forma para usar la pestaña de formato.</p>
@@ -3444,8 +4661,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                       }}
                       className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
-                      {fontFamilies.slice(0, 8).map(font => (
-                        <option key={font} value={font}>{font}</option>
+                      {fontFamilies.map(font => (
+                        <option key={font} value={font} style={{ fontFamily: font }}>
+                          {font}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -3727,65 +4946,17 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
 
 
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Tools Panel */}
-          <div className={`${sidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-1'} transition-all duration-300`}>
-            {/* Sidebar Header with Collapse Button */}
-            <div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Herramientas</h3>
-                  <p className="text-xs text-gray-500">Presiona <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">B</kbd> para alternar</p>
-                </div>
-                <button
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  title={sidebarCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
-                >
-                  {sidebarCollapsed ? (
-                    <FiPlus className="w-5 h-5 text-gray-600" />
-                  ) : (
-                    <FiMinus className="w-5 h-5 text-gray-600" />
-                  )}
-                </button>
-              </div>
-            </div>
-            
-            {/* Collapsible Sidebar Content */}
-            <div className={`space-y-6 ${sidebarCollapsed ? 'hidden' : 'block'}`}>
-
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            </div> {/* Close collapsible sidebar content */}
-          </div>
-          
+        <div className="w-full">
           {/* Canvas */}
-          <div className={`${sidebarCollapsed ? 'lg:col-span-3' : 'lg:col-span-3'} transition-all duration-300`}>
+          <div className="w-full">
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Canvas</h3>
               </div>
               
-              <div className="flex justify-center">
+              <div className="flex justify-center overflow-auto">
                 <div 
-                  className="relative border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg"
+                  className="relative border-2 border-gray-300 rounded-lg shadow-lg"
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                 >
@@ -3821,6 +4992,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           </div>
         </div>
       </div>
+
+      {/* Hidden file input for image uploads */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
     </div>
   );
 };

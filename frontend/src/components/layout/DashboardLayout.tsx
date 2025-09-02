@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -99,7 +100,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden flex">
+    <ThemeProvider>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden flex">
       {/* Background Decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-full blur-3xl"></div>
@@ -178,8 +180,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       {/* Main Content */}
       <div className="flex-1 min-h-screen flex flex-col lg:ml-64">
         {/* Top Bar */}
-        <div className="fixed top-0 right-0 left-0 lg:left-64 z-40 bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/30">
-          <div className="flex items-center justify-between px-6 py-3">
+        <div className="fixed top-0 right-0 left-0 lg:left-64 z-40 bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/30 h-20">
+          <div className="flex items-center justify-between px-6 py-4 h-full">
             <div className="flex items-center space-x-4">
               <button
                 onClick={handleSidebarOpen}
@@ -214,11 +216,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
 
         {/* Page Content */}
-        <main className="flex-1 pt-20">
+        <main className="flex-1 pt-24 px-6">
           {children}
         </main>
       </div>
     </div>
+    </ThemeProvider>
   );
 };
 

@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     // For now, return a placeholder image
     // In production, this would fetch the actual template thumbnail from your storage
-    const placeholderImage = `https://via.placeholder.com/400x300/1f2937/ffffff?text=Template+${params.id}`;
+    const placeholderImage = `https://via.placeholder.com/400x300/1f2937/ffffff?text=Template+${id}`;
     
     // Redirect to placeholder image
     return NextResponse.redirect(placeholderImage);
