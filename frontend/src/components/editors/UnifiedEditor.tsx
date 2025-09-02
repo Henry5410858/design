@@ -1363,7 +1363,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         height: getCurrentCanvasSize().height,
         backgroundColor: backgroundColor,
         selection: true,
-        preserveObjectStacking: true
+        preserveObjectStacking: true,
+        renderOnAddRemove: true,
+        skipTargetFind: false,
+        allowTouchScrolling: true
       });
       
       // Set up canvas events
@@ -1466,6 +1469,20 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       });
       
       setCanvas(fabricCanvas);
+      
+      // Add window resize handler
+      const handleResize = () => {
+        if (fabricCanvas) {
+          fabricCanvas.renderAll();
+        }
+      };
+      
+      window.addEventListener('resize', handleResize);
+      
+      // Cleanup
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
     }
   }, [canvasRef.current, canvas, backgroundColor]);
   
@@ -1479,8 +1496,22 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       });
       canvas.backgroundColor = backgroundColor;
       canvas.renderAll();
+      
+      // Force a re-render to ensure proper display
+      setTimeout(() => {
+        canvas.renderAll();
+      }, 100);
     }
   }, [canvas, editorTypeState, canvasSize, backgroundColor]);
+
+  // Cleanup canvas on unmount
+  useEffect(() => {
+    return () => {
+      if (canvas) {
+        canvas.dispose();
+      }
+    };
+  }, [canvas]);
 
   // Load all templates from database on component mount
   useEffect(() => {
@@ -2250,9 +2281,27 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       const response = await fetch(`http://localhost:4000/api/templates/by-key/${templateKey}`);
       if (response.ok) {
         const template = await response.json();
-        console.log('✅ Template loaded from database:', template);
+        console.log('✅ Template metadata loaded from database:', template);
+        
+        // If template has a design file, load the design data from it
+        if (template.designFilename) {
+          console.log('📁 Loading design from file:', template.designFilename);
+          const designResponse = await fetch(`http://localhost:4000/api/templates/design/${template.designFilename}`);
+          if (designResponse.ok) {
+            const designData = await designResponse.json();
+            console.log('🎨 Design data loaded from file:', designData);
+            await loadTemplateFromData(templateKey, designData);
+            return;
+          } else {
+            console.error('❌ Failed to load design file:', designResponse.status);
+            alert('Error al cargar el archivo de diseño de la plantilla.');
+            return;
+          }
+        } else {
+          // Fallback to loading from template data if no design file
         await loadTemplateFromData(templateKey, template);
         return;
+        }
       }
     } catch (error) {
       console.warn('⚠️ Failed to load template from database, falling back to constant:', error);
@@ -2260,7 +2309,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     
     // Fallback to hard-coded template
     const template = realEstateTemplates[templateKey as keyof typeof realEstateTemplates];
-    if (!template && canvas) {
+    if (template && canvas) {
       console.log('📋 Template data from constant:', template);
       await loadTemplateFromData(templateKey, template);
     }
@@ -2749,10 +2798,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           });
           break;
         case 'line':
-          element = new fabric.Line([obj.x1 || 100, obj.y1 || 100, obj.x2 || 200, obj.y2 || 100], {
-            stroke: obj.stroke || '#FFD700',
-            strokeWidth: obj.strokeWidth || 3,
-            strokeDashArray: obj.strokeDashArray || null,
+          element = new fabric.Line([100, 100, 200, 100], {
+            stroke: '#FFD700',
+            strokeWidth: 3,
             selectable: true,
             resizable: true,
             hasControls: true,
@@ -2761,12 +2809,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             lockScalingY: true,
             lockUniScaling: true,
             cornerStyle: 'circle',
-            cornerColor: obj.stroke || '#FFD700',
+            cornerColor: '#FFD700',
             cornerSize: 8,
             transparentCorners: false,
-            borderColor: obj.stroke || '#FFD700',
-            borderScaleFactor: 1,
-            opacity: obj.opacity || 1
+            borderColor: '#FFD700',
+            borderScaleFactor: 1
           });
           // Show only the middle controls and rotation
           element.setControlsVisibility({
@@ -3516,7 +3563,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              designData: designData
+              designData: designData,
+              templateKey: templateKey // Include template key for individual file naming
             })
           });
           
@@ -3802,7 +3850,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         } else if (obj.type === 'image') {
           // Create image object from saved data
           if (obj.src) {
-            fabric.Image.fromURL(obj.src, (img) => {
+            (fabric.Image.fromURL as any)(obj.src, (img: fabric.Image) => {
               img.set({
                 left: obj.left || 0,
                 top: obj.top || 0,
@@ -3826,7 +3874,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               });
               canvas.add(img);
               canvas.renderAll();
-            }, { crossOrigin: 'anonymous' });
+            });
           } else {
             // Fallback to placeholder if no src
           const rect = new fabric.Rect({
@@ -4955,9 +5003,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 <h3 className="text-lg font-semibold text-gray-900">Canvas</h3>
               </div>
               
-              <div className="flex justify-center overflow-auto">
+              <div className="flex justify-center overflow-auto p-4">
                 <div 
-                  className="relative border-2 border-gray-300 rounded-lg shadow-lg"
+                  className="relative border-2 border-gray-300 rounded-lg shadow-lg bg-white min-w-fit"
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                 >
@@ -4965,29 +5013,37 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     ref={canvasRef}
                     width={getCurrentCanvasSize().width}
                     height={getCurrentCanvasSize().height}
-                    className="block"
+                    className="block max-w-full h-auto"
+                    style={{ 
+                      maxWidth: '100%', 
+                      height: 'auto',
+                      display: 'block'
+                    }}
                   />
                   
                   {/* Canvas Boundary Indicator */}
-                  <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-300 opacity-50"></div>
+                  <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-400 opacity-60 rounded-lg"></div>
                   
                   {/* Drag and drop overlay */}
                   {isDragOver && (
-                    <div className="absolute inset-0 bg-blue-100 bg-opacity-50 flex items-center justify-center">
-                      <div className="text-blue-600 font-medium">Suelta la imagen aquí</div>
+                    <div className="absolute inset-0 bg-blue-100 bg-opacity-70 flex items-center justify-center rounded-lg">
+                      <div className="text-blue-600 font-medium text-lg">Suelta la imagen aquí</div>
                     </div>
                   )}
                   
                   {/* Canvas Size Indicator */}
-                  <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                  <div className="absolute top-2 right-2 bg-gray-800 bg-opacity-80 text-white text-xs px-3 py-1 rounded-lg font-medium">
                     {getCurrentCanvasSize().width} × {getCurrentCanvasSize().height}
                   </div>
                 </div>
               </div>
               
               {/* Upload instructions */}
-              <div className="mt-4 text-center text-sm text-gray-500">
-                Arrastra y suelta imágenes aquí o usa el botón de subir
+              <div className="mt-4 text-center text-sm text-gray-600">
+                <p className="mb-2">💡 <strong>Consejos para el canvas:</strong></p>
+                <p>• Arrastra y suelta imágenes directamente en el canvas</p>
+                <p>• Usa los botones de la barra de herramientas para agregar elementos</p>
+                <p>• Haz clic en cualquier elemento para editarlo</p>
               </div>
             </div>
           </div>

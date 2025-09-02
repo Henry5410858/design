@@ -14,21 +14,23 @@ export default function EditorPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-white">
-              Editor de Diseños
-            </h1>
-            <p className="mt-2 text-gray-300">
-              {templateKey ? `Editando: ${templateKey}` : 'Creando nuevo diseño'}
-            </p>
-          </div>
-          
+      <div className="max-w-7xl mx-auto py-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Editor de Diseños
+          </h1>
+          <p className="mt-2 text-gray-600">
+            {templateKey ? `Editando: ${templateKey}` : 'Creando nuevo diseño'}
+          </p>
+        </div>
+        
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 overflow-hidden">
           <UnifiedEditor 
             id={templateId}
             editorType={editorType}
             templateKey={templateKey}
           />
+        </div>
       </div>
     </AppLayout>
   );
