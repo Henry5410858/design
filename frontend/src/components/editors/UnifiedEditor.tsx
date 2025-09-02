@@ -480,6 +480,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     'Yanone Kaffeesatz',
     'Zilla Slab',
     'Zilla Slab Highlight',
+    'Vladimir Script',
     
     // Additional Google Fonts - Part 1
     'Acme',
@@ -3828,15 +3829,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             }, { crossOrigin: 'anonymous' });
           } else {
             // Fallback to placeholder if no src
-            const rect = new fabric.Rect({
-              left: obj.left || 0,
-              top: obj.top || 0,
-              width: obj.width || 100,
-              height: obj.height || 100,
-              fill: obj.fill || '#cccccc',
-              selectable: true
-            });
-            canvas.add(rect);
+          const rect = new fabric.Rect({
+            left: obj.left || 0,
+            top: obj.top || 0,
+            width: obj.width || 100,
+            height: obj.height || 100,
+            fill: obj.fill || '#cccccc',
+            selectable: true
+          });
+          canvas.add(rect);
           }
           
         } else if (obj.type === 'rect') {
