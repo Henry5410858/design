@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 // This page should be statically generated
 export const dynamic = 'auto';
 import AppLayout from '../../components/layout/AppLayout';
-import { FiUpload, FiSave, FiType, FiImage, FiCheck, FiDroplet } from 'react-icons/fi';
-
+import { Image as ImageIcon, Palette, TextT, FloppyDisk } from 'phosphor-react';
 interface BrandKit {
   _id?: string;
   logo?: string | null;
@@ -160,7 +159,7 @@ export default function BrandPage() {
             <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-brand-primary/10 rounded-xl">
-                  <FiImage className="w-5 h-5 text-brand-primary" />
+                  <ImageIcon size={5} className="w-5 h-5 text-brand-primary" />
                 </div>
                 Logo e Identidad de Marca
               </h2>
@@ -225,7 +224,7 @@ export default function BrandPage() {
             <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-brand-secondary/10 rounded-xl">
-                  <FiDroplet className="w-5 h-5 text-brand-secondary" />
+                  <Palette size={5} className="w-5 h-5 text-brand-secondary" />
                 </div>
                 Colores de Marca
               </h2>
@@ -330,7 +329,7 @@ export default function BrandPage() {
             <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-success/10 rounded-xl">
-                  <FiType className="w-5 h-5 text-success" />
+                  <TextT size={5} className="w-5 h-5 text-success" />
                 </div>
                 Tipografía
               </h2>
@@ -396,7 +395,7 @@ export default function BrandPage() {
                   </>
                 ) : (
                   <>
-                    <FiSave className="w-6 h-6" />
+                    <FloppyDisk size={6} className="w-6 h-6" />
                     Guardar Kit de Marca
                   </>
                 )}
@@ -413,7 +412,7 @@ export default function BrandPage() {
             <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-brand-primary/10 rounded-xl">
-                  <FiImage className="w-5 h-5 text-brand-primary" />
+                  <ImageIcon size={5} className="w-5 h-5 text-brand-primary" />
                 </div>
                 Vista Previa de Marca
               </h2>

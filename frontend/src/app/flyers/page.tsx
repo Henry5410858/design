@@ -6,7 +6,7 @@ export const dynamic = 'auto';
 import FlyerEditor from '../../components/flyers/FlyerEditor';
 import Image from 'next/image';
 import { useUser } from '../../context/UserContext';
-import { FiPlus, FiSearch, FiFilter, FiEdit3, FiTrash2, FiEye, FiArrowLeft } from 'react-icons/fi';
+import Icon from '@/components/ui/Icon';
 import AppLayout from '../../components/layout/AppLayout';
 import { withContextPreservation, safeAsync } from '../../utils/contextManager';
 
@@ -169,7 +169,7 @@ export default function FlyersPage() {
               onClick={() => setEditingFlyer(null)}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 hover:bg-gray-100 p-2 rounded-xl transition-colors"
             >
-              <FiArrowLeft className="w-5 h-5" />
+              <Icon name="edit-pencil" size={5} className="w-5 h-5" />
               Volver a Volantes
             </button>
             <h1 className="text-3xl font-bold text-gray-900">Editar Volante</h1>
@@ -201,7 +201,7 @@ export default function FlyersPage() {
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
                   className="pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
                 />
-                <FiSearch className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                <Icon name="gallery" size={4} className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
               </div>
               <input
                 type="color"
@@ -221,7 +221,7 @@ export default function FlyersPage() {
               onClick={() => setShowCreateForm(true)}
               className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brand-primary to-brand-secondary text-white rounded-xl font-medium hover:from-brand-primary-dark hover:to-brand-secondary-dark transition-all duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1"
             >
-              <FiPlus className="w-4 h-4" />
+              <Icon name="image-add" size={4} className="w-4 h-4" />
               Crear Nuevo Volante
             </button>
           </div>
@@ -288,14 +288,14 @@ export default function FlyersPage() {
                           onClick={() => handleEdit(flyer)} 
                           className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-brand-primary text-white rounded-lg text-sm font-medium hover:bg-brand-primary-dark transition-colors duration-200"
                         >
-                          <FiEdit3 className="w-4 h-4" />
+                          <Icon name="edit-pencil" size={4} className="w-4 h-4" />
                           Editar
                         </button>
                         <button 
                           onClick={() => handleDelete(flyer._id)} 
                           className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-error text-white rounded-lg text-sm font-medium hover:bg-error/90 transition-colors duration-200"
                         >
-                          <FiTrash2 className="w-4 h-4" />
+                          <Icon name="edit-pencil" size={4} className="w-4 h-4" />
                           Eliminar
                         </button>
                       </div>

@@ -6,8 +6,8 @@ export interface BaseObjectData {
   top: number;
   width: number;
   height: number;
-  fill: string;
-  stroke: string;
+  fill: string | any;
+  stroke: string | any;
   scaleX: number;
   scaleY: number;
   angle: number;
@@ -22,7 +22,7 @@ export interface BaseObjectData {
 export interface TextObjectData extends BaseObjectData {
   fontSize: number;
   fontFamily: string;
-  fontWeight: string;
+  fontWeight: string | number;
   textAlign: string;
   text: string;
 }
@@ -36,8 +36,8 @@ export interface ShapeObjectData extends BaseObjectData {
   rx?: number;
   ry?: number;
   radius?: number;
-  points?: number[][];
-  path?: string;
+  points?: any[];
+  path?: any;
 }
 
 export interface LineObjectData extends BaseObjectData {

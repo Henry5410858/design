@@ -23,28 +23,10 @@ const initialData = {
       category: 'flyers',
       templateKey: 'luxuryHouse',
       isRealEstate: true,
-      isDefault: false,
+      // isDefault removed - no more default templates
       objects: [
         { id: '1', type: 'text', x: 100, y: 100, width: 300, height: 50, text: 'LUXURY HOUSE', fontSize: 72, color: '#FFFFFF', fontFamily: 'Georgia', fontWeight: 'bold' },
         { id: '2', type: 'text', x: 100, y: 200, width: 300, height: 50, text: 'FOR SALE', fontSize: 48, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'normal' },
-        { id: '3', type: 'text', x: 100, y: 300, width: 300, height: 50, text: 'START PRICE', fontSize: 24, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'normal' },
-        { id: '4', type: 'text', x: 100, y: 350, width: 300, height: 50, text: '$ 500.000', fontSize: 48, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'bold' }
-      ],
-      backgroundColor: '#1e3a8a',
-      backgroundImage: null,
-      canvasSize: '1200x1800'
-    },
-    {
-      name: 'Modern Family',
-      description: 'Modern family home advertisement with contemporary design',
-      type: 'flyer',
-      category: 'flyers',
-      templateKey: 'modernFamily',
-      isRealEstate: true,
-      isDefault: false,
-      objects: [
-        { id: '1', type: 'text', x: 100, y: 100, width: 300, height: 50, text: 'MODERN FAMILY', fontSize: 72, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'bold' },
-        { id: '2', type: 'text', x: 100, y: 200, width: 300, height: 50, text: 'HOME', fontSize: 48, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'normal' },
         { id: '3', type: 'text', x: 100, y: 300, width: 300, height: 50, text: 'START PRICE', fontSize: 24, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'normal' },
         { id: '4', type: 'text', x: 100, y: 350, width: 300, height: 50, text: '$ 500.000', fontSize: 48, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'bold' }
       ],
@@ -59,7 +41,7 @@ const initialData = {
       category: 'stories',
       templateKey: 'dreamHome',
       isRealEstate: true,
-      isDefault: false,
+      // isDefault removed - no more default templates
       objects: [
         { id: '1', type: 'text', x: 100, y: 100, width: 300, height: 50, text: 'MODERN HOME', fontSize: 48, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'normal' },
         { id: '2', type: 'text', x: 100, y: 200, width: 300, height: 50, text: 'DREAM', fontSize: 96, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'bold' },
@@ -80,7 +62,7 @@ const initialData = {
       category: 'banners',
       templateKey: 'cityRealEstate',
       isRealEstate: true,
-      isDefault: false,
+      // isDefault removed - no more default templates
       objects: [
         { id: '1', type: 'text', x: 100, y: 100, width: 600, height: 80, text: 'CITY REAL ESTATE', fontSize: 72, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'bold' },
         { id: '2', type: 'text', x: 100, y: 200, width: 600, height: 50, text: 'WHAT TO KNOW BEFORE JUMPING IN', fontSize: 24, color: '#d1d5db', fontFamily: 'Arial', fontWeight: 'normal' }
@@ -96,7 +78,7 @@ const initialData = {
       category: 'documents',
       templateKey: 'trifoldBrochure',
       isRealEstate: true,
-      isDefault: false,
+      // isDefault removed - no more default templates
       objects: [
         { id: '1', type: 'text', x: 100, y: 100, width: 400, height: 50, text: 'About Us', fontSize: 36, color: '#1f2937', fontFamily: 'Georgia', fontWeight: 'bold' },
         { id: '2', type: 'text', x: 100, y: 160, width: 400, height: 100, text: 'Trifold brochures have long been a type of material used to advertise brands, products, and services. The best way to maximize its use is to introduce what the brand has to offer with a brief or about section like this.', fontSize: 16, color: '#374151', fontFamily: 'Arial', fontWeight: 'normal' },
@@ -114,23 +96,7 @@ const initialData = {
 
   // Default Templates (Non-Real Estate)
   defaultTemplates: [
-    {
-      name: 'Summer Sale Flyer',
-      description: 'Default flyer template for sales and promotions',
-      type: 'flyer',
-      category: 'flyers',
-      templateKey: 'summerSaleFlyer',
-      isRealEstate: false,
-      isDefault: true,
-      objects: [
-        { id: '1', type: 'text', x: 100, y: 100, width: 300, height: 50, text: 'SUMMER SALE', fontSize: 72, color: '#FF6B35', fontFamily: 'Arial', fontWeight: 'bold' },
-        { id: '2', type: 'text', x: 100, y: 200, width: 300, height: 50, text: 'UP TO 70% OFF', fontSize: 48, color: '#FF6B35', fontFamily: 'Arial', fontWeight: 'bold' },
-        { id: '3', type: 'text', x: 100, y: 300, width: 300, height: 50, text: 'Limited Time Only', fontSize: 24, color: '#666666', fontFamily: 'Arial', fontWeight: 'normal' }
-      ],
-      backgroundColor: '#FFFFFF',
-      backgroundImage: null,
-      canvasSize: '1200x1800'
-    },
+    // Summer Sale Flyer removed - eliminated one flyer from template gallery
     {
       name: 'Instagram Story Promo',
       description: 'Default story template for social media promotions',
@@ -138,7 +104,7 @@ const initialData = {
       category: 'stories',
       templateKey: 'instagramStoryPromo',
       isRealEstate: false,
-      isDefault: true,
+      // isDefault removed - no more default templates
       objects: [
         { id: '1', type: 'text', x: 50, y: 100, width: 300, height: 50, text: 'NEW PRODUCT', fontSize: 48, color: '#E91E63', fontFamily: 'Arial', fontWeight: 'bold' },
         { id: '2', type: 'text', x: 50, y: 200, width: 300, height: 50, text: 'LAUNCH', fontSize: 96, color: '#E91E63', fontFamily: 'Arial', fontWeight: 'bold' },
@@ -155,7 +121,7 @@ const initialData = {
       category: 'banners',
       templateKey: 'eventBanner',
       isRealEstate: false,
-      isDefault: true,
+      // isDefault removed - no more default templates
       objects: [
         { id: '1', type: 'text', x: 100, y: 120, width: 600, height: 80, text: 'GRAND OPENING', fontSize: 72, color: '#1976D2', fontFamily: 'Arial', fontWeight: 'bold' },
         { id: '2', type: 'text', x: 100, y: 220, width: 600, height: 50, text: 'Join us for the celebration!', fontSize: 24, color: '#388E3C', fontFamily: 'Arial', fontWeight: 'normal' }
@@ -171,7 +137,7 @@ const initialData = {
       category: 'documents',
       templateKey: 'businessDocument',
       isRealEstate: false,
-      isDefault: true,
+      // isDefault removed - no more default templates
       objects: [
         { id: '1', type: 'text', x: 100, y: 80, width: 400, height: 50, text: 'Business Report', fontSize: 48, color: '#424242', fontFamily: 'Arial', fontWeight: 'bold' },
         { id: '2', type: 'text', x: 100, y: 150, width: 400, height: 50, text: 'Q4 2024', fontSize: 24, color: '#616161', fontFamily: 'Arial', fontWeight: 'normal' },
@@ -180,6 +146,76 @@ const initialData = {
       backgroundColor: '#FFFFFF',
       backgroundImage: null,
       canvasSize: '1200x1800'
+    },
+    {
+      name: 'IG/FB Square Post',
+      description: 'Square post template optimized for Instagram and Facebook',
+      type: 'social',
+      category: 'social-posts',
+      templateKey: 'igFbSquarePost',
+      isRealEstate: false,
+      // isDefault removed - no more default templates
+      objects: [
+        { id: '1', type: 'text', x: 50, y: 200, width: 500, height: 60, text: 'NEW PRODUCT', fontSize: 48, color: '#E91E63', fontFamily: 'Arial', fontWeight: 'bold' },
+        { id: '2', type: 'text', x: 50, y: 300, width: 500, height: 80, text: 'LAUNCH', fontSize: 72, color: '#E91E63', fontFamily: 'Arial', fontWeight: 'bold' },
+        { id: '3', type: 'text', x: 50, y: 450, width: 500, height: 40, text: 'Coming Soon!', fontSize: 24, color: '#9C27B0', fontFamily: 'Arial', fontWeight: 'normal' }
+      ],
+      backgroundColor: '#FFFFFF',
+      backgroundImage: null,
+      canvasSize: '1080x1080'
+    },
+    {
+      name: 'Post Promocional',
+      description: 'Attractive design for social media promotions',
+      type: 'social',
+      category: 'social-posts',
+      templateKey: 'postPromocional',
+      isRealEstate: false,
+      // isDefault removed - no more default templates
+      objects: [
+        { id: '1', type: 'text', x: 50, y: 150, width: 500, height: 60, text: 'SALE', fontSize: 64, color: '#FF6B35', fontFamily: 'Arial', fontWeight: 'bold' },
+        { id: '2', type: 'text', x: 50, y: 250, width: 500, height: 60, text: 'UP TO 70% OFF', fontSize: 48, color: '#FF6B35', fontFamily: 'Arial', fontWeight: 'bold' },
+        { id: '3', type: 'text', x: 50, y: 400, width: 500, height: 40, text: 'Limited Time Only', fontSize: 24, color: '#666666', fontFamily: 'Arial', fontWeight: 'normal' }
+      ],
+      backgroundColor: '#FFFFFF',
+      backgroundImage: null,
+      canvasSize: '1080x1080'
+    },
+    {
+      name: 'Professional Badge',
+      description: 'Elegant professional badge for credentials and certifications',
+      type: 'badge',
+      category: 'badges',
+      templateKey: 'professionalBadge',
+      isRealEstate: false,
+      // isDefault removed - no more default templates
+      objects: [
+        { id: '1', type: 'text', x: 150, y: 200, width: 400, height: 60, text: 'PROFESSIONAL', fontSize: 48, color: '#1e40af', fontFamily: 'Georgia', fontWeight: 'bold' },
+        { id: '2', type: 'text', x: 150, y: 280, width: 400, height: 80, text: 'CERTIFIED', fontSize: 72, color: '#1e40af', fontFamily: 'Georgia', fontWeight: 'bold' },
+        { id: '3', type: 'text', x: 150, y: 400, width: 400, height: 40, text: 'Design Expert', fontSize: 24, color: '#64748b', fontFamily: 'Arial', fontWeight: 'normal' },
+        { id: '4', type: 'text', x: 150, y: 500, width: 400, height: 30, text: '2024', fontSize: 18, color: '#94a3b8', fontFamily: 'Arial', fontWeight: 'normal' }
+      ],
+      backgroundColor: '#f8fafc',
+      backgroundImage: null,
+      canvasSize: '1080x1350'
+    },
+    {
+      name: 'Achievement Badge',
+      description: 'Modern achievement badge for awards and accomplishments',
+      type: 'badge',
+      category: 'badges',
+      templateKey: 'achievementBadge',
+      isRealEstate: false,
+      // isDefault removed - no more default templates
+      objects: [
+        { id: '1', type: 'text', x: 100, y: 150, width: 500, height: 60, text: 'EXCELLENCE', fontSize: 56, color: '#dc2626', fontFamily: 'Arial', fontWeight: 'bold' },
+        { id: '2', type: 'text', x: 100, y: 250, width: 500, height: 80, text: 'AWARD', fontSize: 80, color: '#dc2626', fontFamily: 'Arial', fontWeight: 'bold' },
+        { id: '3', type: 'text', x: 100, y: 380, width: 500, height: 40, text: 'Outstanding Performance', fontSize: 28, color: '#374151', fontFamily: 'Arial', fontWeight: 'normal' },
+        { id: '4', type: 'text', x: 100, y: 450, width: 500, height: 30, text: 'Recognized for exceptional work', fontSize: 20, color: '#6b7280', fontFamily: 'Arial', fontWeight: 'normal' }
+      ],
+      backgroundColor: '#fef2f2',
+      backgroundImage: null,
+      canvasSize: '1080x1350'
     }
   ]
 };

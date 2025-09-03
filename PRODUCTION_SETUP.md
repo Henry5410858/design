@@ -9,14 +9,14 @@ This guide will walk you through setting up the Canva integration for production
 1. Visit [Canva Developers](https://www.canva.com/developers/)
 2. Click "Get Started" or "Apply for Access"
 3. Fill out the application form:
-   - **Company/Project Name**: RedDragon Design Center
+   - **Company/Project Name**: DesignCenter
    - **Use Case**: Real estate marketing design platform
    - **Expected User Volume**: Your estimated user count
    - **Integration Type**: OAuth 2.0 + API integration
 
 ### 1.2 Create OAuth Application
 Once approved, create your OAuth app:
-1. **App Name**: RedDragon Canva Integration
+1. **App Name**: DesignCenter Canva Integration
 2. **Description**: Professional design tools for real estate marketing
 3. **Redirect URIs**:
    - Production: `https://yourdomain.com/canva/callback`
@@ -102,8 +102,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 // backend/routes/auth.js
 const JWT_OPTIONS = {
   expiresIn: '7d',
-  issuer: 'reddragon-design-center',
-  audience: 'reddragon-users',
+  issuer: 'designcenter',
+  audience: 'designcenter-users',
   algorithm: 'HS256'
 };
 

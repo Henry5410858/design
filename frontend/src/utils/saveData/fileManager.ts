@@ -66,7 +66,7 @@ export const saveDesignToFiles = async (
     }
     
     // 3. Save text objects separately (if any and not too large)
-    const textObjects = processedData.objects.filter(obj => obj.type === 'text' || obj.type === 'i-text');
+    const textObjects = processedData.objects.filter((obj: ObjectData) => obj.type === 'text' || obj.type === 'i-text');
     if (textObjects.length > 0 && !exceedsSizeLimit(textObjects, 100000)) {
       const textFile = `${baseFilename}-text.json`;
       await saveToFile(textFile, textObjects);
@@ -74,7 +74,7 @@ export const saveDesignToFiles = async (
     }
     
     // 4. Save image objects separately (if any and not too large)
-    const imageObjects = processedData.objects.filter(obj => obj.type === 'image');
+    const imageObjects = processedData.objects.filter((obj: ObjectData) => obj.type === 'image');
     if (imageObjects.length > 0 && !exceedsSizeLimit(imageObjects, 100000)) {
       const imageFile = `${baseFilename}-images.json`;
       await saveToFile(imageFile, imageObjects);
@@ -82,7 +82,7 @@ export const saveDesignToFiles = async (
     }
     
     // 5. Save shape objects separately (if any and not too large)
-    const shapeObjects = processedData.objects.filter(obj => 
+    const shapeObjects = processedData.objects.filter((obj: ObjectData) => 
       ['rect', 'circle', 'triangle', 'polygon', 'path'].includes(obj.type)
     );
     if (shapeObjects.length > 0 && !exceedsSizeLimit(shapeObjects, 100000)) {
@@ -92,7 +92,7 @@ export const saveDesignToFiles = async (
     }
     
     // 6. Save line objects separately (if any and not too large)
-    const lineObjects = processedData.objects.filter(obj => obj.type === 'line');
+    const lineObjects = processedData.objects.filter((obj: ObjectData) => obj.type === 'line');
     if (lineObjects.length > 0 && !exceedsSizeLimit(lineObjects, 100000)) {
       const lineFile = `${baseFilename}-lines.json`;
       await saveToFile(lineFile, lineObjects);

@@ -4,8 +4,13 @@ import { useState } from 'react';
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
 import AppLayout from '../../components/layout/AppLayout';
-import { FiFileText, FiPlus, FiSearch, FiFilter, FiEdit3, FiEye, FiDownload, FiTrash2, FiClock, FiDollarSign, FiUser, FiCalendar, FiCheck, FiX } from 'react-icons/fi';
-
+import { 
+  Pencil, 
+  FilePdf, 
+  Image as ImageIcon, 
+  SquaresFour, 
+  Export 
+} from 'phosphor-react';
 interface Proposal {
   id: string;
   title: string;
@@ -99,12 +104,12 @@ export default function ProposalPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'draft': return <FiClock className="w-4 h-4" />;
-      case 'sent': return <FiFileText className="w-4 h-4" />;
-      case 'approved': return <FiCheck className="w-4 h-4" />;
-      case 'rejected': return <FiX className="w-4 h-4" />;
-      case 'expired': return <FiClock className="w-4 h-4" />;
-      default: return <FiFileText className="w-4 h-4" />;
+      case 'draft': return <Pencil size={16} className="w-4 h-4" />;
+      case 'sent': return <FilePdf size={16} className="w-4 h-4" />;
+      case 'approved': return <Pencil size={16} className="w-4 h-4" />;
+      case 'rejected': return <Pencil size={16} className="w-4 h-4" />;
+      case 'expired': return <Pencil size={16} className="w-4 h-4" />;
+      default: return <FilePdf size={16} className="w-4 h-4" />;
     }
   };
 
@@ -133,7 +138,7 @@ export default function ProposalPage() {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center">
-              <FiFileText className="w-6 h-6 text-white" />
+              <FilePdf size={24} className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Propuestas</h1>
@@ -147,7 +152,7 @@ export default function ProposalPage() {
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center">
-                <FiFileText className="w-6 h-6 text-brand-primary" />
+                <FilePdf size={24} className="w-6 h-6 text-brand-primary" />
               </div>
               <span className="text-sm text-gray-500">Total</span>
             </div>
@@ -158,7 +163,7 @@ export default function ProposalPage() {
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center">
-                <FiCheck className="w-6 h-6 text-success" />
+                <Pencil size={24} className="w-6 h-6 text-success" />
               </div>
               <span className="text-sm text-gray-500">Aprobadas</span>
             </div>
@@ -171,7 +176,7 @@ export default function ProposalPage() {
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center">
-                <FiClock className="w-6 h-6 text-warning" />
+                <Pencil size={24} className="w-6 h-6 text-warning" />
               </div>
               <span className="text-sm text-gray-500">Pendientes</span>
             </div>
@@ -184,7 +189,7 @@ export default function ProposalPage() {
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-info/10 rounded-xl flex items-center justify-center">
-                <FiDollarSign className="w-6 h-6 text-info" />
+                <Pencil size={24} className="text-info" />
               </div>
               <span className="text-sm text-gray-500">Valor Total</span>
             </div>
@@ -206,7 +211,7 @@ export default function ProposalPage() {
               onClick={() => setShowCreateModal(true)}
               className="flex items-center gap-2 px-6 py-3 bg-white text-brand-primary rounded-xl font-semibold hover:bg-gray-50 transition-colors duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1"
             >
-              <FiPlus className="w-5 h-5" />
+              <ImageIcon size={20} className="w-5 h-5" />
               Crear Propuesta
             </button>
           </div>
@@ -224,7 +229,7 @@ export default function ProposalPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
               />
-              <FiSearch className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              <SquaresFour size={16} className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             </div>
 
             {/* Status Filters */}
@@ -287,7 +292,7 @@ export default function ProposalPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-brand-primary/10 rounded-full flex items-center justify-center mr-3">
-                          <FiUser className="w-4 h-4 text-brand-primary" />
+                          <Pencil size={16} className="w-4 h-4 text-brand-primary" />
                         </div>
                         <div className="text-sm font-medium text-gray-900">{proposal.client}</div>
                       </div>
@@ -310,16 +315,16 @@ export default function ProposalPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors duration-200">
-                          <FiEye className="w-4 h-4" />
+                          <Pencil size={16} className="w-4 h-4" />
                         </button>
                         <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors duration-200">
-                          <FiEdit3 className="w-4 h-4" />
+                          <Pencil size={16} className="w-4 h-4" />
                         </button>
                         <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors duration-200">
-                          <FiDownload className="w-4 h-4" />
+                          <Export size={16} className="w-4 h-4" />
                         </button>
                         <button className="p-2 text-gray-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors duration-200">
-                          <FiTrash2 className="w-4 h-4" />
+                          <Pencil size={16} className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -334,7 +339,7 @@ export default function ProposalPage() {
         {filteredProposals.length === 0 && (
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FiFileText className="w-8 h-8 text-gray-400" />
+              <FilePdf size={32} className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               No se encontraron propuestas
@@ -353,7 +358,7 @@ export default function ProposalPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
               <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <FiFileText className="w-6 h-6 text-brand-primary" />
+                <FilePdf size={24} className="w-6 h-6 text-brand-primary" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2 text-center">Diseño Web</h4>
               <p className="text-sm text-gray-600 text-center mb-4">Plantilla para proyectos de diseño web</p>
@@ -364,7 +369,7 @@ export default function ProposalPage() {
 
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
               <div className="w-12 h-12 bg-brand-secondary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <FiFileText className="w-6 h-6 text-brand-secondary" />
+                <FilePdf size={24} className="w-6 h-6 text-brand-secondary" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2 text-center">Branding</h4>
               <p className="text-sm text-gray-600 text-center mb-4">Plantilla para proyectos de branding</p>
@@ -375,7 +380,7 @@ export default function ProposalPage() {
 
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
               <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <FiFileText className="w-6 h-6 text-success" />
+                <FilePdf size={24} className="w-6 h-6 text-success" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2 text-center">Marketing</h4>
               <p className="text-sm text-gray-600 text-center mb-4">Plantilla para campañas de marketing</p>

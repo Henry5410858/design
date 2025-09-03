@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
 import Card from '../ui/Card';
-import Button from '../ui/Button';
 import { useTheme } from '@/context/ThemeContext';
-import { FiEdit3, FiDownload, FiFilter, FiGrid, FiImage, FiFileText, FiVideo, FiSmartphone, FiMonitor, FiShare2, FiBookOpen } from 'react-icons/fi';
+import { 
+  SquaresFour, 
+  Download, 
+  Image as ImageIcon, 
+  Stack, 
+  FilePdf 
+} from 'phosphor-react';
 
 interface TemplateItem {
   id: string;
@@ -12,30 +16,84 @@ interface TemplateItem {
   dimensions: string;
   description: string;
   thumbnail: string;
+  type?: 'flyer' | 'social' | 'story' | 'badge' | 'banner' | 'document' | 'brochure';
   editorType?: 'flyer' | 'social' | 'story' | 'badge' | 'banner' | 'document' | 'brochure';
   templateKey?: string; // For real estate templates
 }
 
 interface TemplateGalleryProps {
   onDownloadTemplate?: (templateId: string) => void;
+  isSelectionMode?: boolean;
+  selectedTemplates?: Set<string>;
+  onTemplateSelection?: (templateId: string, isSelected: boolean) => void;
 }
 
 const TemplateGallery: React.FC<TemplateGalleryProps> = ({
-  onDownloadTemplate
+  onDownloadTemplate,
+  isSelectionMode = false,
+  selectedTemplates = new Set(),
+  onTemplateSelection
 }) => {
-  const router = useRouter();
   const { theme } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState<'all' | TemplateItem['category']>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [templates, setTemplates] = useState<TemplateItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch templates from API
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Fetching templates from API...');
+        
+        // Fetch all templates
+        const response = await fetch('http://localhost:4000/api/templates');
+        if (response.ok) {
+          const apiTemplates = await response.json();
+          console.log('✅ Templates fetched from API:', apiTemplates.length);
+          
+          // Convert API templates to TemplateItem format
+          const convertedTemplates: TemplateItem[] = apiTemplates.map((template: any) => ({
+            id: template._id || template.id,
+            name: template.name,
+            category: template.category,
+            dimensions: template.canvasSize || '1200x1800',
+            description: template.description || `Template ${template.name}`,
+            thumbnail: template.thumbnail || '/api/placeholder/400/300',
+            type: template.type as TemplateItem['type'],
+            editorType: template.type as TemplateItem['editorType'],
+            templateKey: template.templateKey
+          }));
+          
+          setTemplates(convertedTemplates);
+          console.log('✅ Templates converted and set:', convertedTemplates.length);
+        } else {
+          console.error('❌ Failed to fetch templates from API');
+          // Fallback to sample templates
+          setTemplates(sampleTemplates);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching templates:', error);
+        // Fallback to sample templates
+        setTemplates(sampleTemplates);
+      } finally { 
+        setLoading(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   const categories = [
-    { id: 'all', name: 'Todos', icon: <FiGrid /> },
-    { id: 'social-posts', name: 'Posts Redes', icon: <FiImage /> },
-    { id: 'stories', name: 'Stories', icon: <FiSmartphone /> },
-    { id: 'flyers', name: 'Flyers', icon: <FiShare2 /> },
-    { id: 'banners', name: 'Banners', icon: <FiMonitor /> },
-    { id: 'badges', name: 'Badges', icon: <FiImage /> },
-    { id: 'documents', name: 'Documentos', icon: <FiBookOpen /> }
+    { id: 'all', name: 'Todos', icon: <SquaresFour size={24} />, color: 'from-gray-500 to-gray-700' },
+    { id: 'flyers', name: 'Flyers', icon: <Download size={24} />, color: 'from-blue-500 to-blue-700' },
+    { id: 'badges', name: 'Badges', icon: <ImageIcon size={24} />, color: 'from-green-500 to-green-700' },
+    { id: 'stories', name: 'Stories', icon: <ImageIcon size={24} />, color: 'from-purple-500 to-purple-700' },
+    { id: 'banners', name: 'Banners', icon: <Stack size={24} />, color: 'from-orange-500 to-orange-700' },
+    { id: 'social-posts', name: 'Posts Redes', icon: <ImageIcon size={24} />, color: 'from-pink-500 to-pink-700' },
+    { id: 'documents', name: 'Documentos', icon: <FilePdf size={24} />, color: 'from-red-500 to-red-700' },
+    { id: 'brochures', name: 'Brochures', icon: <ImageIcon size={24} />, color: 'from-indigo-500 to-indigo-700' }
   ];
 
   // Enhanced templates with editor types and template keys
@@ -176,7 +234,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   };
 
   // Ensure templates is always an array and filter safely
-  const safeTemplates = Array.isArray(sampleTemplates) ? sampleTemplates : [];
+  const safeTemplates = Array.isArray(templates) ? templates : [];
   
   const filteredTemplates = safeTemplates.filter(template => {
     const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
@@ -185,15 +243,151 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     return matchesCategory && matchesSearch;
   });
 
-  const handleEditTemplate = (template: TemplateItem) => {
-    if (template.editorType && template.templateKey) {
-      // Navigate to the unified editor with template information
-      router.push(`/editor?type=${template.editorType}&template=${template.templateKey}&id=${template.id}`);
-    } else {
-      // Fallback to default editor
-      router.push(`/editor?type=${template.category === 'social-posts' ? 'social' : template.category === 'documents' ? 'document' : template.category.slice(0, -1)}&id=${template.id}`);
+  // Group templates by category
+  const groupedTemplates = filteredTemplates.reduce((acc, template) => {
+    const category = template.category;
+    if (!acc[category]) {
+      acc[category] = [];
     }
+    acc[category].push(template);
+    return acc;
+  }, {} as Record<string, TemplateItem[]>);
+
+  // Get category info for display
+  const getCategoryInfo = (categoryId: string) => {
+    return categories.find(cat => cat.id === categoryId) || categories[0];
   };
+
+  const handleEditTemplate = (template: TemplateItem) => {
+    console.log('🎯 Template clicked:', template);
+    console.log('📝 Template key:', template.templateKey);
+    console.log('🎨 Editor type:', template.editorType);
+    
+    let editorUrl: string;
+    
+    if (template.templateKey) {
+      // Template has templateKey - use the new loading system
+      console.log('✅ Opening editor with template key:', template.templateKey);
+      editorUrl = `/editor?type=${template.editorType || template.type}&template=${template.templateKey}&id=${template.id}`;
+    } else {
+      // Template without templateKey - use fallback loading
+      console.log('⚠️ No template key, using fallback navigation');
+      const editorType = template.editorType || template.type || 
+        (template.category === 'social-posts' ? 'social' : 
+         template.category === 'documents' ? 'document' : 
+         template.category.slice(0, -1));
+      editorUrl = `/editor?type=${editorType}&id=${template.id}`;
+    }
+    
+    // Open editor in new tab
+    window.open(editorUrl, '_blank');
+  };
+
+  // Render template card
+  const renderTemplateCard = (template: TemplateItem) => (
+    <Card
+      key={template.id}
+      variant="interactive"
+      padding="none"
+      className={`group overflow-hidden relative ${
+        isSelectionMode ? 'cursor-pointer' : ''
+      }`}
+      onClick={() => {
+        if (isSelectionMode) {
+          const isSelected = selectedTemplates.has(template.id);
+          onTemplateSelection?.(template.id, !isSelected);
+        } else {
+          handleEditTemplate(template);
+        }
+      }}
+    >
+      {/* Selection Checkbox */}
+      {isSelectionMode && (
+        <div className="absolute top-3 left-3 z-10">
+          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+            selectedTemplates.has(template.id)
+              ? 'bg-blue-600 border-blue-600'
+              : 'bg-white border-gray-300'
+          }`}>
+            {selectedTemplates.has(template.id) && (
+              <div className="w-3 h-3 bg-white rounded-full"></div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Thumbnail */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 bg-gray-200">
+              {template.category === 'stories' ? <ImageIcon size={24} className="text-gray-600" /> :
+                template.category === 'documents' ? <FilePdf size={24} className="text-gray-600" /> :
+                template.category === 'banners' ? <Stack size={24} className="text-gray-600" /> :
+                template.category === 'badges' ? <ImageIcon size={24} className="text-gray-600" /> :
+                <ImageIcon size={24} className="text-gray-600" />}
+            </div>
+            <span className="text-sm font-medium text-gray-700">{template.name}</span>
+          </div>
+        </div>
+        
+        {/* Hover Overlay */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center bg-black/40">
+          <div className="text-center text-white">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+              <ImageIcon size={24} />
+            </div>
+            <p className="font-medium">
+              {isSelectionMode ? 'Click to select' : 'Editar en Editor'}
+            </p>
+            <p className="text-sm opacity-80">
+              {isSelectionMode ? 'Select template' : 'Click para abrir'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="font-semibold text-sm line-clamp-2 text-gray-900">
+            {template.name}
+          </h3>
+          {template.templateKey && (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">
+              🏠 Preset
+            </span>
+          )}
+        </div>
+        
+        <p className="text-xs mb-3 line-clamp-2 text-gray-600">
+          {template.description}
+        </p>
+        
+        {/* Category Badge */}
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+            {getCategoryInfo(template.category)?.name}
+          </span>
+          
+          {/* Quick Actions */}
+          {!isSelectionMode && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDownloadTemplate?.(template.id);
+                }}
+                className="p-1 h-8 w-8 hover:bg-gray-100 rounded transition-colors duration-200"
+              >
+                <Download size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
 
   return (
     <div className="space-y-8">
@@ -208,16 +402,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           </p>
         </div>
         
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="primary"
-            onClick={() => router.push('/editor?type=flyer&id=new')}
-            className="flex items-center space-x-2"
-          >
-            <FiEdit3 className="w-4 h-4" />
-            <span>Crear Nuevo Diseño</span>
-          </Button>
-        </div>
+
       </div>
 
       {/* Filters and Search */}
@@ -250,96 +435,55 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-xl focus:outline-none focus:border-blue-500 focus:shadow-sm transition-all duration-200 bg-white border border-gray-300 text-gray-900 placeholder-gray-500"
             />
-            <FiFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <SquaresFour size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           </div>
         </div>
       </div>
 
-      {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredTemplates.map(template => (
-          <Card
-            key={template.id}
-            variant="interactive"
-            padding="none"
-            className="group overflow-hidden"
-            onClick={() => handleEditTemplate(template)}
-          >
-            {/* Thumbnail */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                <div className="text-center">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 bg-gray-200">
-                    {template.category === 'stories' ? <FiSmartphone className="w-6 h-6 text-gray-600" /> :
-                     template.category === 'documents' ? <FiBookOpen className="w-6 h-6 text-gray-600" /> :
-                     template.category === 'banners' ? <FiMonitor className="w-6 h-6 text-gray-600" /> :
-                     template.category === 'badges' ? <FiImage className="w-6 h-6 text-gray-600" /> :
-                     <FiImage className="w-6 h-6 text-gray-600" />}
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">{template.name}</span>
-                </div>
-              </div>
-              
-              {/* Hover Overlay */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center bg-black/40">
-                <div className="text-center text-white">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <FiEdit3 className="w-6 h-6" />
-                  </div>
-                  <p className="font-medium">Editar en Editor</p>
-                  <p className="text-sm opacity-80">Click para abrir</p>
-                </div>
-              </div>
-            </div>
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <ImageIcon size={32} className="text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Cargando plantillas...</h3>
+          <p className="text-gray-600">Obteniendo plantillas desde la base de datos</p>
+        </div>
+      )}
 
-            {/* Content */}
-            <div className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-sm line-clamp-2 text-gray-900">
-                  {template.name}
-                </h3>
-                {template.templateKey && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">
-                    🏠 Preset
-                  </span>
-                )}
-              </div>
-              
-              <p className="text-xs mb-3 line-clamp-2 text-gray-600">
-                {template.description}
-              </p>
-              
-              {/* Category Badge */}
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                  {categories.find(c => c.id === template.category)?.name}
-                </span>
-                
-                {/* Quick Actions */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDownloadTemplate?.(template.id);
-                    }}
-                    className="p-1 h-8 w-8"
-                  >
-                    <FiDownload className="w-4 h-4" />
-                  </Button>
+      {/* Templates Organized by Category */}
+      {!loading && (
+        <div className="space-y-12">
+          {Object.entries(groupedTemplates).map(([categoryId, categoryTemplates]) => {
+            const categoryInfo = getCategoryInfo(categoryId);
+            return (
+              <div key={categoryId} className="space-y-6">
+                {/* Category Header */}
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${categoryInfo.color} flex items-center justify-center text-white`}>
+                    {categoryInfo.icon}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">{categoryInfo.name}</h2>
+                    <p className="text-gray-600">{categoryTemplates.length} template{categoryTemplates.length !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+
+                {/* Templates Grid for this Category */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {categoryTemplates.map(template => renderTemplateCard(template))}
                 </div>
               </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Empty State */}
-      {filteredTemplates.length === 0 && (
+      {!loading && filteredTemplates.length === 0 && (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FiImage className="w-8 h-8 text-gray-400" />
+            <ImageIcon size={32} className="text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             No se encontraron templates

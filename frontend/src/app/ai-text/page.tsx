@@ -5,8 +5,7 @@ import { useState } from 'react';
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
 import AppLayout from '../../components/layout/AppLayout';
-import { FiZap, FiCopy, FiRefreshCw, FiStar } from 'react-icons/fi';
-
+import { Lightning, ArrowsOutCardinal, Star, Pencil } from 'phosphor-react';
 export default function AITextPage() {
   const [flyerType, setFlyerType] = useState('');
   const [headlines, setHeadlines] = useState<string[]>([]);
@@ -46,7 +45,7 @@ export default function AITextPage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl mb-6 shadow-lg">
-            <FiZap className="w-8 h-8 text-white" />
+            <Lightning size={8} className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-4">
             Generador de Texto con IA
@@ -79,12 +78,12 @@ export default function AITextPage() {
           >
             {loading ? (
               <>
-                <FiRefreshCw className="w-5 h-5 animate-spin" />
+                <ArrowsOutCardinal size={5} className="w-5 h-5 animate-spin" />
                 Generando...
               </>
             ) : (
               <>
-                <FiStar className="w-5 h-5" />
+                <Star size={5} className="w-5 h-5" />
                 Generar Títulos
               </>
             )}
@@ -96,7 +95,7 @@ export default function AITextPage() {
           <div className="bg-gray-800 rounded-2xl border border-gray-700 shadow-soft overflow-hidden">
             <div className="bg-gradient-to-r from-brand-primary/10 to-brand-secondary/10 px-6 py-4 border-b border-gray-700">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <FiStar className="w-5 h-5 text-brand-primary" />
+                <Star size={5} className="w-5 h-5 text-brand-primary" />
                 Títulos Generados
               </h3>
             </div>
@@ -117,7 +116,7 @@ export default function AITextPage() {
                         className="ml-4 p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
                         title="Copiar al portapapeles"
                       >
-                        <FiCopy className="w-4 h-4" />
+                        <Pencil size={4} className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -147,7 +146,7 @@ export default function AITextPage() {
         {/* Tips Section */}
         <div className="mt-12 bg-gradient-to-r from-brand-primary/10 to-brand-secondary/10 rounded-2xl p-8 border border-brand-primary/30">
           <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-            <FiZap className="w-5 h-5 text-brand-primary" />
+            <Lightning size={5} className="w-5 h-5 text-brand-primary" />
             Consejos Profesionales
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">

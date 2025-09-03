@@ -99,7 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white text-lg font-bold">🎨</span>
             </div>
-            <h1 className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>RedDragon</h1>
+            <h1 className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>DesignCenter</h1>
           </div>
           
           {/* Mobile Close Button */}

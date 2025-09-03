@@ -1,4 +1,4 @@
-import { fabric } from 'fabric';
+import * as fabric from 'fabric';
 import { DesignData, ObjectData, SaveOptions } from './types';
 import { extractObjectData } from './objectExtractors';
 

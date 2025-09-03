@@ -1,7 +1,7 @@
 import React from 'react';
 import Modal from './Modal';
 import Button from './Button';
-import { FiStar, FiZap, FiCheck } from 'react-icons/fi';
+import { Star, Lightning, Check } from 'phosphor-react';
 
 export interface UpgradeModalProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
       <div className="text-center">
         {/* Icon */}
         <div className="mx-auto w-16 h-16 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-full flex items-center justify-center mb-6">
-          <FiStar className="w-8 h-8 text-white" />
+          <Star size={32} className="text-white" />
         </div>
         
         {/* Title */}
@@ -47,7 +47,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
         {/* Features List */}
         <div className="bg-neutral-50 rounded-xl p-6 mb-8 text-left">
           <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
-            <FiZap className="w-5 h-5 text-brand-primary" />
+            <Lightning size={20} className="text-brand-primary" />
             Funcionalidades incluidas:
           </h3>
           <ul className="space-y-3">
@@ -59,7 +59,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
               'Colaboración en equipo'
             ].map((feature, index) => (
               <li key={index} className="flex items-center gap-3 text-neutral-700">
-                <FiCheck className="w-4 h-4 text-success flex-shrink-0" />
+                <Check size={16} className="text-success flex-shrink-0" />
                 <span>{feature}</span>
               </li>
             ))}
@@ -73,7 +73,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
             size="lg"
             onClick={handleUpgrade}
             className="flex-1 sm:flex-none"
-            leftIcon={<FiStar />}
+            leftIcon={<Star size={20} />}
           >
             Actualizar Plan
           </Button>

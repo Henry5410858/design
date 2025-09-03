@@ -1,4 +1,4 @@
-import { fabric } from 'fabric';
+import * as fabric from 'fabric';
 import { BaseObjectData, TextObjectData, ImageObjectData, ShapeObjectData, LineObjectData, ObjectData } from './types';
 
 // Extract base object properties

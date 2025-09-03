@@ -1,6 +1,13 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { FiImage, FiType, FiSquare, FiDownload, FiSave, FiRotateCcw, FiRotateCw } from 'react-icons/fi';
+import { 
+  ArrowsOutCardinal, 
+  FloppyDisk, 
+  Download, 
+  TextT, 
+  Image as ImageIcon, 
+  Square 
+} from 'phosphor-react';
 import { useUser } from '@/context/UserContext';
 
 interface StoriesEditorProps {
@@ -390,7 +397,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
     a.click();
     URL.revokeObjectURL(url);
     
-    alert('Template saved successfully!');
+    alert('Template saved successfully!\n📁 Datos guardados en un solo archivo');
   };
 
   const handleExport = () => {
@@ -807,7 +814,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                 disabled={historyIndex <= 0}
                 title="Ctrl+Z"
               >
-                <FiRotateCcw className="w-4 h-4 inline mr-2" />
+                <ArrowsOutCardinal size={4} className="w-4 h-4 inline mr-2" />
                 Deshacer
               </button>
               <button 
@@ -820,7 +827,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                 disabled={historyIndex >= history.length - 1}
                 title="Ctrl+Y"
               >
-                <FiRotateCw className="w-4 h-4 inline mr-2" />
+                <ArrowsOutCardinal size={4} className="w-4 h-4 inline mr-2" />
                 Rehacer
               </button>
               <button 
@@ -833,14 +840,14 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                 disabled={userPlan === 'Free'}
                 title={userPlan === 'Free' ? 'Free plan users cannot save' : 'Save template'}
               >
-                <FiSave className="w-4 h-4 inline mr-2" />
+                <FloppyDisk size={4} className="w-4 h-4 inline mr-2" />
                 Guardar
               </button>
               <button 
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 onClick={handleExport}
               >
-                <FiDownload className="w-4 h-4 inline mr-2" />
+                <Download size={4} className="w-4 h-4 inline mr-2" />
                 Exportar
               </button>
             </div>
@@ -1014,7 +1021,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                 onClick={addText}
                 className="w-full flex items-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm"
               >
-                <FiType className="w-4 h-4" />
+                <TextT size={4} className="w-4 h-4" />
                 Texto
               </button>
             </div>
@@ -1025,7 +1032,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                 onClick={addImage}
                 className="w-full flex items-center gap-2 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm"
               >
-                <FiImage className="w-4 h-4" />
+                <ImageIcon size={4} className="w-4 h-4" />
                 Imagen
               </button>
             </div>
@@ -1036,7 +1043,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                 onClick={() => setShowShapeSelector(!showShapeSelector)}
                 className="w-full flex items-center gap-2 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors text-sm"
               >
-                <FiSquare className="w-4 h-4" />
+                <Square size={4} className="w-4 h-4" />
                 Forma
               </button>
               
@@ -1095,7 +1102,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
                 onClick={addImagePlaceholder}
                 className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm"
               >
-                <FiImage className="w-4 h-4" />
+                <ImageIcon size={4} className="w-4 h-4" />
                 Placeholder
               </button>
             </div>

@@ -61,7 +61,7 @@ Un centro de diseño profesional para agentes de bienes raíces, integrado con C
 ### 1. Clonar el repositorio
 ```bash
 git clone <your-repo-url>
-cd reddragon/frontend
+cd designcenter/frontend
 ```
 
 ### 2. Instalar dependencias
@@ -240,7 +240,7 @@ El diseño es completamente responsive con breakpoints de Tailwind:
 
 - Validación de tokens JWT
 - Sanitización de inputs
-- Control de acceso basado en roles
+- Control de acceso basado en planes
 - Redirección segura en autenticación fallida
 
 ## 🧪 Testing

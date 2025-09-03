@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const User = require('./models/User');
 
 // Database connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/reddragon';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/designcenter';
 
 async function migrateRoleToPlan() {
   try {

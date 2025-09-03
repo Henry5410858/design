@@ -14,6 +14,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+
+
   // Handle responsive behavior
   useEffect(() => {
     const checkMobile = () => {
@@ -49,7 +51,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <span className="text-white text-lg font-black">🎨</span>
                 </div>
-                <span className="text-lg font-black text-gray-900">RedDragon</span>
+                <span className="text-lg font-black text-gray-900">DesignCenter</span>
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -110,7 +112,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   </button>
                   
                   <div className="hidden lg:block">
-                    <h1 className="text-lg font-black text-gray-900">RedDragon Design</h1>
+                    <h1 className="text-lg font-black text-gray-900">DesignCenter</h1>
                     <p className="text-xs text-gray-600">Professional Design Platform</p>
                   </div>
                 </div>
@@ -118,13 +120,19 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <div className="flex items-center space-x-4">
                   <div className="hidden sm:flex items-center space-x-3 text-sm">
                     <span className="text-gray-600 font-medium">Welcome to</span>
-                    <span className="font-bold text-purple-600">RedDragon</span>
+                    <span className="font-bold text-purple-600">DesignCenter</span>
                   </div>
                   
-                  <button className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 text-sm">
-                    <span>🚀</span>
-                    <span>Get Started</span>
-                  </button>
+                  {/* User Avatar */}
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      👤
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className="text-sm font-medium text-gray-900">User</div>
+                      <div className="text-xs text-gray-500">Designer</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -68,8 +68,8 @@ const CanvasObjectSchema = new mongoose.Schema({
 const TemplateSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
-  type: { type: String, enum: ['flyer', 'banner', 'story', 'document', 'badge', 'social', 'brochure'], required: true },
-  category: { type: String, enum: ['social-posts', 'stories', 'flyers', 'banners', 'badges', 'documents'], required: true },
+  type: { type: String, enum: ['square-post', 'story', 'marketplace-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'], required: true },
+  category: { type: String, enum: ['social-posts', 'stories', 'flyers', 'banners', 'badges', 'documents', 'marketplace-flyers', 'fb-banners'], required: true },
   templateKey: { type: String, unique: true, sparse: true }, // For real estate templates
   thumbnail: {
     type: String,
@@ -81,16 +81,21 @@ const TemplateSchema = new mongoose.Schema({
   backgroundColor: { type: String, default: '#ffffff' },
   backgroundImage: { type: String },
   canvasSize: { type: String, default: '1200x1800' },
+  dimensions: {
+    width: { type: Number, required: true },
+    height: { type: Number, required: true }
+  },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  isDefault: { type: Boolean, default: false },
+  // isDefault field removed - no more default templates
   isRealEstate: { type: Boolean, default: false } // Flag for real estate templates
 }, { timestamps: true });
 
 // Index for faster queries
 TemplateSchema.index({ type: 1 });
 TemplateSchema.index({ category: 1 });
-TemplateSchema.index({ isDefault: 1 });
+// isDefault index removed
 TemplateSchema.index({ isRealEstate: 1 });
 TemplateSchema.index({ templateKey: 1 });
+TemplateSchema.index({ dimensions: 1 });
 
 module.exports = mongoose.model('Template', TemplateSchema);

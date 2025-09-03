@@ -4,8 +4,13 @@ import { useState } from 'react';
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
 import AppLayout from '../../components/layout/AppLayout';
-import { FiImage, FiDownload, FiEdit3, FiEye, FiPlus, FiShare2, FiType, FiDroplet } from 'react-icons/fi';
-
+import { 
+  Image as ImageIcon, 
+  Palette, 
+  TextT, 
+  Export, 
+  Pencil 
+} from 'phosphor-react';
 interface BrandAsset {
   id: string;
   name: string;
@@ -54,11 +59,11 @@ export default function BrandingPage() {
   ];
 
   const categories = [
-    { id: 'all', name: 'Todos', icon: <FiImage />, count: brandAssets.length },
-    { id: 'logos', name: 'Logos', icon: <FiImage />, count: brandAssets.filter(a => a.type === 'logo').length },
-    { id: 'colors', name: 'Colores', icon: <FiDroplet />, count: brandAssets.filter(a => a.type === 'color').length },
-    { id: 'fonts', name: 'Tipografías', icon: <FiType />, count: brandAssets.filter(a => a.type === 'font').length },
-    { id: 'icons', name: 'Iconos', icon: <FiImage />, count: brandAssets.filter(a => a.type === 'icon').length }
+    { id: 'all', name: 'Todos', icon: <ImageIcon size={24} className="" />, count: brandAssets.length },
+    { id: 'logos', name: 'Logos', icon: <ImageIcon size={24} className="" />, count: brandAssets.filter(a => a.type === 'logo').length },
+    { id: 'colors', name: 'Colores', icon: <Palette size={24} className="" />, count: brandAssets.filter(a => a.type === 'color').length },
+    { id: 'fonts', name: 'Tipografías', icon: <TextT size={24} className="" />, count: brandAssets.filter(a => a.type === 'font').length },
+    { id: 'icons', name: 'Iconos', icon: <ImageIcon size={24} className="" />, count: brandAssets.filter(a => a.type === 'icon').length }
   ];
 
   const filteredAssets = brandAssets.filter(asset => {
@@ -74,7 +79,7 @@ export default function BrandingPage() {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center">
-              <FiImage className="w-6 h-6 text-white" />
+              <ImageIcon size={24} className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Gestión de Marca</h1>
@@ -87,7 +92,7 @@ export default function BrandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl p-6 text-white shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-4">
-              <FiPlus className="w-8 h-8" />
+              <ImageIcon size={32} className="w-8 h-8" />
               <span className="text-sm opacity-90">Nuevo</span>
             </div>
             <h3 className="text-xl font-semibold mb-2">Crear Asset</h3>
@@ -96,7 +101,7 @@ export default function BrandingPage() {
 
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-4">
-              <FiDownload className="w-8 h-8 text-brand-primary" />
+              <Export size={32} className="w-8 h-8 text-brand-primary" />
               <span className="text-sm text-gray-500">Descargar</span>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Kit Completo</h3>
@@ -105,7 +110,7 @@ export default function BrandingPage() {
 
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-4">
-              <FiShare2 className="w-8 h-8 text-brand-secondary" />
+              <Export size={32} className="w-8 h-8 text-brand-secondary" />
               <span className="text-sm text-gray-500">Compartir</span>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Compartir</h3>
@@ -146,7 +151,7 @@ export default function BrandingPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
               />
-              <FiEye className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              <Pencil size={16} className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             </div>
           </div>
         </div>
@@ -162,7 +167,7 @@ export default function BrandingPage() {
               <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
                 {asset.type === 'logo' && (
                   <div className="w-full h-full flex items-center justify-center">
-                    <FiImage className="w-16 h-16 text-gray-400" />
+                    <ImageIcon size={64} className="w-16 h-16 text-gray-400" />
                   </div>
                 )}
                 {asset.type === 'color' && (
@@ -172,12 +177,12 @@ export default function BrandingPage() {
                 )}
                 {asset.type === 'font' && (
                   <div className="w-full h-full flex items-center justify-center">
-                    <FiType className="w-16 h-16 text-gray-400" />
+                    <TextT size={64} className="w-16 h-16 text-gray-400" />
                   </div>
                 )}
                 {asset.type === 'icon' && (
                   <div className="w-full h-full flex items-center justify-center">
-                    <FiImage className="w-16 h-16 text-gray-400" />
+                    <ImageIcon size={64} className="w-16 h-16 text-gray-400" />
                   </div>
                 )}
 
@@ -185,10 +190,10 @@ export default function BrandingPage() {
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                   <div className="flex gap-2">
                     <button className="p-2 bg-white/20 rounded-lg text-white hover:bg-white/30 transition-colors">
-                      <FiEdit3 className="w-5 h-5" />
+                      <Pencil size={20} className="w-5 h-5" />
                     </button>
                     <button className="p-2 bg-white/20 rounded-lg text-white hover:bg-white/30 transition-colors">
-                      <FiDownload className="w-5 h-5" />
+                      <Export size={20} className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
@@ -213,10 +218,10 @@ export default function BrandingPage() {
                   <span>Actualizado: {asset.lastUpdated}</span>
                   <div className="flex gap-1">
                     <button className="p-1 text-gray-400 hover:text-brand-primary transition-colors">
-                      <FiEdit3 className="w-3 h-3" />
+                      <Pencil size={12} className="w-3 h-3" />
                     </button>
                     <button className="p-1 text-gray-400 hover:text-brand-primary transition-colors">
-                      <FiDownload className="w-3 h-3" />
+                      <Export size={12} className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
@@ -229,7 +234,7 @@ export default function BrandingPage() {
         {filteredAssets.length === 0 && (
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FiImage className="w-8 h-8 text-gray-400" />
+              <ImageIcon size={32} className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               No se encontraron assets
@@ -248,28 +253,28 @@ export default function BrandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiImage className="w-6 h-6 text-brand-primary" />
+                <ImageIcon size={24} className="w-6 h-6 text-brand-primary" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2">Uso de Logos</h4>
               <p className="text-sm text-gray-600">Guía para el uso correcto de logos</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-brand-secondary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiDroplet className="w-6 h-6 text-brand-secondary" />
+                <Palette size={24} className="w-6 h-6 text-brand-secondary" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2">Paleta de Colores</h4>
               <p className="text-sm text-gray-600">Colores principales y secundarios</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiType className="w-6 h-6 text-success" />
+                <TextT size={24} className="w-6 h-6 text-success" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2">Tipografía</h4>
               <p className="text-sm text-gray-600">Fuentes y jerarquía de texto</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiImage className="w-6 h-6 text-warning" />
+                <ImageIcon size={24} className="w-6 h-6 text-warning" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2">Espaciado</h4>
               <p className="text-sm text-gray-600">Sistema de espaciado y márgenes</p>

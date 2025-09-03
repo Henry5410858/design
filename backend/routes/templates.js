@@ -28,7 +28,7 @@ const deleteOldDesignFile = async (templateId) => {
   try {
     const template = await Template.findById(templateId);
     if (template && template.designFilename) {
-      const oldFilePath = path.resolve(__dirname, '../uploads/designs', template.designFilename);
+              const oldFilePath = path.resolve(__dirname, '../uploads/designs', template.designFilename);
       if (deleteFileSafely(oldFilePath)) {
         console.log('🗑️ Old design file deleted for template:', templateId);
         return true;
@@ -60,7 +60,7 @@ const storage = multer.diskStorage({
 // Configure multer for design data files
 const designStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.resolve(__dirname, '../uploads/designs');
+            const uploadDir = path.resolve(__dirname, '../uploads/designs');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -177,15 +177,65 @@ const upload = multer({
 // Helper function to get default objects based on template type
 function getDefaultObjectsForType(type) {
   switch (type) {
-    case 'flyer':
+    case 'square-post':
+      return [
+        {
+          id: '1',
+          type: 'text',
+          x: 200,
+          y: 200,
+          width: 400,
+          height: 60,
+          text: 'Your Post Title',
+          font: 'Arial',
+          color: '#1D4ED8',
+        },
+        {
+          id: '2',
+          type: 'text',
+          x: 200,
+          y: 300,
+          width: 400,
+          height: 40,
+          text: 'Add your content here',
+          font: 'Arial',
+          color: '#6B7280',
+        }
+      ];
+    case 'story':
+      return [
+        {
+          id: '1',
+          type: 'text',
+          x: 50,
+          y: 200,
+          width: 400,
+          height: 60,
+          text: 'STORY TITLE',
+          font: 'Arial',
+          color: '#E91E63',
+        },
+        {
+          id: '2',
+          type: 'text',
+          x: 50,
+          y: 300,
+          width: 400,
+          height: 50,
+          text: 'Your story content',
+          font: 'Arial',
+          color: '#9C27B0',
+        }
+      ];
+    case 'marketplace-flyer':
       return [
         {
           id: '1',
           type: 'text',
           x: 100,
           y: 100,
-          width: 300,
-          height: 50,
+          width: 500,
+          height: 60,
           text: 'Your Flyer Headline',
           font: 'Arial',
           color: '#1D4ED8',
@@ -194,15 +244,15 @@ function getDefaultObjectsForType(type) {
           id: '2',
           type: 'text',
           x: 100,
-          y: 170,
-          width: 300,
-          height: 30,
+          y: 200,
+          width: 500,
+          height: 40,
           text: 'Add your content here',
           font: 'Arial',
           color: '#6B7280',
         }
       ];
-    case 'banner':
+    case 'fb-feed-banner':
       return [
         {
           id: '1',
@@ -227,40 +277,40 @@ function getDefaultObjectsForType(type) {
           color: '#388E3C',
         }
       ];
-    case 'story':
+    case 'digital-badge':
       return [
         {
           id: '1',
           type: 'text',
-          x: 50,
-          y: 100,
-          width: 300,
-          height: 50,
-          text: 'STORY TITLE',
+          x: 150,
+          y: 150,
+          width: 400,
+          height: 60,
+          text: 'BADGE TITLE',
           font: 'Arial',
-          color: '#E91E63',
+          color: '#FF9800',
         },
         {
           id: '2',
           type: 'text',
-          x: 50,
-          y: 170,
-          width: 300,
+          x: 150,
+          y: 250,
+          width: 400,
           height: 40,
-          text: 'Your story content',
+          text: 'Badge content here',
           font: 'Arial',
-          color: '#9C27B0',
+          color: '#795548',
         }
       ];
-    case 'document':
+    case 'brochure':
       return [
         {
           id: '1',
           type: 'text',
-          x: 100,
-          y: 80,
-          width: 400,
-          height: 50,
+          x: 200,
+          y: 150,
+          width: 600,
+          height: 80,
           text: 'Document Title',
           font: 'Arial',
           color: '#424242',
@@ -268,10 +318,10 @@ function getDefaultObjectsForType(type) {
         {
           id: '2',
           type: 'text',
-          x: 100,
-          y: 150,
-          width: 400,
-          height: 30,
+          x: 200,
+          y: 300,
+          width: 600,
+          height: 50,
           text: 'Document content here',
           font: 'Arial',
           color: '#616161',
@@ -282,68 +332,58 @@ function getDefaultObjectsForType(type) {
   }
 }
 
-// Initialize default templates if they don't exist
-async function initializeDefaultTemplates() {
-  try {
-    const defaultTemplates = [
-      {
-        name: 'Summer Sale Flyer',
-        type: 'flyer',
-        thumbnail: '/uploads/default-flyer-thumb.png',
-        objects: getDefaultObjectsForType('flyer'),
-        backgroundColor: '#FFFFFF',
-        isDefault: true
-      },
-      {
-        name: 'Instagram Story Promo',
-        type: 'story',
-        thumbnail: '/uploads/default-story-thumb.png',
-        objects: getDefaultObjectsForType('story'),
-        backgroundColor: '#FFFFFF',
-        isDefault: true
-      },
-      {
-        name: 'Event Banner',
-        type: 'banner',
-        thumbnail: '/uploads/default-banner-thumb.png',
-        objects: getDefaultObjectsForType('banner'),
-        backgroundColor: '#FFFFFF',
-        isDefault: true
-      },
-      {
-        name: 'Business Document',
-        type: 'document',
-        thumbnail: '/uploads/default-document-thumb.png',
-        objects: getDefaultObjectsForType('document'),
-        backgroundColor: '#FFFFFF',
-        isDefault: true
-      }
-    ];
-
-    for (const templateData of defaultTemplates) {
-      const existingTemplate = await Template.findOne({ 
-        name: templateData.name, 
-        type: templateData.type,
-        isDefault: true 
-      });
-      
-      if (!existingTemplate) {
-        await Template.create(templateData);
-        console.log(`Created default ${templateData.type} template: ${templateData.name}`);
-      }
-    }
-  } catch (error) {
-    console.error('Error initializing default templates:', error);
-  }
+// Helper function to map template type to category
+function getCategoryForType(type) {
+  const typeToCategory = {
+    'square-post': 'social-posts',
+    'story': 'stories', 
+    'marketplace-flyer': 'flyers',
+    'fb-feed-banner': 'banners',
+    'digital-badge': 'badges',
+    'brochure': 'documents'
+  };
+  return typeToCategory[type] || 'flyers'; // Default to 'flyers' if type not found
 }
 
-// Initialize default templates on startup
-initializeDefaultTemplates();
+// Helper function to generate default template name
+function generateDefaultTemplateName(type) {
+  const typeLabels = {
+    'square-post': 'IG/FB Square Post',
+    'story': 'IG/FB/WSP Story',
+    'marketplace-flyer': 'Marketplace Flyer',
+    'fb-feed-banner': 'FB Feed Banner',
+    'digital-badge': 'Digital Badge',
+    'brochure': 'Brochure'
+  };
+  
+  const typeLabel = typeLabels[type] || 'Template';
+  const timestamp = new Date().toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+  return `${typeLabel} - ${timestamp}`;
+}
 
-// GET /api/templates?type=flyer|banner|story|document
+// Helper function to get default dimensions for template type
+function getDefaultDimensions(type) {
+  const dimensions = {
+    'square-post': { width: 1080, height: 1080 },
+    'story': { width: 1080, height: 1920 },
+    'marketplace-flyer': { width: 1200, height: 1500 },
+    'fb-feed-banner': { width: 1200, height: 628 },
+    'digital-badge': { width: 1080, height: 1350 },
+    'brochure': { width: 2480, height: 3508 }
+  };
+  return dimensions[type] || dimensions['square-post'];
+}
+
+// Default templates removed - editors now only work with user-created templates
+
+// GET /api/templates?type=square-post|story|marketplace-flyer|fb-feed-banner|digital-badge|brochure
 router.get('/', async (req, res) => {
   try {
-    const { type, category, isRealEstate, isDefault } = req.query;
+    const { type, category, isRealEstate } = req.query;
     let query = {};
     
     if (type) {
@@ -356,10 +396,6 @@ router.get('/', async (req, res) => {
     
     if (isRealEstate !== undefined) {
       query.isRealEstate = isRealEstate === 'true';
-    }
-    
-    if (isDefault !== undefined) {
-      query.isDefault = isDefault === 'true';
     }
     
     const templates = await Template.find(query).sort({ createdAt: -1 });
@@ -580,25 +616,30 @@ router.post('/save-design-large', async (req, res) => {
 // POST /api/templates - Create new template
 router.post('/', async (req, res) => {
   try {
-    const { name, type } = req.body;
+    const { name, type, dimensions } = req.body;
     
-    if (!name || !type) {
-      return res.status(400).json({ error: 'Name and type are required' });
+    if (!type) {
+      return res.status(400).json({ error: 'Template type is required' });
     }
     
     // Validate template type
-    const validTypes = ['flyer', 'banner', 'story', 'document'];
+    const validTypes = ['square-post', 'story', 'marketplace-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({ error: 'Invalid template type' });
     }
     
+    // Generate default name if none provided
+    const templateName = name || generateDefaultTemplateName(type);
+    
     // Create new template with default content based on type
     const newTemplate = await Template.create({
-      name: name,
+      name: templateName,
       type: type,
+      category: getCategoryForType(type),
       thumbnail: '/uploads/default-thumbnail.png', // Will be updated when saved
       objects: getDefaultObjectsForType(type),
       backgroundColor: '#ffffff',
+      dimensions: dimensions || getDefaultDimensions(type),
     });
     
     res.status(201).json(newTemplate);
@@ -634,7 +675,7 @@ router.post('/:id/duplicate', async (req, res) => {
       ...template.toObject(),
       _id: undefined, // Remove the original ID
       name: template.name + ' (Copy)',
-      isDefault: false, // Ensure copied templates are not marked as default
+              // Copied templates inherit properties from original
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -668,17 +709,14 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Template not found' });
     }
     
-    // Prevent deletion of default templates
-    if (template.isDefault) {
-      return res.status(400).json({ error: 'Cannot delete default templates' });
-    }
+    // Template deletion allowed for all templates
     
     // Clean up associated files before deleting the template
     console.log('🗑️ Cleaning up files for template:', id);
     
     // Delete design file if it exists
     if (template.designFilename) {
-      const designFilePath = path.resolve(__dirname, '../uploads/designs', template.designFilename);
+              const designFilePath = path.resolve(__dirname, '../uploads/designs', template.designFilename);
       deleteFileSafely(designFilePath);
     }
     

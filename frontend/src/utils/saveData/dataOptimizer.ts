@@ -34,8 +34,8 @@ export const createMinimalObjectData = (obj: ObjectData): any => {
     minimal.fontFamily = textObj.fontFamily || 'Arial';
   } else if (obj.type === 'image') {
     const imageObj = obj as any;
-    // For images, only store a placeholder to save space
-    minimal.src = 'placeholder';
+    // For images, preserve the actual src to maintain functionality
+    minimal.src = imageObj.src || 'placeholder';
     minimal.isImage = true;
   } else if (obj.type === 'line') {
     const lineObj = obj as any;
@@ -67,7 +67,9 @@ export const createUltraMinimalObjectData = (obj: ObjectData): any => {
     ultraMinimal.fontSize = Math.round(textObj.fontSize || 48);
     ultraMinimal.fontFamily = textObj.fontFamily || 'Arial';
   } else if (obj.type === 'image') {
-    // For images, just mark as image without src to save massive space
+    const imageObj = obj as any;
+    // For images, preserve the actual src to maintain functionality
+    ultraMinimal.src = imageObj.src || 'placeholder';
     ultraMinimal.isImage = true;
   } else if (obj.type === 'line') {
     const lineObj = obj as any;

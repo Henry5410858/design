@@ -1,8 +1,8 @@
-# 🎨 Canva Integration for RedDragon Design Center
+# 🎨 Canva Integration for DesignCenter
 
 ## Overview
 
-This document outlines the complete Canva integration implementation for the RedDragon Design Center platform. The integration provides users with access to professional design tools and templates through Canva's API, with plan-based restrictions and seamless user experience.
+This document outlines the complete Canva integration implementation for the DesignCenter platform. The integration provides users with access to professional design tools and templates through Canva's API, with plan-based restrictions and seamless user experience.
 
 ## 🚀 Features Implemented
 
@@ -12,7 +12,7 @@ This document outlines the complete Canva integration implementation for the Red
 - **Real estate templates** (12 templates across 6 formats)
 - **Brand Kit auto-application** (logo + colors)
 - **Export designs** as PNG/JPG/PDF (download or via storage)
-- **Role-based feature restrictions** (Free, Premium, Ultra-Premium)
+- **Plan-based feature restrictions** (Free, Premium, Ultra-Premium)
 - **Technical documentation** & clean source code
 
 ## 🏗️ Architecture
@@ -310,4 +310,4 @@ console.log('Canva Context:', useCanva());
 
 ---
 
-*This integration transforms RedDragon from a basic design tool into a professional design platform, giving users access to industry-standard design capabilities while maintaining the platform's unique real estate focus.*
+*This integration transforms DesignCenter from a basic design tool into a professional design platform, giving users access to industry-standard design capabilities while maintaining the platform's unique real estate focus.*

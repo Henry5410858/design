@@ -4,8 +4,10 @@
 export const dynamic = 'auto';
 
 import AppLayout from '../../components/layout/AppLayout';
-import { FiCalendar, FiPlus, FiClock, FiMapPin, FiUsers, FiTag, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-
+import { 
+  Pencil, 
+  Image as ImageIcon 
+} from 'phosphor-react';
 export default function CampaignCalendarPage() {
   return (
     <AppLayout>
@@ -25,17 +27,17 @@ export default function CampaignCalendarPage() {
               </button>
               <div className="flex items-center gap-2">
                 <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-                  <FiChevronLeft className="w-5 h-5" />
+                  <Pencil size={20} className="w-5 h-5" />
                 </button>
                 <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-                  <FiChevronRight className="w-5 h-5" />
+                  <Pencil size={20} className="w-5 h-5" />
                 </button>
               </div>
               <span className="text-lg font-semibold text-gray-900">Agosto 2024</span>
             </div>
             
             <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-primary to-brand-secondary text-white rounded-xl font-medium hover:from-brand-primary-dark hover:to-brand-secondary-dark transition-all duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1">
-              <FiPlus className="w-4 h-4" />
+              <ImageIcon size={16} className="w-4 h-4" />
               Agregar Evento
             </button>
           </div>
@@ -101,7 +103,7 @@ export default function CampaignCalendarPage() {
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FiClock className="w-5 h-5 text-brand-primary" />
+              <Pencil size={20} className="w-5 h-5 text-brand-primary" />
               Próximos Eventos
             </h3>
             <div className="space-y-4">
@@ -116,11 +118,11 @@ export default function CampaignCalendarPage() {
                     <h4 className="font-medium text-gray-900">{event.title}</h4>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">
-                        <FiCalendar className="w-3 h-3" />
+                        <Pencil size={12} className="w-3 h-3" />
                         {event.date}
                       </span>
                       <span className="flex items-center gap-1">
-                        <FiClock className="w-3 h-3" />
+                        <Pencil size={12} className="w-3 h-3" />
                         {event.time}
                       </span>
                     </div>
@@ -135,14 +137,14 @@ export default function CampaignCalendarPage() {
 
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FiTag className="w-5 h-5 text-success" />
+              <Pencil size={20} className="w-5 h-5 text-success" />
               Acciones Rápidas
             </h3>
             <div className="space-y-3">
               <button className="w-full p-3 text-left bg-brand-primary/5 hover:bg-brand-primary/10 rounded-xl transition-colors duration-200 group hover:-translate-y-1">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center group-hover:bg-brand-primary/20 transition-colors duration-200">
-                    <FiPlus className="w-5 h-5 text-brand-primary" />
+                    <ImageIcon size={20} className="w-5 h-5 text-brand-primary" />
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900">Crear Nueva Campaña</h4>
@@ -154,7 +156,7 @@ export default function CampaignCalendarPage() {
               <button className="w-full p-3 text-left bg-success/5 hover:bg-success/10 rounded-xl transition-colors duration-200 group hover:-translate-y-1">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center group-hover:bg-success/20 transition-colors duration-200">
-                    <FiUsers className="w-5 h-5 text-success" />
+                    <Pencil size={20} className="w-5 h-5 text-success" />
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900">Reunión de Equipo</h4>
@@ -166,7 +168,7 @@ export default function CampaignCalendarPage() {
               <button className="w-full p-3 text-left bg-brand-secondary/5 hover:bg-brand-secondary/10 rounded-xl transition-colors duration-200 group hover:-translate-y-1">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-brand-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-brand-secondary/20 transition-colors duration-200">
-                    <FiMapPin className="w-5 h-5 text-brand-secondary" />
+                    <Pencil size={20} className="w-5 h-5 text-brand-secondary" />
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900">Planificación de Eventos</h4>

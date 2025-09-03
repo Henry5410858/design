@@ -2,7 +2,7 @@
 
 ## Overview
 A modular, scalable web design and proposal generation hub. Features include:
-- Dashboard with role-based feature access
+- Dashboard with plan-based feature access
 - Template Gallery
 - Brand Customization
 - Online Editing (Canva SDK or custom)
@@ -14,7 +14,7 @@ A modular, scalable web design and proposal generation hub. Features include:
 ## Tech Stack
 - Frontend: Next.js (React), Saas
 - Backend: Node.js, Express, MongoDB (Mongoose)
-- Auth: JWT (demo), role/plan-based access
+- Auth: JWT (demo), plan-based access
 - Deployment: Docker, GitHub Actions, Vercel (frontend), AWS (backend, S3, RDS)
 
 ## Local Development

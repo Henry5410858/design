@@ -4,7 +4,14 @@ import { useState } from 'react';
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
 import AppLayout from '../../components/layout/AppLayout';
-import { FiUser, FiMail, FiPhone, FiMapPin, FiCamera, FiSave, FiEdit3, FiShield, FiKey, FiBell, FiGlobe, FiStar, FiCheck } from 'react-icons/fi';
+import { 
+  Pencil, 
+  Image as ImageIcon, 
+  Star, 
+  FloppyDisk, 
+  Bell, 
+  Lock 
+} from 'phosphor-react';
 import { withContextPreservation, createContextAwarePromise } from '../../utils/contextManager';
 
 interface UserProfile {
@@ -18,7 +25,7 @@ interface UserProfile {
   location: string;
   bio: string;
   avatar: string;
-  role: 'Free' | 'Premium' | 'Ultra-Premium';
+  plan: 'Free' | 'Premium' | 'Ultra-Premium';
   preferences: {
     notifications: boolean;
     marketing: boolean;
@@ -39,7 +46,7 @@ export default function ChangeUserInfoPage() {
     location: 'Madrid, España',
     bio: 'Diseñador creativo con más de 5 años de experiencia en branding y diseño digital.',
     avatar: '/api/users/1/avatar',
-    role: 'Free',
+    plan: 'Free',
     preferences: {
       notifications: true,
       marketing: false,
@@ -110,22 +117,22 @@ export default function ChangeUserInfoPage() {
     setMessage(null);
   };
 
-  const roleOptions = [
+  const planOptions = [
     { value: 'Free', label: 'Plan Gratuito', description: 'Acceso básico a templates', color: 'text-gray-600' },
     { value: 'Premium', label: 'Plan Premium', description: 'Funcionalidades avanzadas', color: 'text-brand-primary' },
     { value: 'Ultra-Premium', label: 'Plan Ultra-Premium', description: 'Experiencia completa', color: 'text-brand-secondary' }
   ];
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
+  const getPlanColor = (plan: string) => {
+    switch (plan) {
       case 'Premium': return 'text-brand-primary';
       case 'Ultra-Premium': return 'text-brand-secondary';
       default: return 'text-gray-600';
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
+  const getPlanBadgeColor = (plan: string) => {
+    switch (plan) {
       case 'Premium': return 'bg-brand-primary/10 text-brand-primary border-brand-primary/20';
       case 'Ultra-Premium': return 'bg-brand-secondary/10 text-brand-secondary border-brand-secondary/20';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
@@ -139,7 +146,7 @@ export default function ChangeUserInfoPage() {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center">
-              <FiUser className="w-6 h-6 text-white" />
+              <Pencil size={24} className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
@@ -167,7 +174,7 @@ export default function ChangeUserInfoPage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
                   <div className="p-2 bg-brand-primary/10 rounded-xl">
-                    <FiUser className="w-5 h-5 text-brand-primary" />
+                    <Pencil size={20} className="w-5 h-5 text-brand-primary" />
                   </div>
                   Información Personal
                 </h2>
@@ -175,7 +182,7 @@ export default function ChangeUserInfoPage() {
                   onClick={() => setIsEditing(!isEditing)}
                   className="flex items-center gap-2 px-4 py-2 text-brand-primary hover:bg-brand-primary/10 rounded-xl transition-colors duration-200"
                 >
-                  <FiEdit3 className="w-4 h-4" />
+                  <Pencil size={16} className="w-4 h-4" />
                   {isEditing ? 'Cancelar' : 'Editar'}
                 </button>
               </div>
@@ -185,11 +192,11 @@ export default function ChangeUserInfoPage() {
                 <div className="flex items-center gap-6">
                   <div className="relative">
                     <div className="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-                      <FiUser className="w-12 h-12 text-gray-400" />
+                      <Pencil size={48} className="w-12 h-12 text-gray-400" />
                     </div>
                     {isEditing && (
                       <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-brand-primary text-white rounded-full flex items-center justify-center hover:bg-brand-primary-dark transition-colors duration-200">
-                        <FiCamera className="w-4 h-4" />
+                        <ImageIcon size={16} className="w-4 h-4" />
                       </button>
                     )}
                   </div>
@@ -199,39 +206,39 @@ export default function ChangeUserInfoPage() {
                     </h3>
                     <p className="text-gray-600">{profile.position} en {profile.company}</p>
                     <div className="mt-2">
-                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getRoleBadgeColor(profile.role)}`}>
-                                                            <FiStar className="w-4 h-4" />
-                        {profile.role}
+                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getPlanBadgeColor(profile.plan)}`}>
+                                                            <Star size={16} className="w-4 h-4" />
+                        {profile.plan}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Role Selection */}
+                {/* Plan Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Plan de Suscripción
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {roleOptions.map((role) => (
+                    {planOptions.map((plan) => (
                       <div
-                        key={role.value}
+                        key={plan.value}
                         className={`relative p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                          profile.role === role.value
+                          profile.plan === plan.value
                             ? 'border-brand-primary bg-brand-primary/5'
                             : 'border-gray-200 hover:border-gray-300'
                         } ${!isEditing ? 'cursor-default' : ''}`}
-                        onClick={() => isEditing && handleInputChange('role', role.value)}
+                        onClick={() => isEditing && handleInputChange('plan', plan.value)}
                       >
                         <div className="text-center">
-                          <h4 className={`font-semibold text-sm mb-1 ${getRoleColor(role.value)}`}>
-                            {role.label}
+                          <h4 className={`font-semibold text-sm mb-1 ${getPlanColor(plan.value)}`}>
+                            {plan.label}
                           </h4>
-                          <p className="text-xs text-gray-600">{role.description}</p>
+                          <p className="text-xs text-gray-600">{plan.description}</p>
                         </div>
-                        {profile.role === role.value && (
+                        {profile.plan === plan.value && (
                           <div className="absolute top-2 right-2 w-4 h-4 bg-brand-primary rounded-full flex items-center justify-center">
-                            <FiCheck className="w-2 h-2 text-white" />
+                            <Pencil size={8} className="w-2 h-2 text-white" />
                           </div>
                         )}
                       </div>
@@ -366,7 +373,7 @@ export default function ChangeUserInfoPage() {
                         </>
                       ) : (
                         <>
-                          <FiSave className="w-4 h-4" />
+                          <FloppyDisk size={16} className="w-4 h-4" />
                           Guardar Cambios
                         </>
                       )}
@@ -386,7 +393,7 @@ export default function ChangeUserInfoPage() {
             <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-brand-secondary/10 rounded-xl">
-                  <FiBell className="w-5 h-5 text-brand-secondary" />
+                  <Bell size={20} className="w-5 h-5 text-brand-secondary" />
                 </div>
                 Preferencias
               </h2>
@@ -473,14 +480,14 @@ export default function ChangeUserInfoPage() {
             <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-3">
                 <div className="p-2 bg-success/10 rounded-xl">
-                  <FiShield className="w-5 h-5 text-success" />
+                  <Lock size={20} className="w-5 h-5 text-success" />
                 </div>
                 Seguridad
               </h3>
               
               <div className="space-y-3">
                 <button className="w-full flex items-center gap-3 p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors duration-200">
-                  <FiKey className="w-5 h-5 text-gray-600" />
+                  <Lock size={20} className="w-5 h-5 text-gray-600" />
                   <div>
                     <h4 className="font-medium text-gray-900">Cambiar Contraseña</h4>
                     <p className="text-sm text-gray-600">Actualiza tu contraseña</p>
@@ -488,7 +495,7 @@ export default function ChangeUserInfoPage() {
                 </button>
                 
                 <button className="w-full flex items-center gap-3 p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors duration-200">
-                  <FiShield className="w-5 h-5 text-gray-600" />
+                  <Lock size={20} className="w-5 h-5 text-gray-600" />
                   <div>
                     <h4 className="font-medium text-gray-900">Autenticación 2FA</h4>
                     <p className="text-sm text-gray-600">Activa verificación en dos pasos</p>
@@ -501,7 +508,7 @@ export default function ChangeUserInfoPage() {
             <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-3">
                 <div className="p-2 bg-info/10 rounded-xl">
-                  <FiGlobe className="w-5 h-5 text-info" />
+                  <Pencil size={20} className="w-5 h-5 text-info" />
                 </div>
                 Información de Cuenta
               </h3>
@@ -521,8 +528,8 @@ export default function ChangeUserInfoPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Plan actual:</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(profile.role)}`}>
-                    {profile.role}
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPlanBadgeColor(profile.plan)}`}>
+                    {profile.plan}
                   </span>
                 </div>
                 <div className="flex justify-between">

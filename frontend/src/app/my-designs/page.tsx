@@ -4,8 +4,13 @@ import { useState } from 'react';
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
 import AppLayout from '../../components/layout/AppLayout';
-import { FiGrid, FiImage, FiEdit3, FiDownload, FiTrash2, FiEye, FiSearch, FiFilter, FiPlus, FiStar, FiClock, FiFolder } from 'react-icons/fi';
-
+import { 
+  SquaresFour, 
+  Image as ImageIcon, 
+  Pencil, 
+  Export, 
+  Star 
+} from 'phosphor-react';
 interface Design {
   id: string;
   name: string;
@@ -67,11 +72,11 @@ export default function MyDesignsPage() {
   ];
 
   const types = [
-    { id: 'all', name: 'Todos', icon: <FiGrid />, count: designs.length },
-    { id: 'flyer', name: 'Flyers', icon: <FiImage />, count: designs.filter(d => d.type === 'flyer').length },
-    { id: 'banner', name: 'Banners', icon: <FiImage />, count: designs.filter(d => d.type === 'banner').length },
-    { id: 'social', name: 'Redes Sociales', icon: <FiImage />, count: designs.filter(d => d.type === 'social').length },
-    { id: 'document', name: 'Documentos', icon: <FiFolder />, count: designs.filter(d => d.type === 'document').length }
+    { id: 'all', name: 'Todos', icon: <SquaresFour size={24} className="" />, count: designs.length },
+    { id: 'flyer', name: 'Flyers', icon: <ImageIcon size={24} className="" />, count: designs.filter(d => d.type === 'flyer').length },
+    { id: 'banner', name: 'Banners', icon: <ImageIcon size={24} className="" />, count: designs.filter(d => d.type === 'banner').length },
+    { id: 'social', name: 'Redes Sociales', icon: <ImageIcon size={24} className="" />, count: designs.filter(d => d.type === 'social').length },
+    { id: 'document', name: 'Documentos', icon: <Pencil size={24} className="" />, count: designs.filter(d => d.type === 'document').length }
   ];
 
   const statuses = [
@@ -99,11 +104,11 @@ export default function MyDesignsPage() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'flyer': return <FiImage className="w-4 h-4" />;
-      case 'banner': return <FiImage className="w-4 h-4" />;
-      case 'social': return <FiImage className="w-4 h-4" />;
-      case 'document': return <FiFolder className="w-4 h-4" />;
-      default: return <FiImage className="w-4 h-4" />;
+      case 'flyer': return <ImageIcon size={16} className="w-4 h-4" />;
+      case 'banner': return <ImageIcon size={16} className="w-4 h-4" />;
+      case 'social': return <ImageIcon size={16} className="w-4 h-4" />;
+      case 'document': return <Pencil size={16} className="w-4 h-4" />;
+      default: return <ImageIcon size={16} className="w-4 h-4" />;
     }
   };
 
@@ -114,7 +119,7 @@ export default function MyDesignsPage() {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center">
-              <FiGrid className="w-6 h-6 text-white" />
+              <SquaresFour size={24} className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Mis Diseños</h1>
@@ -127,7 +132,7 @@ export default function MyDesignsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl p-6 text-white shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-4">
-              <FiPlus className="w-8 h-8" />
+              <ImageIcon size={32} className="w-8 h-8" />
               <span className="text-sm opacity-90">Nuevo</span>
             </div>
             <h3 className="text-xl font-semibold mb-2">Crear Diseño</h3>
@@ -136,7 +141,7 @@ export default function MyDesignsPage() {
 
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-4">
-              <FiDownload className="w-8 h-8 text-brand-primary" />
+              <Export size={32} className="w-8 h-8 text-brand-primary" />
               <span className="text-sm text-gray-500">Descargar</span>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Exportar Todo</h3>
@@ -145,7 +150,7 @@ export default function MyDesignsPage() {
 
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-4">
-              <FiStar className="w-8 h-8 text-warning" />
+              <Star size={32} className="w-8 h-8 text-warning" />
               <span className="text-sm text-gray-500">Favoritos</span>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Favoritos</h3>
@@ -154,7 +159,7 @@ export default function MyDesignsPage() {
 
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-4">
-              <FiClock className="w-8 h-8 text-info" />
+              <Pencil size={32} className="w-8 h-8 text-info" />
               <span className="text-sm text-gray-500">Recientes</span>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Recientes</h3>
@@ -174,7 +179,7 @@ export default function MyDesignsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
               />
-              <FiSearch className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              <SquaresFour size={16} className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             </div>
 
             {/* View Mode Toggle */}
@@ -185,7 +190,7 @@ export default function MyDesignsPage() {
                   viewMode === 'grid' ? 'bg-white text-brand-primary shadow-soft' : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <FiGrid className="w-4 h-4" />
+                <SquaresFour size={16} className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -193,7 +198,7 @@ export default function MyDesignsPage() {
                   viewMode === 'list' ? 'bg-white text-brand-primary shadow-soft' : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <FiGrid className="w-4 h-4" />
+                <SquaresFour size={16} className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -253,7 +258,7 @@ export default function MyDesignsPage() {
                 {/* Thumbnail */}
                 <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
                   <div className="w-full h-full flex items-center justify-center">
-                    <FiImage className="w-16 h-16 text-gray-400" />
+                    <ImageIcon size={64} className="w-16 h-16 text-gray-400" />
                   </div>
                   
                   {/* Status Badge */}
@@ -267,7 +272,7 @@ export default function MyDesignsPage() {
                   {/* Favorite Badge */}
                   {design.isFavorite && (
                     <div className="absolute top-3 right-3">
-                      <FiStar className="w-5 h-5 text-yellow-500 fill-current" />
+                      <Star size={20} className="w-5 h-5 text-yellow-500 fill-current" />
                     </div>
                   )}
 
@@ -275,13 +280,13 @@ export default function MyDesignsPage() {
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <div className="flex gap-2">
                       <button className="p-2 bg-white/20 rounded-lg text-white hover:bg-white/30 transition-colors">
-                        <FiEdit3 className="w-5 h-5" />
+                        <Pencil size={20} className="w-5 h-5" />
                       </button>
                       <button className="p-2 bg-white/20 rounded-lg text-white hover:bg-white/30 transition-colors">
-                        <FiDownload className="w-5 h-5" />
+                        <Export size={20} className="w-5 h-5" />
                       </button>
                       <button className="p-2 bg-white/20 rounded-lg text-white hover:bg-white/30 transition-colors">
-                        <FiEye className="w-5 h-5" />
+                        <Pencil size={20} className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
@@ -322,7 +327,7 @@ export default function MyDesignsPage() {
                 <div className="flex items-center gap-4">
                   {/* Thumbnail */}
                   <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <FiImage className="w-8 h-8 text-gray-400" />
+                    <ImageIcon size={32} className="w-8 h-8 text-gray-400" />
                   </div>
 
                   {/* Info */}
@@ -333,7 +338,7 @@ export default function MyDesignsPage() {
                       </h3>
                       <div className="flex items-center gap-2">
                         {design.isFavorite && (
-                          <FiStar className="w-5 h-5 text-yellow-500 fill-current" />
+                          <Star size={20} className="w-5 h-5 text-yellow-500 fill-current" />
                         )}
                         <span className={`px-3 py-1 rounded-lg text-sm font-medium ${getStatusColor(design.status)}`}>
                           {design.status === 'draft' ? 'Borrador' : 
@@ -359,16 +364,16 @@ export default function MyDesignsPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors">
-                      <FiEdit3 className="w-4 h-4" />
+                      <Pencil size={16} className="w-4 h-4" />
                     </button>
                     <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors">
-                      <FiDownload className="w-4 h-4" />
+                      <Export size={16} className="w-4 h-4" />
                     </button>
                     <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors">
-                      <FiEye className="w-4 h-4" />
+                      <Pencil size={16} className="w-4 h-4" />
                     </button>
                     <button className="p-2 text-gray-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors">
-                      <FiTrash2 className="w-4 h-4" />
+                      <Pencil size={16} className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -381,7 +386,7 @@ export default function MyDesignsPage() {
         {filteredDesigns.length === 0 && (
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FiGrid className="w-8 h-8 text-gray-400" />
+              <SquaresFour size={32} className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               No se encontraron diseños
@@ -400,28 +405,28 @@ export default function MyDesignsPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiGrid className="w-6 h-6 text-brand-primary" />
+                <SquaresFour size={24} className="w-6 h-6 text-brand-primary" />
               </div>
               <h4 className="text-2xl font-bold text-gray-900 mb-1">{designs.length}</h4>
               <p className="text-sm text-gray-600">Total de Diseños</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiStar className="w-6 h-6 text-success" />
+                <Star size={24} className="w-6 h-6 text-success" />
               </div>
               <h4 className="text-2xl font-bold text-gray-900 mb-1">{designs.filter(d => d.isFavorite).length}</h4>
               <p className="text-sm text-gray-600">Favoritos</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiClock className="w-6 h-6 text-warning" />
+                <Pencil size={24} className="w-6 h-6 text-warning" />
               </div>
               <h4 className="text-2xl font-bold text-gray-900 mb-1">{designs.filter(d => d.status === 'draft').length}</h4>
               <p className="text-sm text-gray-600">Borradores</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-info/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiDownload className="w-6 h-6 text-info" />
+                <Export size={24} className="w-6 h-6 text-info" />
               </div>
               <h4 className="text-2xl font-bold text-gray-900 mb-1">{designs.filter(d => d.status === 'published').length}</h4>
               <p className="text-sm text-gray-600">Publicados</p>

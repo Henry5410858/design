@@ -1,7 +1,13 @@
 'use client';
 import { useState, useRef } from 'react';
-import { FiImage, FiType, FiSquare, FiDownload, FiSave, FiRotateCcw, FiRotateCw } from 'react-icons/fi';
-
+import { 
+  ArrowsOutCardinal, 
+  FloppyDisk, 
+  Download, 
+  TextT, 
+  Image as ImageIcon, 
+  Square 
+} from 'phosphor-react';
 interface BadgesEditorProps {
   id: string;
 }
@@ -175,19 +181,19 @@ export default function BadgesEditor({ id }: BadgesEditorProps) {
             </div>
             <div className="flex items-center gap-3">
               <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                <FiRotateCcw className="w-4 h-4 inline mr-2" />
+                <ArrowsOutCardinal size={4} className="w-4 h-4 inline mr-2" />
                 Deshacer
               </button>
               <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                <FiRotateCw className="w-4 h-4 inline mr-2" />
+                <ArrowsOutCardinal size={4} className="w-4 h-4 inline mr-2" />
                 Rehacer
               </button>
               <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <FiSave className="w-4 h-4 inline mr-2" />
+                <FloppyDisk size={4} className="w-4 h-4 inline mr-2" />
                 Guardar
               </button>
               <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                <FiDownload className="w-4 h-4 inline mr-2" />
+                <Download size={4} className="w-4 h-4 inline mr-2" />
                 Exportar
               </button>
             </div>
@@ -259,7 +265,7 @@ export default function BadgesEditor({ id }: BadgesEditorProps) {
                 onClick={addText}
                 className="w-full flex items-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm"
               >
-                <FiType className="w-4 h-4" />
+                <TextT size={4} className="w-4 h-4" />
                 Texto
               </button>
             </div>
@@ -270,7 +276,7 @@ export default function BadgesEditor({ id }: BadgesEditorProps) {
                 onClick={addImage}
                 className="w-full flex items-center gap-2 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm"
               >
-                <FiImage className="w-4 h-4" />
+                <ImageIcon size={4} className="w-4 h-4" />
                 Imagen
               </button>
             </div>
@@ -281,7 +287,7 @@ export default function BadgesEditor({ id }: BadgesEditorProps) {
                 onClick={addShape}
                 className="w-full flex items-center gap-2 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors text-sm"
               >
-                <FiSquare className="w-4 h-4" />
+                <Square size={4} className="w-4 h-4" />
                 Forma
               </button>
             </div>
@@ -292,7 +298,7 @@ export default function BadgesEditor({ id }: BadgesEditorProps) {
                 onClick={addImagePlaceholder}
                 className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm"
               >
-                <FiImage className="w-4 h-4" />
+                <ImageIcon size={4} className="w-4 h-4" />
                 Placeholder
               </button>
             </div>

@@ -1,14 +1,14 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiMail, FiLock, FiUserPlus, FiUser } from 'react-icons/fi';
+import { User, Envelope, Lock } from 'phosphor-react';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'Free',
+    plan: 'Free',
     firstName: '',
     lastName: '',
     phone: '',
@@ -48,7 +48,7 @@ export default function SignupPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          role: formData.role,
+          plan: formData.plan,
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
@@ -80,7 +80,7 @@ export default function SignupPage() {
           <h1 className="text-2xl font-bold text-center mb-6">Sign Up</h1>
           
           <form onSubmit={handleSignUp} className="space-y-4">
-            {/* Role Selection */}
+            {/* Plan Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Selecciona tu plan
@@ -90,23 +90,23 @@ export default function SignupPage() {
                   { value: 'Free', label: 'Plan Gratuito', description: 'Acceso básico a templates' },
                   { value: 'Premium', label: 'Plan Premium', description: 'Funcionalidades avanzadas' },
                   { value: 'Ultra-Premium', label: 'Plan Ultra-Premium', description: 'Experiencia completa' }
-                ].map((role) => (
+                ].map((plan) => (
                   <div
-                    key={role.value}
+                    key={plan.value}
                     className={`relative p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                      formData.role === role.value
+                      formData.plan === plan.value
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
-                    onClick={() => handleInputChange('role', role.value)}
+                    onClick={() => handleInputChange('plan', plan.value)}
                   >
                     <div className="text-center">
-                      <h4 className="font-semibold text-sm mb-1 text-gray-900">{role.label}</h4>
-                      <p className="text-xs text-gray-600">{role.description}</p>
+                      <h4 className="font-semibold text-sm mb-1 text-gray-900">{plan.label}</h4>
+                      <p className="text-xs text-gray-600">{plan.description}</p>
                     </div>
-                    {formData.role === role.value && (
+                    {formData.plan === plan.value && (
                       <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                        <FiUser className="w-2 h-2 text-white" />
+                        <User size={8} className="text-white" />
                       </div>
                     )}
                   </div>
@@ -120,7 +120,7 @@ export default function SignupPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="h-5 w-5 text-gray-400" />
+                  <Envelope size={20} className="text-gray-400" />
                 </div>
                 <input
                   type="email"
@@ -138,36 +138,36 @@ export default function SignupPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiUser className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Tu nombre"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User size={20} className="text-gray-400" />
                 </div>
+                <input
+                  type="text"
+                  placeholder="Tu nombre"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange('firstName', e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Apellidos
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiUser className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Tus apellidos"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User size={20} className="text-gray-400" />
                 </div>
+                <input
+                  type="text"
+                  placeholder="Tus apellidos"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
               </div>
             </div>
 
@@ -176,16 +176,16 @@ export default function SignupPage() {
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock size={20} className="text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
               </div>
             </div>
 
@@ -194,16 +194,16 @@ export default function SignupPage() {
                 Confirmar contraseña
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock size={20} className="text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
               </div>
             </div>
 

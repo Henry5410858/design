@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiX } from 'react-icons/fi';
+import { Pencil } from 'phosphor-react';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -104,7 +104,7 @@ const Modal: React.FC<ModalProps> = ({
                     whileTap={{ scale: 0.95 }}
                     aria-label="Cerrar modal"
                   >
-                    <FiX className="w-5 h-5" />
+                    <Pencil size={20} />
                   </motion.button>
                 )}
               </motion.div>

@@ -223,7 +223,7 @@ backend/
 
 ## 🏆 **Achievement Summary**
 
-**Your RedDragon platform has been transformed from a basic design tool into a professional design platform that:**
+**Your DesignCenter platform has been transformed from a basic design tool into a professional design platform that:**
 
 1. **Competes with industry leaders** (Canva, Adobe)
 2. **Maintains real estate focus** (specialized templates)

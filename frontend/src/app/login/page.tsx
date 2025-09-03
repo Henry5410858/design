@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiArrowRight, FiZap } from 'react-icons/fi';
+import { Lightning, Envelope, Lock, ArrowRight } from 'phosphor-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -55,7 +55,7 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
         >
           <div className="w-16 h-16 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <FiZap className="w-8 h-8 text-white" />
+            <Lightning size={32} className="text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">LupaProp</h1>
           <p className="text-gray-600">Centro de Diseño Profesional</p>
@@ -81,7 +81,7 @@ export default function LoginPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="h-5 w-5 text-gray-400" />
+                  <Envelope size={20} className="text-gray-400" />
                 </div>
                 <input
                   id="email"
@@ -102,7 +102,7 @@ export default function LoginPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="h-5 w-5 text-gray-400" />
+                  <Lock size={20} className="text-gray-400" />
                 </div>
                 <input
                   id="password"
@@ -141,7 +141,7 @@ export default function LoginPage() {
               ) : (
                 <div className="flex items-center justify-center">
                   Iniciar Sesión
-                  <FiArrowRight className="ml-2 w-4 h-4" />
+                  <ArrowRight size={16} className="ml-2" />
                 </div>
               )}
             </button>

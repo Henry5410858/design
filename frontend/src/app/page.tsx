@@ -1,17 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
+import CreateTemplateModal from '@/components/modals/CreateTemplateModal';
 
 export default function HomePage() {
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
+
   return (
     <AppLayout>
       <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
         <div className="text-center max-w-4xl mx-auto">
           <div className="mb-8">
             <h1 className="text-6xl font-black text-gray-900 mb-4">
-              🎨 RedDragon
+              🎨 DesignCenter
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
               Professional design templates and tools for creators
@@ -19,32 +22,46 @@ export default function HomePage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30">
-              <div className="text-4xl mb-4">🎨</div>
+            {/* Templates Card */}
+            <Link 
+              href="/templates"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
+            >
+              <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">🎨</div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Templates</h3>
               <p className="text-gray-600 text-sm">Professional design templates for all your needs</p>
-            </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30">
-              <div className="text-4xl mb-4">✏️</div>
+            </Link>
+
+            {/* Editor Card */}
+            <div 
+              onClick={() => setShowCreateTemplateModal(true)}
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
+            >
+              <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">✏️</div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Editor</h3>
-              <p className="text-gray-600 text-sm">Powerful online editor with advanced features</p>
+              <p className="text-gray-600 text-sm">Create new designs from scratch</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30">
-              <div className="text-4xl mb-4">🏷️</div>
+
+            {/* Brand Kit Card */}
+            <Link 
+              href="/brand-kit"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
+            >
+              <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">🏷️</div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Brand Kit</h3>
               <p className="text-gray-600 text-sm">Manage your brand assets and guidelines</p>
-            </div>
+            </Link>
           </div>
-          
-          <Link 
-            href="/templates" 
-            className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
-          >
-            Browse Templates
-          </Link>
         </div>
       </div>
+
+      {/* Create Template Modal */}
+      <CreateTemplateModal 
+        isOpen={showCreateTemplateModal}
+        onClose={() => setShowCreateTemplateModal(false)}
+      />
     </AppLayout>
   );
 }
+
 export const dynamic = "force-dynamic"; 

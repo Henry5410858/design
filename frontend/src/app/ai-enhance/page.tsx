@@ -1,10 +1,15 @@
 'use client';
 import { useState } from 'react';
+import { 
+  MagicWand, 
+  Image as ImageIcon, 
+  ArrowsOutCardinal, 
+  Export 
+} from 'phosphor-react';
 
 // This page should be statically generated
 export const dynamic = 'auto';
 import AppLayout from '../../components/layout/AppLayout';
-import { FiUpload, FiImage, FiZap, FiDownload, FiRefreshCw } from 'react-icons/fi';
 import { createContextAwarePromise, safeAsync } from '../../utils/contextManager';
 
 export default function AIEnhancePage() {
@@ -64,7 +69,7 @@ export default function AIEnhancePage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl mb-6 shadow-lg">
-            <FiZap className="w-8 h-8 text-white" />
+            <MagicWand size={32} className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
             Mejora de Imágenes con IA
@@ -78,7 +83,7 @@ export default function AIEnhancePage() {
         <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-soft mb-8">
           <div className="text-center">
             <div className="w-20 h-20 bg-brand-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FiUpload className="w-10 h-10 text-brand-primary" />
+              <ImageIcon size={40} className="w-10 h-10 text-brand-primary" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Subir Imagen</h2>
             <p className="text-gray-600 mb-6">Selecciona una imagen para mejorar con IA</p>
@@ -95,7 +100,7 @@ export default function AIEnhancePage() {
                 htmlFor="image-upload"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary-dark transition-colors duration-200 cursor-pointer shadow-soft hover:shadow-elevated transform hover:-translate-y-1"
               >
-                <FiImage className="w-5 h-5" />
+                <ImageIcon size={20} className="w-5 h-5" />
                 Seleccionar Imagen
               </label>
             </div>
@@ -113,7 +118,7 @@ export default function AIEnhancePage() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-soft overflow-hidden">
             <div className="bg-gradient-to-r from-brand-primary/5 to-brand-secondary/5 px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FiImage className="w-5 h-5 text-brand-primary" />
+                <ImageIcon size={20} className="w-5 h-5 text-brand-primary" />
                 Vista Previa y Mejora
               </h3>
             </div>
@@ -145,14 +150,14 @@ export default function AIEnhancePage() {
                     {enhancing ? (
                       <div className="w-full h-64 bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center">
                         <div className="text-center">
-                          <FiRefreshCw className="w-8 h-8 text-brand-primary animate-spin mx-auto mb-2" />
+                          <ArrowsOutCardinal size={32} className="w-8 h-8 text-brand-primary animate-spin mx-auto mb-2" />
                           <p className="text-gray-600">Mejorando imagen...</p>
                         </div>
                       </div>
                     ) : (
                       <div className="w-full h-64 bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center">
                         <div className="text-center">
-                          <FiZap className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <MagicWand size={32} className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                           <p className="text-gray-500">Resultado de IA aquí</p>
                         </div>
                       </div>
@@ -177,12 +182,12 @@ export default function AIEnhancePage() {
                   >
                     {enhancing ? (
                       <>
-                        <FiRefreshCw className="w-4 h-4 animate-spin" />
+                        <ArrowsOutCardinal size={16} className="w-4 h-4 animate-spin" />
                         Mejorando...
                       </>
                     ) : (
                       <>
-                        <FiZap className="w-4 h-4" />
+                        <MagicWand size={16} className="w-4 h-4" />
                         Mejorar con IA
                       </>
                     )}
@@ -190,7 +195,7 @@ export default function AIEnhancePage() {
                   
                   {!enhancing && (
                     <button className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center gap-2">
-                      <FiDownload className="w-4 h-4" />
+                      <Export size={16} className="w-4 h-4" />
                       Descargar
                     </button>
                   )}
@@ -208,21 +213,21 @@ export default function AIEnhancePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiImage className="w-6 h-6 text-brand-primary" />
+                <ImageIcon size={24} className="w-6 h-6 text-brand-primary" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2">Mejora de Resolución</h4>
               <p className="text-sm text-gray-600">Aumenta la resolución de tus imágenes hasta 4K</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-brand-secondary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiZap className="w-6 h-6 text-brand-secondary" />
+                <MagicWand size={24} className="w-6 h-6 text-brand-secondary" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2">Reducción de Ruido</h4>
               <p className="text-sm text-gray-600">Elimina el ruido y mejora la claridad de la imagen</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <FiDownload className="w-6 h-6 text-success" />
+                <Export size={24} className="w-6 h-6 text-success" />
               </div>
               <h4 className="font-medium text-gray-900 mb-2">Descarga Inmediata</h4>
               <p className="text-sm text-gray-600">Descarga tu imagen mejorada en alta calidad</p>
