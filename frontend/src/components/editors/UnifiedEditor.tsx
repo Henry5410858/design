@@ -1090,7 +1090,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       const currentObjects: EditorObject[] = canvasObjects.map((obj: fabric.Object) => {
         // For path objects (like waves), preserve the path data
         if (obj.type === 'path') {
-          return {
+          const savedObj = {
             id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
             type: 'shape' as const,
             x: obj.left || 0,
@@ -1116,6 +1116,20 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             isWaveShape: (obj as any).isWaveShape || false,
             shapeType: (obj as any).shapeType || 'path'
           };
+          
+          // Debug logging for wave shapes
+          if ((obj as any).isWaveShape) {
+            console.log('💾 Wave shape saved to history:', {
+              id: savedObj.id,
+              type: savedObj.type,
+              isPath: savedObj.isPath,
+              isWaveShape: savedObj.isWaveShape,
+              shapeType: savedObj.shapeType,
+              pathData: savedObj.pathData
+            });
+          }
+          
+          return savedObj;
         }
         
         return {
@@ -3756,7 +3770,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           // Add path-specific properties
           if (obj.type === 'path') {
             const pathObj = obj as fabric.Path;
-            return {
+            const savedPathObj = {
               ...baseObj,
               path: pathObj.path || '',
               opacity: pathObj.opacity || 1,
@@ -3768,6 +3782,19 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               isWaveShape: (obj as any).isWaveShape || false,
               shapeType: (obj as any).shapeType || 'path'
             };
+            
+            // Debug logging for wave shapes
+            if ((obj as any).isWaveShape) {
+              console.log('💾 Wave shape saved to design file:', {
+                id: savedPathObj.id,
+                type: savedPathObj.type,
+                path: savedPathObj.path,
+                isWaveShape: savedPathObj.isWaveShape,
+                shapeType: savedPathObj.shapeType
+              });
+            }
+            
+            return savedPathObj;
           }
           
           return baseObj;
