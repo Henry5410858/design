@@ -24,7 +24,7 @@ interface UnifiedEditorProps {
 
 interface EditorObject {
   id: string;
-  type: 'text' | 'image' | 'shape' | 'placeholder';
+  type: 'text' | 'image' | 'shape' | 'placeholder' | 'path';
   x: number;
   y: number;
   width?: number;
@@ -42,10 +42,24 @@ interface EditorObject {
   strokeWidth?: number;
   strokeLineCap?: string;
   strokeLineJoin?: string;
+  strokeDashArray?: any;
+  strokeDashOffset?: number;
+  strokeUniform?: boolean;
+  strokeMiterLimit?: number;
   shadow?: any;
+  fillRule?: string;
+  paintFirst?: string;
+  globalCompositeOperation?: string;
+  skewX?: number;
+  skewY?: number;
+  flipX?: boolean;
+  flipY?: boolean;
   // Path-specific properties for wave shapes and other path objects
   pathData?: any;
   isPath?: boolean;
+  // Gradient properties
+  gradientType?: string;
+  gradientColors?: string[];
 }
 
 interface HistoryState {
@@ -1088,55 +1102,60 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       // Convert Fabric.js objects to our EditorObject format
       const currentObjects: EditorObject[] = canvasObjects.map((obj: fabric.Object) => {
-        // For path objects (like waves), preserve the path data
-        if (obj.type === 'path') {
-          const savedObj = {
-            id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
-            type: 'shape' as const,
-            x: obj.left || 0,
-            y: obj.top || 0,
-            width: obj.width || 100,
-            height: obj.height || 100,
-            content: '',
-            color: (obj as any).fill || '#000000',
-            fontSize: 16,
-            fontFamily: 'Arial',
-            rotation: obj.angle || 0,
-            zIndex: (obj as any).zIndex || 0,
-            opacity: obj.opacity || 1,
-            stroke: (obj as any).stroke || 'transparent',
-            strokeWidth: (obj as any).strokeWidth || 0,
-            strokeLineCap: (obj as any).strokeLineCap || 'butt',
-            strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
-            shadow: (obj as any).shadow || null,
-            // Preserve path-specific data
-            pathData: (obj as fabric.Path).path,
-            isPath: true,
-            // Preserve wave-specific data
-            isWaveShape: (obj as any).isWaveShape || false,
-            shapeType: (obj as any).shapeType || 'path'
-          };
-          
-          // Debug logging for wave shapes
-          if ((obj as any).isWaveShape) {
-            console.log('💾 Wave shape saved to history:', {
-              id: savedObj.id,
-              type: savedObj.type,
-              isPath: savedObj.isPath,
-              isWaveShape: savedObj.isWaveShape,
-              shapeType: savedObj.shapeType,
-              pathData: savedObj.pathData
+                  // For path objects (like waves), preserve the path data
+          if (obj.type === 'path') {
+            const pathObj = obj as fabric.Path;
+            console.log('🔍 saveCanvasToHistory - Path object found:', {
+              type: pathObj.type,
+              path: pathObj.path,
+              hasPath: !!pathObj.path,
+              pathLength: pathObj.path ? pathObj.path.length : 0
             });
+            return {
+              id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
+              type: 'path' as const,  // Keep as 'path' type for proper identification
+              x: obj.left || 0,
+              y: obj.top || 0,
+              width: obj.width || 100,
+              height: obj.height || 100,
+              content: '',
+              color: (obj as any).fill || '#000000',
+              fontSize: 16,
+              fontFamily: 'Arial',
+              rotation: obj.angle || 0,
+              zIndex: (obj as any).zIndex || 0,
+              opacity: obj.opacity || 1,
+              stroke: (obj as any).stroke || 'transparent',
+              strokeWidth: (obj as any).strokeWidth || 0,
+              strokeLineCap: (obj as any).strokeLineCap || 'butt',
+              strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
+              strokeDashArray: (obj as any).strokeDashArray || null,
+              strokeDashOffset: (obj as any).strokeDashOffset || 0,
+              strokeUniform: (obj as any).strokeUniform || false,
+              strokeMiterLimit: (obj as any).strokeMiterLimit || 4,
+              shadow: (obj as any).shadow || null,
+              fillRule: (obj as any).fillRule || 'nonzero',
+              paintFirst: (obj as any).paintFirst || 'fill',
+              globalCompositeOperation: (obj as any).globalCompositeOperation || 'source-over',
+              skewX: (obj as any).skewX || 0,
+              skewY: (obj as any).skewY || 0,
+              flipX: (obj as any).flipX || false,
+              flipY: (obj as any).flipY || false,
+              // Preserve path-specific data
+              pathData: pathObj.path,
+              isPath: true,
+              // Preserve gradient properties
+              gradientType: (pathObj as any).gradientType || null,
+              gradientColors: (pathObj as any).gradientColors || null
+            };
           }
-          
-          return savedObj;
-        }
         
         return {
           id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
           type: (obj.type === 'text' || obj.type === 'i-text' ? 'text' : 
                  obj.type === 'image' ? 'image' : 
-                 obj.type === 'placeholder' ? 'placeholder' : 'shape') as 'text' | 'image' | 'shape' | 'placeholder',
+                 obj.type === 'placeholder' ? 'placeholder' : 
+                 obj.type === 'path' ? 'path' : 'shape') as 'text' | 'image' | 'shape' | 'placeholder' | 'path',
           x: obj.left || 0,
           y: obj.top || 0,
           width: obj.width || 100,
@@ -1238,7 +1257,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
           });
         } else if ((obj as any).isPath && (obj as any).pathData) {
-          // UNDO FUNCTION: Restore path objects (like waves) with their original path data
+          // Restore path objects (like waves) with their original path data
           fabricObj = new fabric.Path((obj as any).pathData, {
             left: obj.x,
             top: obj.y,
@@ -1249,13 +1268,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             strokeLineCap: (obj.strokeLineCap as any) || 'butt',
             strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
           });
-          
-          // Restore wave-specific properties
-          if ((obj as any).isWaveShape) {
-            (fabricObj as any).isWaveShape = true;
-            (fabricObj as any).shapeType = (obj as any).shapeType || 'wave';
-            (fabricObj as any).id = (obj as any).id || `wave_${Date.now()}_${Math.random()}`;
-          }
         } else {
           // Regular shape
           fabricObj = new fabric.Rect({
@@ -1326,7 +1338,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
           });
         } else if ((obj as any).isPath && (obj as any).pathData) {
-          // REDO FUNCTION: Restore path objects (like waves) with their original path data
+          // Restore path objects (like waves) with their original path data
           fabricObj = new fabric.Path((obj as any).pathData, {
             left: obj.x,
             top: obj.y,
@@ -1337,13 +1349,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             strokeLineCap: (obj.strokeLineCap as any) || 'butt',
             strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
           });
-          
-          // Restore wave-specific properties
-          if ((obj as any).isWaveShape) {
-            (fabricObj as any).isWaveShape = true;
-            (fabricObj as any).shapeType = (obj as any).shapeType || 'wave';
-            (fabricObj as any).id = (obj as any).id || `wave_${Date.now()}_${Math.random()}`;
-          }
         } else {
           // Regular shape
           fabricObj = new fabric.Rect({
@@ -1743,10 +1748,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             scaleX: 1,
             scaleY: 1
           });
-          // Mark as wave shape for proper saving/loading
-          (wavePath as any).isWaveShape = true;
-          (wavePath as any).shapeType = 'wave';
-          (wavePath as any).id = `wave_${Date.now()}_${Math.random()}`;
           shape = wavePath;
           break;
         case 'wave-vertical':
@@ -1762,10 +1763,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             scaleX: 1,
             scaleY: 1
           });
-          // Mark as wave shape for proper saving/loading
-          (verticalWavePath as any).isWaveShape = true;
-          (verticalWavePath as any).shapeType = 'wave-vertical';
-          (verticalWavePath as any).id = `wave_vertical_${Date.now()}_${Math.random()}`;
           shape = verticalWavePath;
           break;
         case 'wave-simple':
@@ -1781,10 +1778,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             scaleX: 1,
             scaleY: 1
           });
-          // Mark as wave shape for proper saving/loading
-          (simpleWavePath as any).isWaveShape = true;
-          (simpleWavePath as any).shapeType = 'wave-simple';
-          (simpleWavePath as any).id = `wave_simple_${Date.now()}_${Math.random()}`;
           shape = simpleWavePath;
           break;
         default:
@@ -1807,17 +1800,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       canvas.add(shape);
       canvas.setActiveObject(shape);
       canvas.renderAll();
-      
-      // Debug logging for wave shapes
-      if ((shape as any).isWaveShape) {
-        console.log('🌊 Wave shape created:', {
-          id: (shape as any).id,
-          type: (shape as any).shapeType,
-          isWaveShape: (shape as any).isWaveShape,
-          path: (shape as fabric.Path).path
-        });
-      }
-      
       saveCanvasToHistory();
       setShowShapeSelector(false);
     }
@@ -2295,8 +2277,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             break;
             
           case 'path':
-            if (obj.path) {
-              const path = new fabric.Path(obj.path, {
+            if (obj.path || (obj as any).pathData) {
+              const pathData = obj.path || (obj as any).pathData;
+              const path = new fabric.Path(pathData, {
                 left: obj.left || obj.x || 0,
                 top: obj.top || obj.y || 0,
                 fill: obj.fill || obj.color || '#3b82f6',
@@ -2304,16 +2287,72 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
                 strokeLineCap: obj.strokeLineCap || 'butt',
                 strokeLineJoin: obj.strokeLineJoin || 'miter',
+                strokeDashArray: obj.strokeDashArray || null,
+                strokeDashOffset: obj.strokeDashOffset || 0,
+                strokeUniform: obj.strokeUniform || false,
+                strokeMiterLimit: obj.strokeMiterLimit || 4,
                 scaleX: obj.scaleX || 1,
                 scaleY: obj.scaleY || 1,
                 angle: obj.angle || obj.rotation || 0,
                 selectable: true,
                 hasControls: true,
                 opacity: obj.opacity || 1,
-                shadow: obj.shadow || null
+                shadow: obj.shadow || null,
+                fillRule: obj.fillRule || 'nonzero',
+                paintFirst: obj.paintFirst || 'fill',
+                globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+                skewX: obj.skewX || 0,
+                skewY: obj.skewY || 0,
+                flipX: obj.flipX || false,
+                flipY: obj.flipY || false
               });
+              
+              // Restore gradient properties if they exist
+              if (obj.gradientType) {
+                (path as any).gradientType = obj.gradientType;
+              }
+              if (obj.gradientColors) {
+                (path as any).gradientColors = obj.gradientColors;
+                
+                // Recreate the actual gradient fill
+                if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                  const gradient = new fabric.Gradient({
+                    type: 'linear',
+                    coords: {
+                      x1: 0,
+                      y1: 0,
+                      x2: path.width || 200,
+                      y2: 0
+                    },
+                    colorStops: [
+                      { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                      { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                    ]
+                  });
+                  path.set('fill', gradient);
+                  console.log('🎨 Teal → Blue gradient restored for template path object');
+                } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                  const gradient = new fabric.Gradient({
+                    type: 'linear',
+                    coords: {
+                      x1: 0,
+                      y1: 0,
+                      x2: path.width || 200,
+                      y2: 0
+                    },
+                    colorStops: [
+                      { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                      { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                    ]
+                  });
+                  path.set('fill', gradient);
+                  console.log('🎨 Blue → Teal gradient restored for template path object');
+                }
+              }
               canvas.add(path);
-              console.log(`✅ Path object loaded`);
+              console.log(`✅ Path object loaded with path data:`, pathData ? 'yes' : 'no');
+            } else {
+              console.warn(`⚠️ Path object missing both 'path' and 'pathData' properties:`, obj);
             }
             break;
             
@@ -2328,14 +2367,68 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
                 strokeLineCap: obj.strokeLineCap || 'butt',
                 strokeLineJoin: obj.strokeLineJoin || 'miter',
+                strokeDashArray: obj.strokeDashArray || null,
+                strokeDashOffset: obj.strokeDashOffset || 0,
+                strokeUniform: obj.strokeUniform || false,
+                strokeMiterLimit: obj.strokeMiterLimit || 4,
                 scaleX: obj.scaleX || 1,
                 scaleY: obj.scaleY || 1,
                 angle: obj.angle || obj.rotation || 0,
                 selectable: true,
                 hasControls: true,
                 opacity: obj.opacity || 1,
-                shadow: obj.shadow || null
+                shadow: obj.shadow || null,
+                fillRule: obj.fillRule || 'nonzero',
+                paintFirst: obj.paintFirst || 'fill',
+                globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+                skewX: obj.skewX || 0,
+                skewY: obj.skewY || 0,
+                flipX: obj.flipX || false,
+                flipY: obj.flipY || false
               });
+              
+              // Restore gradient properties if they exist
+              if (obj.gradientType) {
+                (path as any).gradientType = obj.gradientType;
+              }
+              if (obj.gradientColors) {
+                (path as any).gradientColors = obj.gradientColors;
+                
+                // Recreate the actual gradient fill
+                if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                  const gradient = new fabric.Gradient({
+                    type: 'linear',
+                    coords: {
+                      x1: 0,
+                      y1: 0,
+                      x2: path.width || 200,
+                      y2: 0
+                    },
+                    colorStops: [
+                      { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                      { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                    ]
+                  });
+                  path.set('fill', gradient);
+                  console.log('🎨 Teal → Blue gradient restored for template shape object');
+                } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                  const gradient = new fabric.Gradient({
+                    type: 'linear',
+                    coords: {
+                      x1: 0,
+                      y1: 0,
+                      x2: path.width || 200,
+                      y2: 0
+                    },
+                    colorStops: [
+                      { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                      { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                  });
+                  path.set('fill', gradient);
+                  console.log('🎨 Blue → Teal gradient restored for template shape object');
+                }
+              }
               canvas.add(path);
               console.log(`✅ Shape object with path data (wave) loaded`);
             } else {
@@ -2453,6 +2546,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // Load user-saved design (for designs with saved content)
   const loadUserSavedDesign = async (designData: any, templateData: any) => {
     console.log('🚀 loadUserSavedDesign called with design data and template data');
+    console.log('📊 Full designData structure:', JSON.stringify(designData, null, 2));
+    console.log('📊 Full templateData structure:', JSON.stringify(templateData, null, 2));
     
     if (!canvas) {
       console.error('❌ Canvas is not ready');
@@ -2546,6 +2641,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         
         console.log('✅ Background image loaded and positioned successfully');
         console.log('🎨 Canvas objects after background:', canvas.getObjects().length);
+        console.log('📋 Objects after background processing:', canvas.getObjects().map((obj, i) => ({
+          index: i + 1,
+          type: obj.type,
+          isBackground: (obj as any).isBackground
+        })));
       };
       
       imgElement.onerror = (error) => {
@@ -2568,6 +2668,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     // Load user-saved objects from design file
     if (designData.designData && designData.designData.objects && Array.isArray(designData.designData.objects)) {
       console.log(`🎨 Loading ${designData.designData.objects.length} user-saved objects from design file...`);
+      console.log(`🔍 All objects from design file:`, JSON.stringify(designData.designData.objects, null, 2));
       
       // Log background image info for debugging
       if (designData.designData.backgroundImage) {
@@ -2577,7 +2678,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       designData.designData.objects.forEach((obj: any, index: number) => {
         // Use the same object loading logic as in loadTemplateFromData
         try {
-          console.log(`🎨 Loading object ${index + 1}:`, obj);
+                console.log(`🎨 Loading object ${index + 1}:`, {
+        type: obj.type,
+        left: obj.left,
+        top: obj.top,
+        path: obj.path,
+        pathData: (obj as any).pathData,
+        isPath: (obj as any).isPath
+      });
+      console.log(`📋 Full object ${index + 1} data:`, JSON.stringify(obj, null, 2));
           
           if (obj.type === 'text' || obj.type === 'i-text') {
             const text = new fabric.IText(obj.text || obj.content || 'Texto', {
@@ -2681,9 +2790,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               angle: circle.angle,
               opacity: circle.opacity
             });
-          } else if (obj.type === 'path' && obj.path) {
-            // Handle path objects (like waves) with path property (from saved design files)
-            const path = new fabric.Path(obj.path, {
+          } else if (obj.type === 'path' && (obj.path || (obj as any).pathData)) {
+            // Handle path objects (like waves) with path or pathData property
+            const pathData = obj.path || (obj as any).pathData;
+            console.log(`🎯 Creating fabric.Path for wave with pathData:`, pathData);
+            console.log(`🔍 Full path object data:`, JSON.stringify(obj, null, 2));
+            const path = new fabric.Path(pathData, {
               left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
               top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
               fill: obj.fill || obj.color || '#cccccc',
@@ -2691,52 +2803,81 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
               strokeLineCap: obj.strokeLineCap || 'butt',
               strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset || 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit || 4,
               scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
               scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
               angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
               selectable: true,
               hasControls: true,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX || 0,
+              skewY: obj.skewY || 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
             });
             
-            // Restore wave-specific properties
-            if ((obj as any).isWaveShape) {
-              (path as any).isWaveShape = true;
-              (path as any).shapeType = (obj as any).shapeType || 'wave';
-              (path as any).id = (obj as any).id || `wave_${Date.now()}_${Math.random()}`;
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (path as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (path as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for wave shape');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for wave shape');
+              }
             }
             
             canvas.add(path);
-            console.log(`✅ Path object (wave) loaded with path property and wave metadata`);
-          } else if ((obj as any).isPath && (obj as any).pathData) {
-            // Handle path objects (like waves) with pathData property (from history)
-            const path = new fabric.Path((obj as any).pathData, {
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              fill: obj.fill || obj.color || '#cccccc',
-              stroke: obj.stroke || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              selectable: true,
-              hasControls: true,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1
+            console.log(`✅ Path object (wave) loaded with path data from design file:`, {
+              left: path.left,
+              top: path.top,
+              fill: path.fill,
+              stroke: path.stroke,
+              pathData: pathData,
+              gradientType: (path as any).gradientType,
+              gradientColors: (path as any).gradientColors
             });
-            
-            // Restore wave-specific properties
-            if ((obj as any).isWaveShape) {
-              (path as any).isWaveShape = true;
-              (path as any).shapeType = (obj as any).shapeType || 'wave';
-              (path as any).id = (obj as any).id || `wave_${Date.now()}_${Math.random()}`;
-            }
-            
-            canvas.add(path);
-            console.log(`✅ Path object (wave) loaded with pathData property and wave metadata`);
           } else if (obj.type === 'shape' && (obj as any).pathData) {
             // Handle shape objects that have path data (like waves)
+            console.log(`🎯 Creating fabric.Path for shape with pathData:`, (obj as any).pathData);
             const path = new fabric.Path((obj as any).pathData, {
               left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
               top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
@@ -2745,26 +2886,87 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
               strokeLineCap: obj.strokeLineCap || 'butt',
               strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset || 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit || 4,
               scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
               scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
               angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
               selectable: true,
               hasControls: true,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX || 0,
+              skewY: obj.skewY || 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
             });
             
-            // Restore wave-specific properties
-            if ((obj as any).isWaveShape) {
-              (path as any).isWaveShape = true;
-              (path as any).shapeType = (obj as any).shapeType || 'wave';
-              (path as any).id = (obj as any).id || `wave_${Date.now()}_${Math.random()}`;
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (path as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (path as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for shape with pathData');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for shape with pathData');
+              }
             }
             
             canvas.add(path);
-            console.log(`✅ Shape object with path data (wave) loaded and wave metadata restored`);
-          } else if (obj.type === 'shape' && obj.path) {
-            // Handle shape objects that have path property (from saved design files)
-            const path = new fabric.Path(obj.path, {
+            console.log(`✅ Shape object with path data (wave) loaded:`, {
+              left: path.left,
+              top: path.top,
+              fill: path.fill,
+              stroke: path.stroke,
+              pathData: (obj as any).pathData,
+              gradientType: (path as any).gradientType,
+              gradientColors: (path as any).gradientColors
+            });
+          } else if ((obj as any).pathData || (obj as any).isPath) {
+            // Catch-all for any object that has pathData or isPath flag (wave shapes)
+            const pathData = (obj as any).pathData || obj.path;
+            console.log(`🎯 Catch-all: Creating fabric.Path for object with pathData/isPath:`, {
+              type: obj.type,
+              pathData: pathData,
+              isPath: (obj as any).isPath
+            });
+            const path = new fabric.Path(pathData, {
               left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
               top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
               fill: obj.fill || obj.color || '#cccccc',
@@ -2772,23 +2974,78 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
               strokeLineCap: obj.strokeLineCap || 'butt',
               strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset || 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit || 4,
               scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
               scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
               angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
               selectable: true,
               hasControls: true,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX || 0,
+              skewY: obj.skewY || 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
             });
             
-            // Restore wave-specific properties
-            if ((obj as any).isWaveShape) {
-              (path as any).isWaveShape = true;
-              (path as any).shapeType = (obj as any).shapeType || 'wave';
-              (path as any).id = (obj as any).id || `wave_${Date.now()}_${Math.random()}`;
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (path as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (path as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for catch-all path object');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for catch-all path object');
+              }
             }
             
             canvas.add(path);
-            console.log(`✅ Shape object with path property (wave) loaded and wave metadata restored`);
+            console.log(`✅ Catch-all path object (wave) loaded:`, {
+              left: path.left,
+              top: path.top,
+              fill: path.fill,
+              stroke: path.stroke,
+              pathData: pathData,
+              gradientType: (path as any).gradientType,
+              gradientColors: (path as any).gradientColors
+            });
           }
         } catch (error) {
           console.error(`❌ Error loading object ${index + 1}:`, error, obj);
@@ -2804,6 +3061,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       const allObjects = canvas.getObjects();
       const backgroundObjects = allObjects.filter(obj => (obj as any).isBackground === true);
       const contentObjects = allObjects.filter(obj => (obj as any).isBackground !== true);
+      
+      console.log('🔍 Before final layering - Total objects:', allObjects.length);
+      console.log('🔍 Background objects found:', backgroundObjects.length);
+      console.log('🔍 Content objects found:', contentObjects.length);
       
       // Remove all objects temporarily
       allObjects.forEach(obj => canvas.remove(obj));
@@ -2825,7 +3086,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       // Log detailed object information for debugging
       console.log('📋 Detailed object breakdown:');
-      allObjects.forEach((obj, index) => {
+      const finalObjects = canvas.getObjects();
+      finalObjects.forEach((obj, index) => {
         const objInfo: any = {
           index: index + 1,
           type: obj.type,
@@ -2840,9 +3102,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           objInfo.text = (obj as fabric.IText).text;
         } else if (obj.type === 'image') {
           objInfo.src = (obj as any).src || 'unknown';
+        } else if (obj.type === 'path') {
+          objInfo.pathData = (obj as any).pathData ? 'present' : 'missing';
         }
         
         console.log(`🎨 Object ${index + 1}:`, objInfo);
+        console.log(`📋 Full object ${index + 1} details:`, JSON.stringify(obj, null, 2));
       });
     }, 100);
   };
@@ -3657,8 +3922,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             strokeLineCap: (obj as any).strokeLineCap || 'butt',
             strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
             shadow: (obj as any).shadow || null,
-            isBackground: (obj as any).isBackground || false
+            isBackground: (obj as any).isBackground || false,
+            // Add path property for path objects
+            ...(obj.type === 'path' ? { path: (obj as fabric.Path).path || '' } : {})
           };
+          
+
           
           // Add text-specific properties if it's a text object
           if (obj.type === 'text' || obj.type === 'i-text') {
@@ -3770,31 +4039,62 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           // Add path-specific properties
           if (obj.type === 'path') {
             const pathObj = obj as fabric.Path;
-            const savedPathObj = {
+            console.log('🔍 Saving path object:', {
+              type: pathObj.type,
+              path: pathObj.path,
+              hasPath: !!pathObj.path,
+              pathLength: pathObj.path ? pathObj.path.length : 0
+            });
+            // Get the path data directly from the path object
+            const originalPathData = pathObj.path || '';
+            
+            // If pathData is an array, convert it to SVG path string
+            let pathDataString = '';
+            if (Array.isArray(originalPathData)) {
+              console.log('🔍 Converting path array to SVG string:', originalPathData);
+              // Convert Fabric.js path array to SVG path string
+              pathDataString = originalPathData.map((cmd: any) => {
+                if (typeof cmd === 'string') return cmd;
+                if (Array.isArray(cmd)) {
+                  return cmd.join(' ');
+                }
+                return '';
+              }).join(' ');
+              console.log('🔍 Converted to SVG path string:', pathDataString);
+            } else {
+              pathDataString = String(originalPathData);
+            }
+            
+            console.log('🔍 Final path data for saving:', {
+              path: pathDataString,
+              hasPath: !!pathDataString,
+              pathLength: pathDataString ? pathDataString.length : 0
+            });
+            
+            return {
               ...baseObj,
-              path: pathObj.path || '',
+              path: pathDataString,
+              pathData: pathDataString, // Also store as pathData for compatibility
               opacity: pathObj.opacity || 1,
               strokeWidth: pathObj.strokeWidth || 0,
               strokeLineCap: pathObj.strokeLineCap || 'butt',
               strokeLineJoin: pathObj.strokeLineJoin || 'miter',
+              strokeDashArray: pathObj.strokeDashArray || null,
+              strokeDashOffset: pathObj.strokeDashOffset || 0,
+              strokeUniform: pathObj.strokeUniform || false,
+              strokeMiterLimit: pathObj.strokeMiterLimit || 4,
               shadow: pathObj.shadow || null,
-              // Preserve wave-specific data
-              isWaveShape: (obj as any).isWaveShape || false,
-              shapeType: (obj as any).shapeType || 'path'
+              fillRule: pathObj.fillRule || 'nonzero',
+              paintFirst: pathObj.paintFirst || 'fill',
+              globalCompositeOperation: pathObj.globalCompositeOperation || 'source-over',
+              skewX: pathObj.skewX || 0,
+              skewY: pathObj.skewY || 0,
+              flipX: pathObj.flipX || false,
+              flipY: pathObj.flipY || false,
+              // Save gradient properties
+              gradientType: (pathObj as any).gradientType || null,
+              gradientColors: (pathObj as any).gradientColors || null
             };
-            
-            // Debug logging for wave shapes
-            if ((obj as any).isWaveShape) {
-              console.log('💾 Wave shape saved to design file:', {
-                id: savedPathObj.id,
-                type: savedPathObj.type,
-                path: savedPathObj.path,
-                isWaveShape: savedPathObj.isWaveShape,
-                shapeType: savedPathObj.shapeType
-              });
-            }
-            
-            return savedPathObj;
           }
           
           return baseObj;
@@ -5129,6 +5429,36 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 {/* Gradient Options */}
                 <div className="space-y-2">
                   <span className="text-sm font-medium text-gray-700">Gradientes:</span>
+                  
+                  {/* Current Gradient Info Display */}
+                  {selectedObject && (selectedObject as any).gradientType && (
+                    <div className="p-2 bg-gray-50 rounded border">
+                      <span className="text-xs text-gray-600">Gradiente actual:</span>
+                      <div className="text-sm font-medium text-gray-800 capitalize">
+                        {(() => {
+                          const gradientType = (selectedObject as any).gradientType;
+                          if (gradientType === 'teal-blue') return 'Teal → Azul';
+                          if (gradientType === 'blue-teal') return 'Azul → Teal';
+                          return gradientType;
+                        })()}
+                      </div>
+                      {(selectedObject as any).gradientColors && (
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className="text-xs text-gray-500">Colores:</span>
+                          {(selectedObject as any).gradientColors.map((color: string, index: number) => (
+                            <div key={index} className="flex items-center space-x-1">
+                              <div 
+                                className="w-3 h-3 rounded border border-gray-300" 
+                                style={{ backgroundColor: color }}
+                              />
+                              <span className="text-xs text-gray-600">{color}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <div className="flex space-x-2">
                     <button
                       onClick={() => {
@@ -5148,6 +5478,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                             ]
                           });
                           selectedObject.set('fill', gradient);
+                          // Store gradient type identifier
+                          (selectedObject as any).gradientType = 'teal-blue';
+                          (selectedObject as any).gradientColors = ['#01aac7', '#00525b'];
                           canvas.renderAll();
                           saveCanvasToHistory();
                         }
@@ -5159,119 +5492,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     </button>
                     
                     <button
-                                              onClick={() => {
-                          if (selectedObject && canvas) {
-                            // Create blue to teal gradient
-                            const gradient = new fabric.Gradient({
-                              type: 'linear',
-                              coords: {
-                                x1: 0,
-                                y1: 0,
-                                x2: selectedObject.width || 200,
-                                y2: 0
-                              },
-                              colorStops: [
-                                { offset: 0, color: '#00525b' },   // Blue on left
-                                { offset: 1, color: '#01aac7' }     // Teal on right
-                              ]
-                            });
-                            selectedObject.set('fill', gradient);
-                            canvas.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="px-3 py-2 bg-gradient-to-r from-blue-600 to-teal-400 text-white text-xs rounded hover:scale-105 transition-transform"
-                        title="Gradiente Azul a Teal"
-                      >
-                        Azul → Teal
-                      </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* WordArt Effects Row */}
-              {selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text') && (
-                <div className="space-y-3">
-                  <span className="text-sm font-medium text-gray-700">Efectos de Texto (WordArt):</span>
-                  
-                  {/* Text Effects */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
                       onClick={() => {
                         if (selectedObject && canvas) {
-                          // 3D Text Effect
-                          (selectedObject as fabric.IText).set({
-                            stroke: '#000000',
-                            strokeWidth: 2,
-                            shadow: new fabric.Shadow({
-                              color: 'rgba(0,0,0,0.5)',
-                              blur: 8,
-                              offsetX: 3,
-                              offsetY: 3
-                            })
-                          });
-                          canvas.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded hover:scale-105 transition-transform"
-                      title="Efecto 3D"
-                    >
-                      3D Text
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        if (selectedObject && canvas) {
-                          // Glow Effect
-                          (selectedObject as fabric.IText).set({
-                            stroke: '#00ffff',
-                            strokeWidth: 4,
-                            shadow: new fabric.Shadow({
-                              color: '#00ffff',
-                              blur: 20,
-                              offsetX: 0,
-                              offsetY: 0
-                            })
-                          });
-                          canvas.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs rounded hover:scale-105 transition-transform"
-                      title="Efecto Brillo"
-                    >
-                      Glow Effect
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        if (selectedObject && canvas) {
-                          // Neon Effect
-                          (selectedObject as fabric.IText).set({
-                            stroke: '#ff00ff',
-                            strokeWidth: 3,
-                            shadow: new fabric.Shadow({
-                              color: '#ff00ff',
-                              blur: 15,
-                              offsetX: 0,
-                              offsetY: 0
-                            })
-                          });
-                          canvas.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="px-3 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs rounded hover:scale-105 transition-transform"
-                      title="Efecto Neón"
-                    >
-                      Neon Effect
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        if (selectedObject && canvas) {
-                          // Metallic Effect
+                          // Create blue to teal gradient
                           const gradient = new fabric.Gradient({
                             type: 'linear',
                             coords: {
@@ -5281,65 +5504,117 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                               y2: 0
                             },
                             colorStops: [
-                              { offset: 0, color: '#c0c0c0' },   // Silver
-                              { offset: 0.5, color: '#ffffff' },  // White
-                              { offset: 1, color: '#808080' }     // Gray
+                              { offset: 0, color: '#00525b' },   // Blue on left
+                              { offset: 1, color: '#01aac7' }     // Teal on right
                             ]
                           });
-                          (selectedObject as fabric.IText).set({
-                            fill: gradient,
-                            stroke: '#404040',
-                            strokeWidth: 1
-                          });
+                          selectedObject.set('fill', gradient);
+                          // Store gradient type identifier
+                          (selectedObject as any).gradientType = 'blue-teal';
+                          (selectedObject as any).gradientColors = ['#00525b', '#01aac7'];
                           canvas.renderAll();
                           saveCanvasToHistory();
                         }
                       }}
-                      className="px-3 py-2 bg-gradient-to-r from-gray-400 to-gray-600 text-white text-xs rounded hover:scale-105 transition-transform"
-                      title="Efecto Metálico"
+                      className="px-3 py-2 bg-gradient-to-r from-blue-600 to-teal-400 text-white text-xs rounded hover:scale-105 transition-transform"
+                      title="Gradiente Azul a Teal"
                     >
-                      Metallic
+                      Azul → Teal
                     </button>
                   </div>
+                </div>
+              </div>
+              
+              {/* Text Color Pickers Row - Only for Text Objects */}
+              {selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text') && (
+                <div className="space-y-3">
+                  <span className="text-sm font-medium text-gray-700">Colores de Texto:</span>
                   
-                  {/* Text Transformations */}
-                  <div className="space-y-2">
-                    <span className="text-sm font-medium text-gray-700">Transformaciones:</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => {
+                  <div className="flex items-center space-x-4">
+                    {/* Text Fill Color Picker */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-600">Relleno:</span>
+                      <input
+                        type="color"
+                        value={(selectedObject.fill as string) || '#000000'}
+                        onChange={(e) => {
                           if (selectedObject && canvas) {
-                            // Uppercase
-                            const currentText = (selectedObject as fabric.IText).text || '';
-                            (selectedObject as fabric.IText).set('text', currentText.toUpperCase());
+                            selectedObject.set('fill', e.target.value);
                             canvas.renderAll();
                             saveCanvasToHistory();
                           }
                         }}
-                        className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs rounded transition-colors"
-                        title="Convertir a mayúsculas"
-                      >
-                        MAYÚSCULAS
-                      </button>
-                      
+                        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                        title="Color de relleno del texto"
+                      />
                       <button
                         onClick={() => {
                           if (selectedObject && canvas) {
-                            // Title Case
-                            const currentText = (selectedObject as fabric.IText).text || '';
-                            const titleCase = currentText.replace(/\w\S*/g, (txt) => 
-                              txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                            );
-                            (selectedObject as fabric.IText).set('text', titleCase);
+                            selectedObject.set('fill', 'transparent');
                             canvas.renderAll();
                             saveCanvasToHistory();
                           }
                         }}
-                        className="px-3 py-2 bg-green-100 hover:bg-green-200 text-green-800 text-xs rounded transition-colors"
-                        title="Convertir a título"
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 transition-colors"
+                        title="Sin color (transparente)"
                       >
-                        Title Case
+                        Sin color
                       </button>
+                    </div>
+                    
+                    {/* Text Outline Color Picker */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-600">Contorno:</span>
+                      <input
+                        type="color"
+                        value={(selectedObject.stroke as string) || '#000000'}
+                        onChange={(e) => {
+                          if (selectedObject && canvas) {
+                            selectedObject.set('stroke', e.target.value);
+                            canvas.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                        title="Color del contorno del texto"
+                      />
+                      <button
+                        onClick={() => {
+                          if (selectedObject && canvas) {
+                            selectedObject.set('stroke', 'transparent');
+                            canvas.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 transition-colors"
+                        title="Sin color (transparente)"
+                      >
+                        Sin color
+                      </button>
+                    </div>
+                    
+                    {/* Text Outline Width */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-600">Ancho:</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        step="0.5"
+                        value={(selectedObject.strokeWidth as number) || 0}
+                        onChange={(e) => {
+                          if (selectedObject && canvas) {
+                            selectedObject.set('strokeWidth', parseFloat(e.target.value));
+                            canvas.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                        className="w-16 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
+                        title="Ancho del contorno del texto"
+                      />
+                      <span className="text-xs text-gray-600 min-w-[2rem] text-center">
+                        {(selectedObject.strokeWidth as number) || 0}
+                      </span>
                     </div>
                   </div>
                 </div>

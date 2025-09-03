@@ -51,7 +51,6 @@ const CanvasObjectSchema = new mongoose.Schema({
   // Transform properties
   scaleX: { type: Number, default: 1 },
   scaleY: { type: Number, default: 1 },
-  angle: { type: Number, default: 0 },
   rotation: { type: Number, default: 0 },  // Alternative to angle
   
   // Shape-specific properties

@@ -43,6 +43,29 @@ export const createMinimalObjectData = (obj: ObjectData): any => {
     minimal.y1 = lineObj.y1 || 0;
     minimal.x2 = lineObj.x2 || 0;
     minimal.y2 = lineObj.y2 || 0;
+  } else if (obj.type === 'path') {
+    // For path objects, preserve the path data and all visual properties
+    minimal.path = (obj as any).path || '';
+    minimal.pathData = (obj as any).pathData || '';
+    minimal.stroke = obj.stroke || 'transparent';
+    minimal.strokeWidth = (obj as any).strokeWidth || 0;
+    minimal.strokeLineCap = (obj as any).strokeLineCap || 'butt';
+    minimal.strokeLineJoin = (obj as any).strokeLineJoin || 'miter';
+    minimal.strokeDashArray = (obj as any).strokeDashArray || null;
+    minimal.strokeDashOffset = (obj as any).strokeDashOffset || 0;
+    minimal.strokeUniform = (obj as any).strokeUniform || false;
+    minimal.strokeMiterLimit = (obj as any).strokeMiterLimit || 4;
+    minimal.shadow = (obj as any).shadow || null;
+    minimal.fillRule = (obj as any).fillRule || 'nonzero';
+    minimal.paintFirst = (obj as any).paintFirst || 'fill';
+    minimal.globalCompositeOperation = (obj as any).globalCompositeOperation || 'source-over';
+    minimal.skewX = (obj as any).skewX || 0;
+    minimal.skewY = (obj as any).skewY || 0;
+    minimal.flipX = (obj as any).flipX || false;
+    minimal.flipY = (obj as any).flipY || false;
+    // Preserve gradient properties
+    minimal.gradientType = (obj as any).gradientType || null;
+    minimal.gradientColors = (obj as any).gradientColors || null;
   }
 
   return minimal;
@@ -77,6 +100,21 @@ export const createUltraMinimalObjectData = (obj: ObjectData): any => {
     ultraMinimal.y1 = Math.round(lineObj.y1 || 0);
     ultraMinimal.x2 = Math.round(lineObj.x2 || 0);
     ultraMinimal.y2 = Math.round(lineObj.y2 || 0);
+  } else if (obj.type === 'path') {
+    // For path objects, preserve the path data and essential visual properties
+    ultraMinimal.path = (obj as any).path || '';
+    ultraMinimal.pathData = (obj as any).pathData || '';
+    ultraMinimal.stroke = obj.stroke || 'transparent';
+    ultraMinimal.strokeWidth = (obj as any).strokeWidth || 0;
+    ultraMinimal.strokeDashArray = (obj as any).strokeDashArray || null;
+    ultraMinimal.shadow = (obj as any).shadow || null;
+    ultraMinimal.skewX = (obj as any).skewX || 0;
+    ultraMinimal.skewY = (obj as any).skewY || 0;
+    ultraMinimal.flipX = (obj as any).flipX || false;
+    ultraMinimal.flipY = (obj as any).flipY || false;
+    // Preserve gradient properties
+    ultraMinimal.gradientType = (obj as any).gradientType || null;
+    ultraMinimal.gradientColors = (obj as any).gradientColors || null;
   }
 
   return ultraMinimal;
