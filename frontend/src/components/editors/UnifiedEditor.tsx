@@ -24,7 +24,7 @@ interface UnifiedEditorProps {
 
 interface EditorObject {
   id: string;
-  type: 'text' | 'image' | 'shape' | 'placeholder' | 'path';
+  type: 'text' | 'image' | 'shape' | 'placeholder' | 'path' | 'triangle';
   x: number;
   y: number;
   width?: number;
@@ -1138,7 +1138,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               paintFirst: (obj as any).paintFirst || 'fill',
               globalCompositeOperation: (obj as any).globalCompositeOperation || 'source-over',
               skewX: (obj as any).skewX || 0,
-              skewY: (obj as any).skewY || 0,
+              skewY: (obj as any).strokeY || 0,
               flipX: (obj as any).flipX || false,
               flipY: (obj as any).flipY || false,
               // Preserve path-specific data
@@ -1147,6 +1147,108 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               // Preserve gradient properties
               gradientType: (pathObj as any).gradientType || null,
               gradientColors: (pathObj as any).gradientColors || null
+            };
+          }
+          
+          // For triangle objects, preserve all properties exactly
+          if (obj.type === 'triangle') {
+            const triangleObj = obj as fabric.Triangle;
+            console.log('🔍 saveCanvasToHistory - Triangle object found:', {
+              type: triangleObj.type,
+              left: triangleObj.left,
+              top: triangleObj.top,
+              width: triangleObj.width,
+              height: triangleObj.height,
+              fill: triangleObj.fill,
+              stroke: triangleObj.stroke,
+              strokeWidth: triangleObj.strokeWidth
+            });
+            return {
+              id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
+              type: 'triangle' as const,  // Keep as 'triangle' type for proper identification
+              x: obj.left || 0,
+              y: obj.top || 0,
+              width: obj.width || 100,
+              height: obj.height || 100,
+              content: '',
+              color: (obj as any).fill || '#000000',
+              fontSize: 16,
+              fontFamily: 'Arial',
+              rotation: obj.angle || 0,
+              zIndex: (obj as any).zIndex || 0,
+              opacity: obj.opacity || 1,
+              stroke: (obj as any).stroke || 'transparent',
+              strokeWidth: (obj as any).strokeWidth || 0,
+              strokeLineCap: (obj as any).strokeLineCap || 'butt',
+              strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
+              strokeDashArray: (obj as any).strokeDashArray || null,
+              strokeDashOffset: (obj as any).strokeDashOffset || 0,
+              strokeUniform: (obj as any).strokeUniform || false,
+              strokeMiterLimit: (obj as any).strokeMiterLimit || 4,
+              shadow: (obj as any).shadow || null,
+              fillRule: (obj as any).fillRule || 'nonzero',
+              paintFirst: (obj as any).paintFirst || 'fill',
+              globalCompositeOperation: (obj as any).globalCompositeOperation || 'source-over',
+              skewX: (obj as any).skewX || 0,
+              skewY: (obj as any).skewY || 0,
+              flipX: (obj as any).flipX || false,
+              flipY: (obj as any).flipY || false,
+              // Preserve gradient properties
+              gradientType: (triangleObj as any).gradientType || null,
+              gradientColors: (triangleObj as any).gradientColors || null
+            };
+          }
+          
+          // For text objects, preserve all properties exactly
+          if (obj.type === 'text' || obj.type === 'i-text') {
+            const textObj = obj as fabric.IText;
+            console.log('🔍 saveCanvasToHistory - Text object found:', {
+              type: textObj.type,
+              text: textObj.text,
+              fontSize: textObj.fontSize,
+              fontFamily: textObj.fontFamily,
+              fontWeight: textObj.fontWeight,
+              fontStyle: textObj.fontStyle,
+              fill: textObj.fill,
+              stroke: textObj.stroke,
+              strokeWidth: textObj.strokeWidth
+            });
+            return {
+              id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
+              type: 'text' as const,  // Keep as 'text' type for proper identification
+              x: obj.left || 0,
+              y: obj.top || 0,
+              width: obj.width || 100,
+              height: obj.height || 100,
+              content: textObj.text || '',
+              color: (obj as any).fill || '#000000',
+              fontSize: textObj.fontSize || 16,
+              fontFamily: textObj.fontFamily || 'Arial',
+              fontWeight: textObj.fontWeight || 'normal',
+              fontStyle: textObj.fontStyle || 'normal',
+              textAlign: textObj.textAlign || 'left',
+              rotation: obj.angle || 0,
+              zIndex: (obj as any).zIndex || 0,
+              opacity: obj.opacity || 1,
+              stroke: (obj as any).stroke || 'transparent',
+              strokeWidth: (obj as any).strokeWidth || 0,
+              strokeLineCap: (obj as any).strokeLineCap || 'butt',
+              strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
+              strokeDashArray: (obj as any).strokeDashArray || null,
+              strokeDashOffset: (obj as any).strokeDashOffset || 0,
+              strokeUniform: (obj as any).strokeUniform || false,
+              strokeMiterLimit: (obj as any).strokeMiterLimit || 4,
+              shadow: (obj as any).shadow || null,
+              fillRule: (obj as any).fillRule || 'nonzero',
+              paintFirst: (obj as any).paintFirst || 'fill',
+              globalCompositeOperation: (obj as any).globalCompositeOperation || 'source-over',
+              skewX: (obj as any).skewX || 0,
+              skewY: (obj as any).skewY || 0,
+              flipX: (obj as any).flipX || false,
+              flipY: (obj as any).flipY || false,
+              // Preserve gradient properties for text
+              gradientType: (textObj as any).gradientType || null,
+              gradientColors: (textObj as any).gradientColors || null
             };
           }
         
@@ -2133,29 +2235,101 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         switch (obj.type) {
           case 'text':
           case 'i-text':
-                         const text = new fabric.IText(obj.text || obj.content || 'Texto', {
-               left: obj.left || obj.x || 0,
-               top: obj.top || obj.y || 0,
-               fontSize: obj.fontSize || obj.fontSize || 48,
-               fill: obj.fill || obj.color || '#000000',
-               fontFamily: obj.fontFamily || obj.font || 'Arial',
-               fontWeight: obj.fontWeight || 'normal',
-               textAlign: obj.textAlign || 'left',
-               selectable: true,
-               scaleX: obj.scaleX || 1,
-               scaleY: obj.scaleY || 1,
-               angle: obj.angle || obj.rotation || 0,
-               width: obj.width || undefined,
-               height: obj.height || undefined,
-               opacity: obj.opacity || 1,
-               stroke: obj.stroke || 'transparent',
-               strokeWidth: obj.strokeWidth || 0,
-               strokeLineCap: obj.strokeLineCap || 'butt',
-               strokeLineJoin: obj.strokeLineJoin || 'miter',
-               shadow: obj.shadow || null
-             });
+            const text = new fabric.IText(obj.text || obj.content || 'Texto', {
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              fontSize: obj.fontSize !== undefined && obj.fontSize !== null ? obj.fontSize : 48,
+              fill: obj.fill || obj.color || '#000000',
+              fontFamily: obj.fontFamily || obj.font || 'Arial',
+              fontWeight: obj.fontWeight || 'normal',
+              fontStyle: obj.fontStyle || 'normal',
+              textAlign: obj.textAlign || 'left',
+              selectable: true,
+              hasControls: true,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              width: obj.width !== undefined && obj.width !== null ? obj.width : undefined,
+              height: obj.height !== undefined && obj.height !== null ? obj.height : undefined,
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
+              shadow: obj.shadow || null,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
+              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
+            });
+            
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (text as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (text as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: text.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                text.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for text');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: text.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                text.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for text');
+              }
+            }
+            
             canvas.add(text);
-            console.log(`✅ Text object loaded: "${obj.text || obj.content}"`);
+            console.log(`✅ Text object loaded with enhanced properties:`, {
+              text: obj.text || obj.content,
+              fontSize: text.fontSize,
+              fontFamily: text.fontFamily,
+              fontWeight: text.fontWeight,
+              fontStyle: text.fontStyle,
+              fill: text.fill,
+              stroke: text.stroke,
+              strokeWidth: text.strokeWidth,
+              scaleX: text.scaleX,
+              scaleY: text.scaleY,
+              angle: text.angle,
+              opacity: text.opacity,
+              gradientType: (text as any).gradientType,
+              gradientColors: (text as any).gradientColors
+            });
             break;
             
           case 'image':
@@ -2233,24 +2407,94 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
           case 'triangle':
             const triangle = new fabric.Triangle({
-              left: obj.left || obj.x || 0,
-              top: obj.top || obj.y || 0,
-              width: obj.width || 200,
-              height: obj.height || 200,
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              width: obj.width !== undefined && obj.width !== null ? obj.width : 200,
+              height: obj.height !== undefined && obj.height !== null ? obj.height : 200,
               fill: obj.fill || obj.color || '#3b82f6',
               stroke: obj.stroke || obj.borderColor || 'transparent',
-              strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
               strokeLineCap: obj.strokeLineCap || 'butt',
               strokeLineJoin: obj.strokeLineJoin || 'miter',
-              scaleX: obj.scaleX || 1,
-              scaleY: obj.scaleY || 1,
-              angle: obj.angle || obj.rotation || 0,
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
               selectable: true,
-              opacity: obj.opacity || 1,
+              hasControls: true,
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
+              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false,
               shadow: obj.shadow || null
             });
+            
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (triangle as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (triangle as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: triangle.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                triangle.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for triangle');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: triangle.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                triangle.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for triangle');
+              }
+            }
+            
             canvas.add(triangle);
-            console.log(`✅ Triangle object loaded`);
+            console.log(`✅ Triangle object loaded with enhanced properties:`, {
+              left: triangle.left,
+              top: triangle.top,
+              width: triangle.width,
+              height: triangle.height,
+              fill: triangle.fill,
+              stroke: triangle.stroke,
+              strokeWidth: triangle.strokeWidth,
+              scaleX: triangle.scaleX,
+              scaleY: triangle.scaleY,
+              angle: triangle.angle,
+              opacity: triangle.opacity,
+              gradientType: (triangle as any).gradientType,
+              gradientColors: (triangle as any).gradientColors
+            });
             break;
             
           case 'polygon':
@@ -3937,13 +4181,31 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               fontSize: textObj.fontSize || 48,
               fontFamily: textObj.fontFamily || 'Arial',
               fontWeight: textObj.fontWeight || 'normal',
+              fontStyle: textObj.fontStyle || 'normal',
               textAlign: textObj.textAlign || 'left',
               text: textObj.text || '',
               opacity: textObj.opacity || 1,
+              // Enhanced text outline and fill properties
               strokeWidth: textObj.strokeWidth || 0,
               strokeLineCap: textObj.strokeLineCap || 'butt',
               strokeLineJoin: textObj.strokeLineJoin || 'miter',
-              shadow: textObj.shadow || null
+              strokeDashArray: textObj.strokeDashArray || null,
+              strokeDashOffset: textObj.strokeDashOffset || 0,
+              strokeUniform: textObj.strokeUniform || false,
+              strokeMiterLimit: textObj.strokeMiterLimit || 4,
+              shadow: textObj.shadow || null,
+              // Text-specific rendering properties
+              fillRule: textObj.fillRule || 'nonzero',
+              paintFirst: textObj.paintFirst || 'fill',
+              globalCompositeOperation: textObj.globalCompositeOperation || 'source-over',
+              // Text transformation properties
+              skewX: textObj.skewX || 0,
+              skewY: textObj.skewY || 0,
+              flipX: textObj.flipX || false,
+              flipY: textObj.flipY || false,
+              // Preserve gradient properties for text
+              gradientType: (textObj as any).gradientType || null,
+              gradientColors: (textObj as any).gradientColors || null
             };
           }
           
@@ -4018,7 +4280,21 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               strokeWidth: triangleObj.strokeWidth || 0,
               strokeLineCap: triangleObj.strokeLineCap || 'butt',
               strokeLineJoin: triangleObj.strokeLineJoin || 'miter',
-              shadow: triangleObj.shadow || null
+              strokeDashArray: triangleObj.strokeDashArray || null,
+              strokeDashOffset: triangleObj.strokeDashOffset || 0,
+              strokeUniform: triangleObj.strokeUniform || false,
+              strokeMiterLimit: triangleObj.strokeMiterLimit || 4,
+              shadow: triangleObj.shadow || null,
+              fillRule: triangleObj.fillRule || 'nonzero',
+              paintFirst: triangleObj.paintFirst || 'fill',
+              globalCompositeOperation: triangleObj.globalCompositeOperation || 'source-over',
+              skewX: triangleObj.skewX || 0,
+              skewY: triangleObj.skewY || 0,
+              flipX: triangleObj.flipX || false,
+              flipY: triangleObj.flipY || false,
+              // Preserve gradient properties
+              gradientType: (triangleObj as any).gradientType || null,
+              gradientColors: (triangleObj as any).gradientColors || null
             };
           }
           
@@ -5292,6 +5568,99 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   <em>I</em>
                 </button>
               </div>
+              
+              {/* Text Formatting Row */}
+              <div className="space-y-3">
+                <span className="text-sm font-medium text-gray-700">Formato de Texto:</span>
+                
+                <div className="flex items-center space-x-4">
+                  {/* Text Fill Color Picker */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-600">Relleno:</span>
+                    <input
+                      type="color"
+                      value={(selectedObject.fill as string) || '#000000'}
+                      onChange={(e) => {
+                        if (selectedObject && canvas) {
+                          selectedObject.set('fill', e.target.value);
+                          canvas.renderAll();
+                          saveCanvasToHistory();
+                        }
+                      }}
+                      className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                      title="Color de relleno del texto"
+                    />
+                    <button
+                      onClick={() => {
+                        if (selectedObject && canvas) {
+                          selectedObject.set('fill', 'transparent');
+                          canvas.renderAll();
+                          saveCanvasToHistory();
+                        }
+                      }}
+                      className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 transition-colors"
+                      title="Sin color (transparente)"
+                    >
+                      Sin color
+                    </button>
+                  </div>
+                  
+                  {/* Text Outline Color Picker */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-600">Contorno:</span>
+                    <input
+                      type="color"
+                      value={(selectedObject.stroke as string) || '#000000'}
+                      onChange={(e) => {
+                        if (selectedObject && canvas) {
+                          selectedObject.set('stroke', e.target.value);
+                          canvas.renderAll();
+                          saveCanvasToHistory();
+                        }
+                      }}
+                      className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                      title="Color del contorno del texto"
+                    />
+                    <button
+                      onClick={() => {
+                        if (selectedObject && canvas) {
+                          selectedObject.set('stroke', 'transparent');
+                          canvas.renderAll();
+                          saveCanvasToHistory();
+                        }
+                      }}
+                      className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 transition-colors"
+                      title="Sin color (transparente)"
+                    >
+                      Sin color
+                    </button>
+                  </div>
+                  
+                  {/* Text Outline Width */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-600">Ancho:</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      step="0.5"
+                      value={(selectedObject.strokeWidth as number) || 0}
+                      onChange={(e) => {
+                        if (selectedObject && canvas) {
+                          selectedObject.set('strokeWidth', parseFloat(e.target.value));
+                          canvas.renderAll();
+                          saveCanvasToHistory();
+                        }
+                      }}
+                      className="w-16 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
+                      title="Ancho del contorno del texto"
+                    />
+                    <span className="text-xs text-gray-600 min-w-[2rem] text-center">
+                      {(selectedObject.strokeWidth as number) || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           
@@ -5525,100 +5894,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 </div>
               </div>
               
-              {/* Text Color Pickers Row - Only for Text Objects */}
-              {selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text') && (
-                <div className="space-y-3">
-                  <span className="text-sm font-medium text-gray-700">Colores de Texto:</span>
-                  
-                  <div className="flex items-center space-x-4">
-                    {/* Text Fill Color Picker */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-600">Relleno:</span>
-                      <input
-                        type="color"
-                        value={(selectedObject.fill as string) || '#000000'}
-                        onChange={(e) => {
-                          if (selectedObject && canvas) {
-                            selectedObject.set('fill', e.target.value);
-                            canvas.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-                        title="Color de relleno del texto"
-                      />
-                      <button
-                        onClick={() => {
-                          if (selectedObject && canvas) {
-                            selectedObject.set('fill', 'transparent');
-                            canvas.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 transition-colors"
-                        title="Sin color (transparente)"
-                      >
-                        Sin color
-                      </button>
-                    </div>
-                    
-                    {/* Text Outline Color Picker */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-600">Contorno:</span>
-                      <input
-                        type="color"
-                        value={(selectedObject.stroke as string) || '#000000'}
-                        onChange={(e) => {
-                          if (selectedObject && canvas) {
-                            selectedObject.set('stroke', e.target.value);
-                            canvas.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-                        title="Color del contorno del texto"
-                      />
-                      <button
-                        onClick={() => {
-                          if (selectedObject && canvas) {
-                            selectedObject.set('stroke', 'transparent');
-                            canvas.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 transition-colors"
-                        title="Sin color (transparente)"
-                      >
-                        Sin color
-                      </button>
-                    </div>
-                    
-                    {/* Text Outline Width */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-600">Ancho:</span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="10"
-                        step="0.5"
-                        value={(selectedObject.strokeWidth as number) || 0}
-                        onChange={(e) => {
-                          if (selectedObject && canvas) {
-                            selectedObject.set('strokeWidth', parseFloat(e.target.value));
-                            canvas.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="w-16 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
-                        title="Ancho del contorno del texto"
-                      />
-                      <span className="text-xs text-gray-600 min-w-[2rem] text-center">
-                        {(selectedObject.strokeWidth as number) || 0}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+
               
               {/* Shadow and Effects Row */}
               <div className="flex items-center space-x-4">

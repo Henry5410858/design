@@ -32,6 +32,31 @@ export const createMinimalObjectData = (obj: ObjectData): any => {
     minimal.text = textObj.text || '';
     minimal.fontSize = textObj.fontSize || 48;
     minimal.fontFamily = textObj.fontFamily || 'Arial';
+    minimal.fontWeight = textObj.fontWeight || 'normal';
+    minimal.fontStyle = textObj.fontStyle || 'normal';
+    minimal.textAlign = textObj.textAlign || 'left';
+    // Enhanced text outline and fill properties
+    minimal.stroke = obj.stroke || 'transparent';
+    minimal.strokeWidth = (obj as any).strokeWidth || 0;
+    minimal.strokeLineCap = (obj as any).strokeLineCap || 'butt';
+    minimal.strokeLineJoin = (obj as any).strokeLineJoin || 'miter';
+    minimal.strokeDashArray = (obj as any).strokeDashArray || null;
+    minimal.strokeDashOffset = (obj as any).strokeDashOffset || 0;
+    minimal.strokeUniform = (obj as any).strokeUniform || false;
+    minimal.strokeMiterLimit = (obj as any).strokeMiterLimit || 4;
+    minimal.shadow = (obj as any).shadow || null;
+    // Text-specific rendering properties
+    minimal.fillRule = (obj as any).fillRule || 'nonzero';
+    minimal.paintFirst = (obj as any).paintFirst || 'fill';
+    minimal.globalCompositeOperation = (obj as any).globalCompositeOperation || 'source-over';
+    // Text transformation properties
+    minimal.skewX = (obj as any).skewX || 0;
+    minimal.skewY = (obj as any).skewY || 0;
+    minimal.flipX = (obj as any).flipX || false;
+    minimal.flipY = (obj as any).flipY || false;
+    // Preserve gradient properties for text
+    minimal.gradientType = (obj as any).gradientType || null;
+    minimal.gradientColors = (obj as any).gradientColors || null;
   } else if (obj.type === 'image') {
     const imageObj = obj as any;
     // For images, preserve the actual src to maintain functionality
@@ -47,6 +72,27 @@ export const createMinimalObjectData = (obj: ObjectData): any => {
     // For path objects, preserve the path data and all visual properties
     minimal.path = (obj as any).path || '';
     minimal.pathData = (obj as any).pathData || '';
+    minimal.stroke = obj.stroke || 'transparent';
+    minimal.strokeWidth = (obj as any).strokeWidth || 0;
+    minimal.strokeLineCap = (obj as any).strokeLineCap || 'butt';
+    minimal.strokeLineJoin = (obj as any).strokeLineJoin || 'miter';
+    minimal.strokeDashArray = (obj as any).strokeDashArray || null;
+    minimal.strokeDashOffset = (obj as any).strokeDashOffset || 0;
+    minimal.strokeUniform = (obj as any).strokeUniform || false;
+    minimal.strokeMiterLimit = (obj as any).strokeMiterLimit || 4;
+    minimal.shadow = (obj as any).shadow || null;
+    minimal.fillRule = (obj as any).fillRule || 'nonzero';
+    minimal.paintFirst = (obj as any).paintFirst || 'fill';
+    minimal.globalCompositeOperation = (obj as any).globalCompositeOperation || 'source-over';
+    minimal.skewX = (obj as any).skewX || 0;
+    minimal.skewY = (obj as any).skewY || 0;
+    minimal.flipX = (obj as any).flipX || false;
+    minimal.flipY = (obj as any).flipY || false;
+    // Preserve gradient properties
+    minimal.gradientType = (obj as any).gradientType || null;
+    minimal.gradientColors = (obj as any).gradientColors || null;
+  } else if (obj.type === 'triangle') {
+    // For triangle objects, preserve all visual properties
     minimal.stroke = obj.stroke || 'transparent';
     minimal.strokeWidth = (obj as any).strokeWidth || 0;
     minimal.strokeLineCap = (obj as any).strokeLineCap || 'butt';
@@ -89,6 +135,22 @@ export const createUltraMinimalObjectData = (obj: ObjectData): any => {
     ultraMinimal.text = (textObj.text || '').substring(0, 50); // Limit text length
     ultraMinimal.fontSize = Math.round(textObj.fontSize || 48);
     ultraMinimal.fontFamily = textObj.fontFamily || 'Arial';
+    ultraMinimal.fontWeight = textObj.fontWeight || 'normal';
+    ultraMinimal.fontStyle = textObj.fontStyle || 'normal';
+    ultraMinimal.textAlign = textObj.textAlign || 'left';
+    // Essential text outline and fill properties
+    ultraMinimal.stroke = obj.stroke || 'transparent';
+    ultraMinimal.strokeWidth = (obj as any).strokeWidth || 0;
+    ultraMinimal.strokeDashArray = (obj as any).strokeDashArray || null;
+    ultraMinimal.shadow = (obj as any).shadow || null;
+    // Essential text transformation properties
+    ultraMinimal.skewX = (obj as any).skewX || 0;
+    ultraMinimal.skewY = (obj as any).skewY || 0;
+    ultraMinimal.flipX = (obj as any).flipX || false;
+    ultraMinimal.flipY = (obj as any).flipY || false;
+    // Preserve gradient properties for text
+    ultraMinimal.gradientType = (obj as any).gradientType || null;
+    ultraMinimal.gradientColors = (obj as any).gradientColors || null;
   } else if (obj.type === 'image') {
     const imageObj = obj as any;
     // For images, preserve the actual src to maintain functionality
@@ -104,6 +166,19 @@ export const createUltraMinimalObjectData = (obj: ObjectData): any => {
     // For path objects, preserve the path data and essential visual properties
     ultraMinimal.path = (obj as any).path || '';
     ultraMinimal.pathData = (obj as any).pathData || '';
+    ultraMinimal.stroke = obj.stroke || 'transparent';
+    ultraMinimal.strokeWidth = (obj as any).strokeWidth || 0;
+    ultraMinimal.strokeDashArray = (obj as any).strokeDashArray || null;
+    ultraMinimal.shadow = (obj as any).shadow || null;
+    ultraMinimal.skewX = (obj as any).skewX || 0;
+    ultraMinimal.shadowY = (obj as any).skewY || 0;
+    ultraMinimal.flipX = (obj as any).flipX || false;
+    ultraMinimal.flipY = (obj as any).flipY || false;
+    // Preserve gradient properties
+    ultraMinimal.gradientType = (obj as any).gradientType || null;
+    ultraMinimal.gradientColors = (obj as any).gradientColors || null;
+  } else if (obj.type === 'triangle') {
+    // For triangle objects, preserve essential visual properties
     ultraMinimal.stroke = obj.stroke || 'transparent';
     ultraMinimal.strokeWidth = (obj as any).strokeWidth || 0;
     ultraMinimal.strokeDashArray = (obj as any).strokeDashArray || null;
