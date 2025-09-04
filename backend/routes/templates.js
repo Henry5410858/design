@@ -305,10 +305,10 @@ function getDefaultObjectsForType(type) {
         {
           id: 'house-image',
           type: 'rect',
-          x: 200,
-          y: 350,
-          width: 800,
-          height: 600,
+          x: 300,
+          y: 400,
+          width: 600,
+          height: 400,
           fill: '#f3f4f6',
           stroke: '#d1d5db',
           strokeWidth: 2,
@@ -319,7 +319,7 @@ function getDefaultObjectsForType(type) {
           id: 'image-placeholder',
           type: 'text',
           x: 600,
-          y: 650,
+          y: 600,
           width: 200,
           height: 40,
           text: 'House Image',
@@ -870,7 +870,7 @@ router.post('/save-design-large', async (req, res) => {
 // POST /api/templates - Create new template
 router.post('/', async (req, res) => {
   try {
-    const { name, type, dimensions } = req.body;
+    const { name, type, dimensions, brandKitLogo } = req.body;
     
     if (!type) {
       return res.status(400).json({ error: 'Template type is required' });
@@ -888,13 +888,45 @@ router.post('/', async (req, res) => {
     // Generate a unique template key
     const templateKey = `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    // Get default objects and add logo if available
+    let templateObjects = getDefaultObjectsForType(type);
+    
+    // Add brand kit logo to template if available
+    if (brandKitLogo) {
+      const logoObject = {
+        id: 'brand-logo',
+        type: 'image',
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 60,
+        src: brandKitLogo,
+        selectable: true,
+        evented: true,
+        lockMovementX: false,
+        lockMovementY: false,
+        lockRotation: false,
+        lockScalingX: false,
+        lockScalingY: false,
+        cornerStyle: 'circle',
+        cornerColor: '#00525b',
+        cornerSize: 8,
+        transparentCorners: false,
+        borderColor: '#00525b',
+        borderScaleFactor: 1
+      };
+      
+      // Add logo as the first object
+      templateObjects = [logoObject, ...templateObjects];
+    }
+    
     // Create new template with default content based on type
     const newTemplate = await Template.create({
       name: templateName,
       type: type,
       category: getCategoryForType(type),
       thumbnail: '/uploads/default-thumbnail.png', // Will be updated when saved
-      objects: getDefaultObjectsForType(type),
+      objects: templateObjects,
       backgroundColor: '#ffffff',
       dimensions: dimensions || getDefaultDimensions(type),
       templateKey: templateKey, // Add templateKey

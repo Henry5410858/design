@@ -96,5 +96,6 @@ TemplateSchema.index({ category: 1 });
 TemplateSchema.index({ isRealEstate: 1 });
 TemplateSchema.index({ templateKey: 1 });
 TemplateSchema.index({ dimensions: 1 });
+// TemplateSchema.index({ dimensions: 1 });
 
 module.exports = mongoose.model('Template', TemplateSchema);

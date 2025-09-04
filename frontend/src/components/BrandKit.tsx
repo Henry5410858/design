@@ -22,24 +22,80 @@ const BrandKit: React.FC = React.memo(() => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('brandKit');
-    if (saved) {
+    const loadBrandKit = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        setBrandKit(parsed);
-        if (parsed.logo) {
-          setLogoPreview(parsed.logo);
+        const token = localStorage.getItem('token');
+        console.log('🔍 BrandKit: Checking for auth token:', token ? 'found' : 'not found');
+        if (!token) {
+          console.log('ℹ️ BrandKit: No auth token found, using default brand kit');
+          return;
+        }
+
+        console.log('🔍 BrandKit: Making request to http://localhost:4000/api/brand-kit with token:', token.substring(0, 20) + '...');
+        
+        const response = await fetch('http://localhost:4000/api/brand-kit', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('🔍 BrandKit: Response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🔍 BrandKit: Response data:', data);
+          if (data.success && data.brandKit) {
+            const brandKitData = data.brandKit;
+            setBrandKit({
+              primaryColor: brandKitData.primaryColor,
+              secondaryColor: brandKitData.secondaryColor,
+              accentColor: brandKitData.accentColor
+            });
+            
+            if (brandKitData.logo && brandKitData.logo.data) {
+              setLogoPreview(brandKitData.logo.data);
+            }
+          }
+        } else {
+          const errorText = await response.text();
+          console.error('❌ BrandKit: Failed to load brand kit:', response.status, errorText);
         }
       } catch (error) {
-        console.error('Error parsing saved brand kit:', error);
+        console.error('Error loading brand kit:', error);
       }
-    }
+    };
+
+    loadBrandKit();
   }, []);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      localStorage.setItem('brandKit', JSON.stringify(brandKit));
-    }, 500); // Debounced save
+    const saveBrandKit = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('No auth token found, skipping save');
+          return;
+        }
+
+        const response = await fetch('http://localhost:4000/api/brand-kit', {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(brandKit)
+        });
+
+        if (!response.ok) {
+          console.error('Failed to save brand kit:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error saving brand kit:', error);
+      }
+    };
+
+    const timeoutId = setTimeout(saveBrandKit, 500); // Debounced save
     return () => clearTimeout(timeoutId);
   }, [brandKit]);
 
@@ -49,22 +105,78 @@ const BrandKit: React.FC = React.memo(() => {
     background: `linear-gradient(135deg, ${brandKit.primaryColor}, ${brandKit.secondaryColor})`
   }), [brandKit.primaryColor, brandKit.secondaryColor]);
 
-  const handleLogoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const result = e.target?.result as string;
         setLogoPreview(result);
-        setBrandKit(prev => ({ ...prev, logo: result }));
+        
+        try {
+          const token = localStorage.getItem('token');
+          console.log('🔍 BrandKit: Logo upload - checking for auth token:', token ? 'found' : 'not found');
+          if (!token) {
+            console.error('❌ BrandKit: No auth token found for logo upload');
+            return;
+          }
+
+          const logoData = {
+            data: result,
+            filename: file.name,
+            mimetype: file.type,
+            size: file.size
+          };
+
+          const response = await fetch('http://localhost:4000/api/brand-kit', {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ logo: logoData })
+          });
+
+          if (!response.ok) {
+            console.error('Failed to save logo:', response.statusText);
+          } else {
+            console.log('Logo saved successfully');
+          }
+        } catch (error) {
+          console.error('Error saving logo:', error);
+        }
       };
       reader.readAsDataURL(file);
     }
   }, []);
 
-  const removeLogo = useCallback(() => {
+  const removeLogo = useCallback(async () => {
     setLogoPreview(null);
-    setBrandKit(prev => ({ ...prev, logo: undefined }));
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const response = await fetch('http://localhost:4000/api/brand-kit', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ logo: null })
+      });
+
+      if (!response.ok) {
+        console.error('Failed to remove logo:', response.statusText);
+      } else {
+        console.log('Logo removed successfully');
+      }
+    } catch (error) {
+      console.error('Error removing logo:', error);
+    }
   }, []);
 
   const updateColor = useCallback((type: keyof BrandKitType, value: string) => {

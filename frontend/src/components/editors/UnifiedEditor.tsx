@@ -2336,6 +2336,192 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   };
 
+  // Add brand kit logo to existing templates if needed
+  const addBrandKitLogoIfNeeded = async () => {
+    console.log('🔍 addBrandKitLogoIfNeeded called');
+    console.log('🔍 Current URL:', window.location.href);
+    console.log('🔍 Canvas exists:', !!canvas);
+    console.log('🔍 Canvas objects count:', canvas ? canvas.getObjects().length : 'N/A');
+    try {
+      // Check if canvas is available
+      if (!canvas) {
+        console.log('ℹ️ Canvas not available - skipping logo addition');
+        return;
+      }
+      console.log('✅ Canvas is available');
+
+      // Get brand kit logo from database
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('ℹ️ No auth token found - skipping logo addition');
+          return;
+        }
+
+        const response = await fetch('http://localhost:4000/api/brand-kit/logo', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          console.log('ℹ️ Failed to fetch brand kit logo:', response.statusText);
+          return;
+        }
+
+        const data = await response.json();
+        console.log('🔍 Brand kit API response:', data);
+        if (!data.success || !data.logo || !data.logo.data) {
+          console.log('ℹ️ No logo found in brand kit - skipping logo addition');
+          console.log('🔍 Response data:', data);
+          return;
+        }
+
+        const brandKitLogo = data.logo.data;
+        console.log('🔍 Brand kit logo from database:', brandKitLogo.substring(0, 50) + '...');
+        
+        // Check if the logo data looks corrupted (too short or doesn't start with data:image)
+        if (brandKitLogo.length < 100 || !brandKitLogo.startsWith('data:image/')) {
+          console.log('❌ Logo data appears corrupted');
+          console.log('🔍 Corrupted logo data preview:', brandKitLogo.substring(0, 50) + '...');
+          console.log('✅ Please upload a fresh logo in the Brand Kit.');
+          return;
+        }
+
+      // Check if logo already exists on canvas
+      const existingObjects = canvas.getObjects();
+      console.log('🔍 Existing objects on canvas:', existingObjects.length);
+      existingObjects.forEach((obj, index) => {
+        console.log(`🔍 Object ${index + 1}:`, {
+          type: obj.type,
+          src: (obj as any).src || 'N/A'
+        });
+      });
+      
+      const logoExists = existingObjects.some(obj => 
+        obj.type === 'image' && (obj as any).src === brandKitLogo
+      );
+
+      if (logoExists) {
+        console.log('ℹ️ Brand kit logo already exists on canvas - skipping addition');
+        return;
+      }
+
+      // Add brand kit logo to canvas
+      console.log('🎨 Adding brand kit logo to existing template...');
+      const imgElement = new Image();
+      imgElement.crossOrigin = 'anonymous';
+      imgElement.onload = () => {
+        console.log('✅ Brand kit logo image loaded successfully');
+        console.log('🔍 Logo image dimensions:', imgElement.width, 'x', imgElement.height);
+        console.log('🔍 Logo image src:', imgElement.src);
+        console.log('🔍 Logo image natural dimensions:', imgElement.naturalWidth, 'x', imgElement.naturalHeight);
+        
+        // Get canvas dimensions to position logo in center
+        const canvasWidth = canvas.width || 1200;
+        const canvasHeight = canvas.height || 1800;
+        const logoWidth = 200; // Much larger so you can see it
+        const logoHeight = 200; // Much larger so you can see it
+        
+        const fabricImage = new fabric.Image(imgElement, {
+          left: 50, // More centered
+          top: 50, // More centered
+          width: logoWidth,
+          height: logoHeight,
+          selectable: true,
+          evented: true,
+          lockMovementX: false,
+          lockMovementY: false,
+          lockRotation: false,
+          lockScalingX: false,
+          lockScalingY: false,
+          cornerStyle: 'circle',
+          cornerColor: '#00525b', // Brand color
+          cornerSize: 8,
+          transparentCorners: false,
+          borderColor: '#00525b', // Brand color border
+          borderScaleFactor: 1,
+          opacity: 1,
+          shadow: null
+        });
+        
+        canvas.add(fabricImage);
+        canvas.bringObjectToFront(fabricImage);
+        
+        // Force canvas to render multiple times to ensure visibility
+        canvas.renderAll();
+        setTimeout(() => {
+          canvas.renderAll();
+          setTimeout(() => {
+            canvas.renderAll();
+          }, 100);
+        }, 100);
+        
+        saveCanvasToHistory();
+        console.log('✅ Brand kit logo added to existing template');
+        console.log('🔍 Canvas objects after adding logo:', canvas.getObjects().length);
+        console.log('🔍 Logo object details:', {
+          left: fabricImage.left,
+          top: fabricImage.top,
+          width: fabricImage.width,
+          height: fabricImage.height,
+          visible: fabricImage.visible,
+          opacity: fabricImage.opacity
+        });
+        
+        // Add a test rectangle to verify the function is working
+        const testRect = new fabric.Rect({
+          left: 100,
+          top: 100,
+          width: 50,
+          height: 50,
+          fill: 'red',
+          selectable: true
+        });
+        canvas.add(testRect);
+        canvas.renderAll();
+        console.log('🔴 Added test red rectangle to verify function is working');
+        console.log('🔍 Canvas dimensions:', { width: canvas.width, height: canvas.height });
+        console.log('🔍 Canvas viewport:', { 
+          vpt: canvas.viewportTransform, 
+          zoom: canvas.getZoom(),
+          panX: canvas.viewportTransform[4],
+          panY: canvas.viewportTransform[5]
+        });
+        console.log('🔍 Logo position:', { left: fabricImage.left, top: fabricImage.top, width: fabricImage.width, height: fabricImage.height });
+        console.log('🔍 Logo is visible:', fabricImage.visible);
+        console.log('🔍 Logo opacity:', fabricImage.opacity);
+        console.log('🔍 Logo bounds:', fabricImage.getBoundingRect());
+        console.log('🔍 Canvas viewport transform:', canvas.viewportTransform);
+        console.log('🔍 Canvas zoom level:', canvas.getZoom());
+        console.log('🔍 Canvas pan position:', { 
+          panX: canvas.viewportTransform[4], 
+          panY: canvas.viewportTransform[5] 
+        });
+              console.log('🔍 Logo should be visible at:', { 
+        left: fabricImage.left, 
+        top: fabricImage.top, 
+        right: fabricImage.left + fabricImage.width, 
+        bottom: fabricImage.top + fabricImage.height 
+      });
+      
+              // Logo added successfully
+      };
+      imgElement.onerror = (error) => {
+        console.error('❌ Error loading brand kit logo:', error);
+        console.error('❌ Failed logo URL:', brandKitLogo);
+      };
+      imgElement.src = brandKitLogo;
+      
+      } catch (error) {
+        console.error('❌ Error fetching brand kit logo:', error);
+      }
+    } catch (error) {
+      console.error('❌ Error adding brand kit logo:', error);
+    }
+  };
+
   // Load template preset
   const loadTemplate = async (templateKey: string) => {
     console.log('🚀 loadTemplate called with key:', templateKey);
@@ -2409,6 +2595,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         // Fallback to loading from template data
         console.log('📋 Loading from template data...');
         await loadTemplateFromData(templateKey, template);
+        
+        // Add brand kit logo after template is loaded
+        setTimeout(async () => {
+          await addBrandKitLogoIfNeeded();
+        }, 500);
         return;
       }
     } catch (error) {
@@ -2854,15 +3045,30 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         }
       }
     } else {
-      // This is a fresh template - start clean (no default objects)
-      console.log('🆕 Fresh template detected - starting with clean canvas (no default objects)');
+      // This is a fresh template or template with default objects
+      console.log('🆕 Fresh template detected - checking for default objects...');
       setBackgroundImage(null);
+      
+      // Load default objects from database if they exist
+      if (templateData.objects && Array.isArray(templateData.objects) && templateData.objects.length > 0) {
+        console.log(`🎨 Loading ${templateData.objects.length} default objects from database...`);
+        templateData.objects.forEach((obj: any, index: number) => {
+          loadObjectToCanvas(obj, index);
+        });
+      } else {
+        console.log('🆕 No default objects found - starting with clean canvas');
+      }
     }
     
     // Wait a bit for objects to load, then render
     setTimeout(() => {
       canvas.renderAll();
       saveCanvasToHistory();
+      
+      // Check if brand kit logo should be added to existing templates (after canvas is fully rendered)
+              setTimeout(async () => {
+          await addBrandKitLogoIfNeeded();
+        }, 200);
       
       const finalObjectCount = canvas.getObjects().length;
       if (templateData.designFilename) {
@@ -3618,6 +3824,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log(`🎨 Object ${index + 1}:`, objInfo);
         console.log(`📋 Full object ${index + 1} details:`, JSON.stringify(obj, null, 2));
       });
+      
+      // Add brand kit logo after user-saved design is loaded
+      setTimeout(async () => {
+        await addBrandKitLogoIfNeeded();
+      }, 300);
     }, 100);
   };
   
@@ -4930,6 +5141,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                               <FloppyDisk size={20} />
               </button>
               
+                          {/* Test Brand Kit Logo Button */}
+              <button
+                onClick={() => addBrandKitLogoIfNeeded()}
+                className="p-2 rounded-lg bg-green-100 hover:bg-green-200 transition-colors"
+                title="Test Brand Kit Logo"
+              >
+                <span className="text-green-600">🏷️</span>
+              </button>
+
                           {/* Download Dropdown */}
             <div className="relative download-dropdown">
               <button

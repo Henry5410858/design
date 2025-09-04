@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
       console.log('🔐 checkAuth: Starting...');
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('token');
       console.log('🔐 checkAuth: Token from localStorage:', token ? 'exists' : 'none');
       
       if (!token) {
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log('🔐 checkAuth: Demo login successful, user:', loginData.user.name);
             
             // Store token and user data
-            localStorage.setItem('authToken', loginData.token);
+            localStorage.setItem('token', loginData.token);
             localStorage.setItem('tokenExpiry', loginData.expiresAt.toString());
             setUser(loginData.user);
             setIsLoading(false);
@@ -87,7 +87,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const expiry = localStorage.getItem('tokenExpiry');
       if (expiry && Date.now() > parseInt(expiry)) {
         console.log('🔐 checkAuth: Token expired, clearing...');
-        localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
         localStorage.removeItem('tokenExpiry');
         setUser(null);
         setIsLoading(false);
@@ -113,7 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         // Token invalid, clear storage
         console.log('🔐 checkAuth: Token invalid, clearing...');
-        localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
         localStorage.removeItem('tokenExpiry');
         setUser(null);
         setIsLoading(false);
@@ -121,7 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('🔐 checkAuth: Error:', error);
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('token');
       localStorage.removeItem('tokenExpiry');
       setUser(null);
       setIsLoading(false);
@@ -179,7 +179,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const loginData: LoginResponse = await response.json();
         
         // Store token and user data
-        localStorage.setItem('authToken', loginData.token);
+        localStorage.setItem('token', loginData.token);
         localStorage.setItem('tokenExpiry', loginData.expiresAt.toString());
         setUser(loginData.user);
       } else {

@@ -95,6 +95,29 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
     setIsCreating(true);
     
     try {
+      // Get brand kit logo from database
+      let brandKitLogo = null;
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await fetch('http://localhost:4000/api/brand-kit/logo', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.logo && data.logo.data) {
+              brandKitLogo = data.logo.data;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching brand kit logo:', error);
+      }
+
       // Create new template in backend
       const response = await fetch('http://localhost:4000/api/templates', {
         method: 'POST',
@@ -107,7 +130,8 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
           canvasData: null, // Blank canvas
           dimensions: getDefaultDimensions(selectedType),
           userId: 'current-user', // This should come from auth context
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          brandKitLogo: brandKitLogo // Include brand kit logo
         }),
       });
 
