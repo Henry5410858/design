@@ -9,11 +9,11 @@ const app = express();
 app.use(cors());
 
 // Increase payload size limits
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
 // Increase raw body size limit for file uploads
-app.use(express.raw({ limit: '100mb' }));
+app.use(express.raw({ limit: '500mb' }));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/designcenter', {

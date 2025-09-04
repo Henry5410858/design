@@ -109,7 +109,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
         const template = await response.json();
         
         // Open editor with the new template in a new tab
-        const editorUrl = `/editor?type=${selectedType}&id=${template._id || template.id}`;
+        const editorUrl = `/editor?type=${selectedType}&id=${template._id || template.id}&template=${template._id || template.id}`;
         window.open(editorUrl, '_blank');
         
         // Show success message

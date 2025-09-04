@@ -23,7 +23,12 @@ export const createMinimalObjectData = (obj: ObjectData): any => {
     scaleX: obj.scaleX,
     scaleY: obj.scaleY,
     angle: obj.angle,
-    opacity: obj.opacity
+    opacity: obj.opacity,
+    // Add gradient properties for all objects
+    gradientType: (obj as any).gradientType || null,
+    gradientColors: (obj as any).gradientColors || null,
+    gradientStops: (obj as any).gradientStops || null,
+    gradientCoords: (obj as any).gradientCoords || null
   };
 
   // Add type-specific minimal properties
@@ -57,6 +62,8 @@ export const createMinimalObjectData = (obj: ObjectData): any => {
     // Preserve gradient properties for text
     minimal.gradientType = (obj as any).gradientType || null;
     minimal.gradientColors = (obj as any).gradientColors || null;
+    minimal.gradientStops = (obj as any).gradientStops || null;
+    minimal.gradientCoords = (obj as any).gradientCoords || null;
   } else if (obj.type === 'image') {
     const imageObj = obj as any;
     // For images, preserve the actual src to maintain functionality
@@ -91,6 +98,8 @@ export const createMinimalObjectData = (obj: ObjectData): any => {
     // Preserve gradient properties
     minimal.gradientType = (obj as any).gradientType || null;
     minimal.gradientColors = (obj as any).gradientColors || null;
+    minimal.gradientStops = (obj as any).gradientStops || null;
+    minimal.gradientCoords = (obj as any).gradientCoords || null;
   } else if (obj.type === 'triangle') {
     // For triangle objects, preserve all visual properties
     minimal.stroke = obj.stroke || 'transparent';
@@ -112,6 +121,8 @@ export const createMinimalObjectData = (obj: ObjectData): any => {
     // Preserve gradient properties
     minimal.gradientType = (obj as any).gradientType || null;
     minimal.gradientColors = (obj as any).gradientColors || null;
+    minimal.gradientStops = (obj as any).gradientStops || null;
+    minimal.gradientCoords = (obj as any).gradientCoords || null;
   }
 
   return minimal;
@@ -126,7 +137,12 @@ export const createUltraMinimalObjectData = (obj: ObjectData): any => {
     top: Math.round(obj.top),
     width: Math.round(obj.width),
     height: Math.round(obj.height),
-    fill: obj.fill
+    fill: obj.fill,
+    // Add gradient properties for all objects
+    gradientType: (obj as any).gradientType || null,
+    gradientColors: (obj as any).gradientColors || null,
+    gradientStops: (obj as any).gradientStops || null,
+    gradientCoords: (obj as any).gradientCoords || null
   };
 
   // Only add absolutely essential type-specific properties
@@ -151,6 +167,8 @@ export const createUltraMinimalObjectData = (obj: ObjectData): any => {
     // Preserve gradient properties for text
     ultraMinimal.gradientType = (obj as any).gradientType || null;
     ultraMinimal.gradientColors = (obj as any).gradientColors || null;
+    ultraMinimal.gradientStops = (obj as any).gradientStops || null;
+    ultraMinimal.gradientCoords = (obj as any).gradientCoords || null;
   } else if (obj.type === 'image') {
     const imageObj = obj as any;
     // For images, preserve the actual src to maintain functionality
@@ -177,6 +195,8 @@ export const createUltraMinimalObjectData = (obj: ObjectData): any => {
     // Preserve gradient properties
     ultraMinimal.gradientType = (obj as any).gradientType || null;
     ultraMinimal.gradientColors = (obj as any).gradientColors || null;
+    ultraMinimal.gradientStops = (obj as any).gradientStops || null;
+    ultraMinimal.gradientCoords = (obj as any).gradientCoords || null;
   } else if (obj.type === 'triangle') {
     // For triangle objects, preserve essential visual properties
     ultraMinimal.stroke = obj.stroke || 'transparent';
@@ -190,6 +210,8 @@ export const createUltraMinimalObjectData = (obj: ObjectData): any => {
     // Preserve gradient properties
     ultraMinimal.gradientType = (obj as any).gradientType || null;
     ultraMinimal.gradientColors = (obj as any).gradientColors || null;
+    ultraMinimal.gradientStops = (obj as any).gradientStops || null;
+    ultraMinimal.gradientCoords = (obj as any).gradientCoords || null;
   }
 
   return ultraMinimal;

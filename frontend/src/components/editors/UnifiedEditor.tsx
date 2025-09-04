@@ -131,8 +131,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     banner: {
       icon: '🚩',
       name: 'Banner',
-      defaultSize: '1200x400',
+      defaultSize: '1200x628',
       sizes: [
+        { value: '1200x628', label: 'Facebook Feed Banner (1200×628)', width: 1200, height: 628 },
         { value: '1200x400', label: 'Facebook Feed (1200×400)', width: 1200, height: 400 },
         { value: '1200x300', label: 'Web Banner (1200×300)', width: 1200, height: 300 },
         { value: '1200x600', label: 'Banner Alto (1200×600)', width: 1200, height: 600 }
@@ -141,8 +142,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     document: {
       icon: '📄',
       name: 'Document',
-      defaultSize: '1200x1600',
+      defaultSize: '2480x3508',
       sizes: [
+        { value: '2480x3508', label: 'A4 Document (2480×3508 px, 300 dpi)', width: 2480, height: 3508 },
         { value: '1200x1600', label: 'Documento A4 (1200×1600)', width: 1200, height: 1600 },
         { value: '1200x1800', label: 'Brochure (1200×1800)', width: 1200, height: 1800 },
         { value: '800x1200', label: 'Documento Pequeño (800×1200)', width: 800, height: 1200 }
@@ -151,8 +153,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     brochure: {
       icon: '📋',
       name: 'Brochure',
-      defaultSize: '1200x1800',
+      defaultSize: '2480x3508',
       sizes: [
+        { value: '2480x3508', label: 'A4 Brochure (2480×3508 px, 300 dpi)', width: 2480, height: 3508 },
         { value: '1200x1800', label: 'Trifold Brochure (1200×1800)', width: 1200, height: 1800 },
         { value: '1200x1600', label: 'Brochure Cuadrado (1200×1600)', width: 1200, height: 1600 },
         { value: '800x1200', label: 'Brochure Pequeño (800×1200)', width: 800, height: 1200 }
@@ -218,6 +221,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
   const [canvasDisplayScale, setCanvasDisplayScale] = useState(1);
   const [activeTab, setActiveTab] = useState('elements');
+
+  // Gradient editor state
+  const [showGradientEditor, setShowGradientEditor] = useState(false);
+  const [gradientStops, setGradientStops] = useState([
+    { id: '1', color: '#ff0000', offset: 0 },
+    { id: '2', color: '#0000ff', offset: 100 }
+  ]);
 
   
   // History and undo/redo
@@ -356,6 +366,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     'Droid Sans',
     'Fira Sans',
     'Oswald',
+    'Century Gothic',
+    'Futura',
+    'Avenir',
+    'Gill Sans',
     
     // Google Fonts - Serif
     'Crimson Text',
@@ -381,11 +395,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     'Lobster Two',
     'Chewy',
     'Fredoka',
-    'Oswald',
-    'Montserrat',
-    'Poppins',
-    'Inter',
-    'Roboto',
     
     // Google Fonts - Handwriting
     'Kalam',
@@ -769,12 +778,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   useEffect(() => {
     const config = editorConfigs[editorTypeState as keyof typeof editorConfigs];
     if (config) {
-      setCanvasSize(config.defaultSize);
-      setBackgroundColor('#ffffff');
-      setBackgroundImage(null);
-      setObjects([]);
-      setHistory([]);
-      setHistoryIndex(-1);
+    setCanvasSize(config.defaultSize);
+    setBackgroundColor('#ffffff');
+    setBackgroundImage(null);
+    setObjects([]);
+    setHistory([]);
+    setHistoryIndex(-1);
     } else {
       console.warn(`Editor type '${editorTypeState}' not found, falling back to 'flyer'`);
       const fallbackConfig = editorConfigs.flyer;
@@ -879,12 +888,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // Close dropdowns and modals when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
+        const target = event.target as Element;
       
       // Close download dropdown
       if (showDownloadDropdown && !target.closest('.download-dropdown')) {
-        setShowDownloadDropdown(false);
-      }
+          setShowDownloadDropdown(false);
+        }
       
       // Close shapes modal
       if (showShapeSelector && !target.closest('.shapes-container')) {
@@ -895,11 +904,16 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       if (showColorPicker && !target.closest('.color-picker-container')) {
         setShowColorPicker(false);
       }
+      
+      // Close gradient editor
+      if (showGradientEditor && !target.closest('.gradient-editor-container')) {
+        setShowGradientEditor(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showDownloadDropdown, showShapeSelector]);
+  }, [showDownloadDropdown, showShapeSelector, showColorPicker, showGradientEditor]);
   
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -1253,26 +1267,26 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           }
         
         return {
-          id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
-          type: (obj.type === 'text' || obj.type === 'i-text' ? 'text' : 
-                 obj.type === 'image' ? 'image' : 
+        id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
+        type: (obj.type === 'text' || obj.type === 'i-text' ? 'text' : 
+               obj.type === 'image' ? 'image' : 
                  obj.type === 'placeholder' ? 'placeholder' : 
                  obj.type === 'path' ? 'path' : 'shape') as 'text' | 'image' | 'shape' | 'placeholder' | 'path',
-          x: obj.left || 0,
-          y: obj.top || 0,
-          width: obj.width || 100,
-          height: obj.height || 100,
-          content: (obj as any).text || '',
-          color: (obj as any).fill || '#000000',
-          fontSize: (obj as any).fontSize || 16,
-          fontFamily: (obj as any).fontFamily || 'Arial',
-          rotation: obj.angle || 0,
-          zIndex: (obj as any).zIndex || 0,
-          opacity: obj.opacity || 1,
-          stroke: (obj as any).stroke || 'transparent',
-          strokeWidth: (obj as any).strokeWidth || 0,
-          strokeLineCap: (obj as any).strokeLineCap || 'butt',
-          strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
+        x: obj.left || 0,
+        y: obj.top || 0,
+        width: obj.width || 100,
+        height: obj.height || 100,
+        content: (obj as any).text || '',
+        color: (obj as any).fill || '#000000',
+        fontSize: (obj as any).fontSize || 16,
+        fontFamily: (obj as any).fontFamily || 'Arial',
+        rotation: obj.angle || 0,
+        zIndex: (obj as any).zIndex || 0,
+        opacity: obj.opacity || 1,
+        stroke: (obj as any).stroke || 'transparent',
+        strokeWidth: (obj as any).strokeWidth || 0,
+        strokeLineCap: (obj as any).strokeLineCap || 'butt',
+        strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
           shadow: (obj as any).shadow || null,
           isPath: false
         };
@@ -1305,6 +1319,133 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     
     const size = config.sizes.find(s => s.value === canvasSize);
     return size || config.sizes[0];
+  };
+
+  // Gradient editor functions
+  const addGradientStop = () => {
+    const newId = `stop_${Date.now()}`;
+    const newStop = {
+      id: newId,
+      color: '#00ff00',
+      offset: 50
+    };
+    setGradientStops([...gradientStops, newStop]);
+  };
+
+  const removeGradientStop = (stopId: string) => {
+    if (gradientStops.length > 2) {
+      setGradientStops(gradientStops.filter(stop => stop.id !== stopId));
+    }
+  };
+
+  const updateGradientStop = (stopId: string, updates: { color?: string; offset?: number }) => {
+    setGradientStops(gradientStops.map(stop => 
+      stop.id === stopId ? { ...stop, ...updates } : stop
+    ));
+  };
+
+  const applyGradient = () => {
+    if (!canvas || !selectedObject) return;
+
+    // Sort stops by offset
+    const sortedStops = [...gradientStops].sort((a, b) => a.offset - b.offset);
+    
+    // Create Fabric.js gradient
+    const gradient = new fabric.Gradient({
+      type: 'linear',
+      coords: {
+        x1: 0,
+        y1: 0,
+        x2: selectedObject.width || 100,
+        y2: 0
+      },
+      colorStops: sortedStops.map(stop => ({
+        offset: stop.offset / 100,
+        color: stop.color
+      }))
+    });
+
+    // Apply gradient to selected object
+    selectedObject.set('fill', gradient);
+    
+    // Store gradient metadata for database saving
+    (selectedObject as any).gradientType = 'custom';
+    (selectedObject as any).gradientColors = sortedStops.map(stop => stop.color);
+    (selectedObject as any).gradientStops = sortedStops;
+    (selectedObject as any).gradientCoords = {
+      x1: 0,
+      y1: 0,
+      x2: selectedObject.width || 100,
+      y2: 0
+    };
+    
+    canvas.renderAll();
+    
+    // Save to history
+    saveCanvasToHistory();
+    
+    console.log('✅ Gradient applied:', sortedStops);
+  };
+
+  // Helper function to restore gradient from saved data
+  const restoreGradient = (obj: any, fabricObj: fabric.Object) => {
+    if (obj.gradientType && obj.gradientColors && obj.gradientColors.length >= 2) {
+      let gradient;
+      
+      if (obj.gradientType === 'custom' && obj.gradientStops && obj.gradientCoords) {
+        // Custom gradient from gradient editor
+        gradient = new fabric.Gradient({
+          type: 'linear',
+          coords: obj.gradientCoords,
+          colorStops: obj.gradientStops.map((stop: any) => ({
+            offset: stop.offset / 100,
+            color: stop.color
+          }))
+        });
+        console.log('🎨 Custom gradient restored:', obj.gradientStops);
+      } else if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+        // Predefined teal-blue gradient
+        gradient = new fabric.Gradient({
+          type: 'linear',
+          coords: {
+            x1: 0,
+            y1: 0,
+            x2: fabricObj.width || 200,
+            y2: 0
+          },
+          colorStops: [
+            { offset: 0, color: obj.gradientColors[0] },
+            { offset: 1, color: obj.gradientColors[1] }
+          ]
+        });
+        console.log('🎨 Teal → Blue gradient restored');
+      } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+        // Predefined blue-teal gradient
+        gradient = new fabric.Gradient({
+          type: 'linear',
+          coords: {
+            x1: 0,
+            y1: 0,
+            x2: fabricObj.width || 200,
+            y2: 0
+          },
+          colorStops: [
+            { offset: 0, color: obj.gradientColors[0] },
+            { offset: 1, color: obj.gradientColors[1] }
+          ]
+        });
+        console.log('🎨 Blue → Teal gradient restored');
+      }
+      
+      if (gradient) {
+        fabricObj.set('fill', gradient);
+        // Store gradient metadata
+        (fabricObj as any).gradientType = obj.gradientType;
+        (fabricObj as any).gradientColors = obj.gradientColors;
+        if (obj.gradientStops) (fabricObj as any).gradientStops = obj.gradientStops;
+        if (obj.gradientCoords) (fabricObj as any).gradientCoords = obj.gradientCoords;
+      }
+    }
   };
   
   // Save current state to history
@@ -1528,6 +1669,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // Enhanced text addition with Fabric.js
   const addText = () => {
     if (canvas) {
+      console.log('🎯 Adding new text with font family:', 'Arial');
       const text = new fabric.IText('Tu texto aquí', {
         left: 100,
         top: 100,
@@ -1538,6 +1680,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         editable: true
       });
       
+      console.log('✅ Text created with font family:', text.fontFamily);
+      
       // Ensure text is within canvas boundaries
       ensureObjectInBounds(text, canvas);
       
@@ -1546,6 +1690,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       text.enterEditing();
       canvas.renderAll();
       saveCanvasToHistory();
+      
+      console.log('🎨 Text added to canvas with font family:', text.fontFamily);
     }
   };
   
@@ -1584,9 +1730,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       return;
     }
     
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('El archivo es demasiado grande. Máximo 10MB permitido.');
+    // Validate file size (max 200MB)
+    if (file.size > 200 * 1024 * 1024) {
+      alert('El archivo es demasiado grande. Máximo 200MB permitido.');
       return;
     }
     
@@ -1881,6 +2027,53 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             scaleY: 1
           });
           shape = simpleWavePath;
+          break;
+        case 'pill':
+          // Create a pill shape (rounded rectangle with high radius)
+          shape = new fabric.Rect({
+            left: 100,
+            top: 100,
+            width: 200,
+            height: 80,
+            rx: 40, // High radius for pill effect
+            ry: 40,
+            fill: brandKit.colors?.accent || '#32e0c5',
+            selectable: true,
+            resizable: true,
+            hasControls: true,
+            hasBorders: true
+          });
+          break;
+        case 'half-rounded':
+          // Create a half-rounded rectangle (rounded on right side, sharp on left)
+          // We need to create this using a custom path since fabric.Rect doesn't support different radius per corner
+          const halfRoundedPath = new fabric.Path('M 0 0 L 160 0 Q 200 0 200 40 L 200 40 Q 200 80 160 80 L 0 80 Z', {
+            left: 100,
+            top: 100,
+            fill: brandKit.colors?.accent || '#f59e0b', // Amber color
+            selectable: true,
+            resizable: true,
+            hasControls: true,
+            hasBorders: true,
+            scaleX: 1,
+            scaleY: 1
+          });
+          shape = halfRoundedPath;
+          break;
+        case 'map-pin':
+          // Create a map pin shape using SVG path
+          const mapPinPath = new fabric.Path('M 12 2 C 8.13 2 5 5.13 5 9 C 5 14.25 12 22 12 22 S 19 14.25 19 9 C 19 5.13 15.87 2 12 2 Z M 12 11.5 C 10.62 11.5 9.5 10.38 9.5 9 S 10.62 6.5 12 6.5 S 14.5 7.62 14.5 9 S 13.38 11.5 12 11.5 Z', {
+            left: 100,
+            top: 100,
+            fill: brandKit.colors?.primary || '#dc2626', // Red color
+            selectable: true,
+            resizable: true,
+            hasControls: true,
+            hasBorders: true,
+            scaleX: 1,
+            scaleY: 1
+          });
+          shape = mapPinPath;
           break;
         default:
           shape = new fabric.Rect({
@@ -2235,16 +2428,16 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         switch (obj.type) {
           case 'text':
           case 'i-text':
-            const text = new fabric.IText(obj.text || obj.content || 'Texto', {
+                         const text = new fabric.IText(obj.text || obj.content || 'Texto', {
               left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
               top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
               fontSize: obj.fontSize !== undefined && obj.fontSize !== null ? obj.fontSize : 48,
-              fill: obj.fill || obj.color || '#000000',
-              fontFamily: obj.fontFamily || obj.font || 'Arial',
-              fontWeight: obj.fontWeight || 'normal',
+               fill: obj.fill || obj.color || '#000000',
+               fontFamily: obj.fontFamily || obj.font || 'Arial',
+               fontWeight: obj.fontWeight || 'normal',
               fontStyle: obj.fontStyle || 'normal',
-              textAlign: obj.textAlign || 'left',
-              selectable: true,
+               textAlign: obj.textAlign || 'left',
+               selectable: true,
               hasControls: true,
               scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
               scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
@@ -2252,10 +2445,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               width: obj.width !== undefined && obj.width !== null ? obj.width : undefined,
               height: obj.height !== undefined && obj.height !== null ? obj.height : undefined,
               opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-              stroke: obj.stroke || 'transparent',
+               stroke: obj.stroke || 'transparent',
               strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
+               strokeLineCap: obj.strokeLineCap || 'butt',
+               strokeLineJoin: obj.strokeLineJoin || 'miter',
               strokeDashArray: obj.strokeDashArray || null,
               strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
               strokeUniform: obj.strokeUniform || false,
@@ -2270,48 +2463,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               flipY: obj.flipY || false
             });
             
-            // Restore gradient properties if they exist
-            if (obj.gradientType) {
-              (text as any).gradientType = obj.gradientType;
-            }
-            if (obj.gradientColors) {
-              (text as any).gradientColors = obj.gradientColors;
-              
-              // Recreate the actual gradient fill
-              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: text.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
-                  ]
-                });
-                text.set('fill', gradient);
-                console.log('🎨 Teal → Blue gradient restored for text');
-              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: text.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
-                  ]
-                });
-                text.set('fill', gradient);
-                console.log('🎨 Blue → Teal gradient restored for text');
-              }
-            }
+            // Restore gradient using helper function
+            restoreGradient(obj, text);
             
             canvas.add(text);
             console.log(`✅ Text object loaded with enhanced properties:`, {
@@ -2380,6 +2533,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               opacity: obj.opacity || 1,
               shadow: obj.shadow || null
             });
+            
+            // Restore gradient using helper function
+            restoreGradient(obj, rect);
+            
             canvas.add(rect);
             console.log(`✅ Rectangle object loaded with rx: ${obj.rx}, ry: ${obj.ry}`);
             break;
@@ -2401,6 +2558,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               opacity: obj.opacity || 1,
               shadow: obj.shadow || null
             });
+            
+            // Restore gradient using helper function
+            restoreGradient(obj, circle);
+            
             canvas.add(circle);
             console.log(`✅ Circle object loaded with radius: ${obj.radius}`);
             break;
@@ -2436,48 +2597,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               shadow: obj.shadow || null
             });
             
-            // Restore gradient properties if they exist
-            if (obj.gradientType) {
-              (triangle as any).gradientType = obj.gradientType;
-            }
-            if (obj.gradientColors) {
-              (triangle as any).gradientColors = obj.gradientColors;
-              
-              // Recreate the actual gradient fill
-              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: triangle.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
-                  ]
-                });
-                triangle.set('fill', gradient);
-                console.log('🎨 Teal → Blue gradient restored for triangle');
-              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: triangle.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
-                  ]
-                });
-                triangle.set('fill', gradient);
-                console.log('🎨 Blue → Teal gradient restored for triangle');
-              }
-            }
+            // Restore gradient using helper function
+            restoreGradient(obj, triangle);
             
             canvas.add(triangle);
             console.log(`✅ Triangle object loaded with enhanced properties:`, {
@@ -2551,48 +2672,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 flipY: obj.flipY || false
               });
               
-              // Restore gradient properties if they exist
-              if (obj.gradientType) {
-                (path as any).gradientType = obj.gradientType;
-              }
-              if (obj.gradientColors) {
-                (path as any).gradientColors = obj.gradientColors;
-                
-                // Recreate the actual gradient fill
-                if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
-                  const gradient = new fabric.Gradient({
-                    type: 'linear',
-                    coords: {
-                      x1: 0,
-                      y1: 0,
-                      x2: path.width || 200,
-                      y2: 0
-                    },
-                    colorStops: [
-                      { offset: 0, color: obj.gradientColors[0] },   // Teal on left
-                      { offset: 1, color: obj.gradientColors[1] }     // Blue on right
-                    ]
-                  });
-                  path.set('fill', gradient);
-                  console.log('🎨 Teal → Blue gradient restored for template path object');
-                } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
-                  const gradient = new fabric.Gradient({
-                    type: 'linear',
-                    coords: {
-                      x1: 0,
-                      y1: 0,
-                      x2: path.width || 200,
-                      y2: 0
-                    },
-                    colorStops: [
-                      { offset: 0, color: obj.gradientColors[0] },   // Blue on left
-                      { offset: 1, color: obj.gradientColors[1] }     // Teal on right
-                    ]
-                  });
-                  path.set('fill', gradient);
-                  console.log('🎨 Blue → Teal gradient restored for template path object');
-                }
-              }
+              // Restore gradient using helper function
+              restoreGradient(obj, path);
               canvas.add(path);
               console.log(`✅ Path object loaded with path data:`, pathData ? 'yes' : 'no');
             } else {
@@ -2631,48 +2712,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 flipY: obj.flipY || false
               });
               
-              // Restore gradient properties if they exist
-              if (obj.gradientType) {
-                (path as any).gradientType = obj.gradientType;
-              }
-              if (obj.gradientColors) {
-                (path as any).gradientColors = obj.gradientColors;
-                
-                // Recreate the actual gradient fill
-                if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
-                  const gradient = new fabric.Gradient({
-                    type: 'linear',
-                    coords: {
-                      x1: 0,
-                      y1: 0,
-                      x2: path.width || 200,
-                      y2: 0
-                    },
-                    colorStops: [
-                      { offset: 0, color: obj.gradientColors[0] },   // Teal on left
-                      { offset: 1, color: obj.gradientColors[1] }     // Blue on right
-                    ]
-                  });
-                  path.set('fill', gradient);
-                  console.log('🎨 Teal → Blue gradient restored for template shape object');
-                } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
-                  const gradient = new fabric.Gradient({
-                    type: 'linear',
-                    coords: {
-                      x1: 0,
-                      y1: 0,
-                      x2: path.width || 200,
-                      y2: 0
-                    },
-                    colorStops: [
-                      { offset: 0, color: obj.gradientColors[0] },   // Blue on left
-                      { offset: 1, color: obj.gradientColors[1] }     // Teal on right
-                  ]
-                  });
-                  path.set('fill', gradient);
-                  console.log('🎨 Blue → Teal gradient restored for template shape object');
-                }
-              }
+              // Restore gradient using helper function
+              restoreGradient(obj, path);
               canvas.add(path);
               console.log(`✅ Shape object with path data (wave) loaded`);
             } else {
@@ -2695,6 +2736,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 opacity: obj.opacity || 1,
                 shadow: obj.shadow || null
               });
+              
+              // Restore gradient using helper function
+              restoreGradient(obj, rect);
+              
               canvas.add(rect);
               console.log(`✅ Regular shape object loaded as rectangle`);
             }
@@ -2936,15 +2981,59 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             const text = new fabric.IText(obj.text || obj.content || 'Texto', {
               left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
               top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              fontSize: obj.fontSize || 48,
+              fontSize: obj.fontSize !== undefined && obj.fontSize !== null ? obj.fontSize : 48,
               fontFamily: obj.fontFamily || obj.font || 'Arial',
               fontWeight: obj.fontWeight || 'normal',
-              fill: obj.fill || obj.color || '#000000',
+              fontStyle: obj.fontStyle || 'normal',
               textAlign: obj.textAlign || 'left',
+              fill: obj.fill || obj.color || '#000000',
               selectable: true,
-              editable: true
+              editable: true,
+              hasControls: true,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              width: obj.width !== undefined && obj.width !== null ? obj.width : undefined,
+              height: obj.height !== undefined && obj.height !== null ? obj.height : undefined,
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
+              shadow: obj.shadow || null,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
+              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
             });
+            
+            // Restore gradient using helper function
+            restoreGradient(obj, text);
+            
             canvas.add(text);
+            console.log(`✅ Text object loaded with enhanced properties:`, {
+              text: obj.text || obj.content,
+              fontSize: text.fontSize,
+              fontFamily: text.fontFamily,
+              fontWeight: text.fontWeight,
+              fontStyle: text.fontStyle,
+              fill: text.fill,
+              stroke: text.stroke,
+              strokeWidth: text.strokeWidth,
+              scaleX: text.scaleX,
+              scaleY: text.scaleY,
+              angle: text.angle,
+              opacity: text.opacity,
+              gradientType: (text as any).gradientType,
+              gradientColors: (text as any).gradientColors
+            });
           } else if (obj.type === 'image') {
             // Skip image objects that are the same as the background image to avoid duplication
             if (obj.src && obj.src !== designData.designData?.backgroundImage) {
@@ -3033,6 +3122,95 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               scaleY: circle.scaleY,
               angle: circle.angle,
               opacity: circle.opacity
+            });
+          } else if (obj.type === 'triangle') {
+            const triangle = new fabric.Triangle({
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              width: obj.width !== undefined && obj.width !== null ? obj.width : 100,
+              height: obj.height !== undefined && obj.height !== null ? obj.height : 100,
+              fill: obj.fill || obj.color || '#cccccc',
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              selectable: true,
+              hasControls: true,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
+              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
+            });
+            
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (triangle as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (triangle as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: triangle.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                triangle.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for triangle');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: triangle.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                triangle.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for triangle');
+              }
+            }
+            
+            canvas.add(triangle);
+            console.log(`✅ Triangle object loaded with enhanced properties:`, {
+              left: triangle.left,
+              top: triangle.top,
+              width: triangle.width,
+              height: triangle.height,
+              fill: triangle.fill,
+              stroke: triangle.stroke,
+              strokeWidth: triangle.strokeWidth,
+              scaleX: triangle.scaleX,
+              scaleY: triangle.scaleY,
+              angle: triangle.angle,
+              opacity: triangle.opacity,
+              gradientType: (triangle as any).gradientType,
+              gradientColors: (triangle as any).gradientColors
             });
           } else if (obj.type === 'path' && (obj.path || (obj as any).pathData)) {
             // Handle path objects (like waves) with path or pathData property
@@ -3526,10 +3704,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         saveCanvasToHistory();
         
         console.log('✅ Promotional banner text elements added to canvas');
-      }
-    };
-    
-    // Add decorative elements
+    }
+  };
+  
+  // Add decorative elements
   const addDecorativeElement = (elementType: string) => {
     if (canvas) {
       let element: fabric.Object;
@@ -3658,10 +3836,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       return;
     }
     
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validate file size (max 200MB)
+    if (file.size > 200 * 1024 * 1024) {
       console.error('File too large:', file.size);
-      alert('El archivo es demasiado grande. Máximo 10MB permitido.');
+      alert('El archivo es demasiado grande. Máximo 200MB permitido.');
       return;
     }
     
@@ -4152,21 +4330,26 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           const baseObj = {
             id: `obj_${Date.now()}_${Math.random()}`,
             type: obj.type,
-            left: obj.left || 0,
-            top: obj.top || 0,
-            width: obj.width || 0,
-            height: obj.height || 0,
-            fill: obj.fill || '#000000',
-            stroke: obj.stroke || 'transparent',
-            scaleX: obj.scaleX || 1,
-            scaleY: obj.scaleY || 1,
-            angle: obj.angle || 0,
-            opacity: obj.opacity || 1,
-            strokeWidth: (obj as any).strokeWidth || 0,
+            left: obj.left !== undefined && obj.left !== null ? obj.left : 0,
+            top: obj.top !== undefined && obj.top !== null ? obj.top : 0,
+            width: obj.width !== undefined && obj.width !== null ? obj.width : 0,
+            height: obj.height !== undefined && obj.height !== null ? obj.height : 0,
+            fill: obj.fill !== undefined && obj.fill !== null ? obj.fill : '#000000',
+            stroke: obj.stroke !== undefined && obj.stroke !== null ? obj.stroke : 'transparent',
+            scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+            scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+            angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : 0,
+            opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+            strokeWidth: (obj as any).strokeWidth !== undefined && (obj as any).strokeWidth !== null ? (obj as any).strokeWidth : 0,
             strokeLineCap: (obj as any).strokeLineCap || 'butt',
             strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
             shadow: (obj as any).shadow || null,
             isBackground: (obj as any).isBackground || false,
+            // Add gradient properties for all objects
+            gradientType: (obj as any).gradientType || null,
+            gradientColors: (obj as any).gradientColors || null,
+            gradientStops: (obj as any).gradientStops || null,
+            gradientCoords: (obj as any).gradientCoords || null,
             // Add path property for path objects
             ...(obj.type === 'path' ? { path: (obj as fabric.Path).path || '' } : {})
           };
@@ -4186,13 +4369,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               text: textObj.text || '',
               opacity: textObj.opacity || 1,
               // Enhanced text outline and fill properties
-              strokeWidth: textObj.strokeWidth || 0,
+              strokeWidth: textObj.strokeWidth !== undefined && textObj.strokeWidth !== null ? textObj.strokeWidth : 0,
               strokeLineCap: textObj.strokeLineCap || 'butt',
               strokeLineJoin: textObj.strokeLineJoin || 'miter',
               strokeDashArray: textObj.strokeDashArray || null,
-              strokeDashOffset: textObj.strokeDashOffset || 0,
+              strokeDashOffset: textObj.strokeDashOffset !== undefined && textObj.strokeDashOffset !== null ? textObj.strokeDashOffset : 0,
               strokeUniform: textObj.strokeUniform || false,
-              strokeMiterLimit: textObj.strokeMiterLimit || 4,
+              strokeMiterLimit: textObj.strokeMiterLimit !== undefined && textObj.strokeMiterLimit !== null ? textObj.strokeMiterLimit : 4,
               shadow: textObj.shadow || null,
               // Text-specific rendering properties
               fillRule: textObj.fillRule || 'nonzero',
@@ -4202,10 +4385,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               skewX: textObj.skewX || 0,
               skewY: textObj.skewY || 0,
               flipX: textObj.flipX || false,
-              flipY: textObj.flipY || false,
-              // Preserve gradient properties for text
-              gradientType: (textObj as any).gradientType || null,
-              gradientColors: (textObj as any).gradientColors || null
+              flipY: textObj.flipY || false
             };
           }
           
@@ -4247,10 +4427,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             const rectObj = obj as fabric.Rect;
             return {
               ...baseObj,
-              rx: rectObj.rx || 0,  // Rounded corner radius X
-              ry: rectObj.ry || 0,  // Rounded corner radius Y
-              opacity: rectObj.opacity || 1,
-              strokeWidth: rectObj.strokeWidth || 0,
+              rx: rectObj.rx !== undefined && rectObj.rx !== null ? rectObj.rx : 0,  // Rounded corner radius X
+              ry: rectObj.ry !== undefined && rectObj.ry !== null ? rectObj.ry : 0,  // Rounded corner radius Y
+              opacity: rectObj.opacity !== undefined && rectObj.opacity !== null ? rectObj.opacity : 1,
+              strokeWidth: rectObj.strokeWidth !== undefined && rectObj.strokeWidth !== null ? rectObj.strokeWidth : 0,
               strokeLineCap: rectObj.strokeLineCap || 'butt',
               strokeLineJoin: rectObj.strokeLineJoin || 'miter',
               shadow: rectObj.shadow || null
@@ -4262,9 +4442,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             const circleObj = obj as fabric.Circle;
             return {
               ...baseObj,
-              radius: circleObj.radius || 0,
-              opacity: circleObj.opacity || 1,
-              strokeWidth: circleObj.strokeWidth || 0,
+              radius: circleObj.radius !== undefined && circleObj.radius !== null ? circleObj.radius : 0,
+              opacity: circleObj.opacity !== undefined && circleObj.opacity !== null ? circleObj.opacity : 1,
+              strokeWidth: circleObj.strokeWidth !== undefined && circleObj.strokeWidth !== null ? circleObj.strokeWidth : 0,
               strokeLineCap: circleObj.strokeLineCap || 'butt',
               strokeLineJoin: circleObj.strokeLineJoin || 'miter',
               shadow: circleObj.shadow || null
@@ -4276,25 +4456,22 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             const triangleObj = obj as fabric.Triangle;
             return {
               ...baseObj,
-              opacity: triangleObj.opacity || 1,
-              strokeWidth: triangleObj.strokeWidth || 0,
+              opacity: triangleObj.opacity !== undefined && triangleObj.opacity !== null ? triangleObj.opacity : 1,
+              strokeWidth: triangleObj.strokeWidth !== undefined && triangleObj.strokeWidth !== null ? triangleObj.strokeWidth : 0,
               strokeLineCap: triangleObj.strokeLineCap || 'butt',
               strokeLineJoin: triangleObj.strokeLineJoin || 'miter',
               strokeDashArray: triangleObj.strokeDashArray || null,
-              strokeDashOffset: triangleObj.strokeDashOffset || 0,
+              strokeDashOffset: triangleObj.strokeDashOffset !== undefined && triangleObj.strokeDashOffset !== null ? triangleObj.strokeDashOffset : 0,
               strokeUniform: triangleObj.strokeUniform || false,
-              strokeMiterLimit: triangleObj.strokeMiterLimit || 4,
+              strokeMiterLimit: triangleObj.strokeMiterLimit !== undefined && triangleObj.strokeMiterLimit !== null ? triangleObj.strokeMiterLimit : 4,
               shadow: triangleObj.shadow || null,
               fillRule: triangleObj.fillRule || 'nonzero',
               paintFirst: triangleObj.paintFirst || 'fill',
               globalCompositeOperation: triangleObj.globalCompositeOperation || 'source-over',
-              skewX: triangleObj.skewX || 0,
-              skewY: triangleObj.skewY || 0,
+              skewX: triangleObj.skewX !== undefined && triangleObj.skewX !== null ? triangleObj.skewX : 0,
+              skewY: triangleObj.skewY !== undefined && triangleObj.skewY !== null ? triangleObj.skewY : 0,
               flipX: triangleObj.flipX || false,
-              flipY: triangleObj.flipY || false,
-              // Preserve gradient properties
-              gradientType: (triangleObj as any).gradientType || null,
-              gradientColors: (triangleObj as any).gradientColors || null
+              flipY: triangleObj.flipY || false
             };
           }
           
@@ -4304,8 +4481,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             return {
               ...baseObj,
               points: polygonObj.points || [],
-              opacity: polygonObj.opacity || 1,
-              strokeWidth: polygonObj.strokeWidth || 0,
+              opacity: polygonObj.opacity !== undefined && polygonObj.opacity !== null ? polygonObj.opacity : 1,
+              strokeWidth: polygonObj.strokeWidth !== undefined && polygonObj.strokeWidth !== null ? polygonObj.strokeWidth : 0,
               strokeLineCap: polygonObj.strokeLineCap || 'butt',
               strokeLineJoin: polygonObj.strokeLineJoin || 'miter',
               shadow: polygonObj.shadow || null
@@ -4351,25 +4528,22 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               ...baseObj,
               path: pathDataString,
               pathData: pathDataString, // Also store as pathData for compatibility
-              opacity: pathObj.opacity || 1,
-              strokeWidth: pathObj.strokeWidth || 0,
+              opacity: pathObj.opacity !== undefined && pathObj.opacity !== null ? pathObj.opacity : 1,
+              strokeWidth: pathObj.strokeWidth !== undefined && pathObj.strokeWidth !== null ? pathObj.strokeWidth : 0,
               strokeLineCap: pathObj.strokeLineCap || 'butt',
               strokeLineJoin: pathObj.strokeLineJoin || 'miter',
               strokeDashArray: pathObj.strokeDashArray || null,
-              strokeDashOffset: pathObj.strokeDashOffset || 0,
+              strokeDashOffset: pathObj.strokeDashOffset !== undefined && pathObj.strokeDashOffset !== null ? pathObj.strokeDashOffset : 0,
               strokeUniform: pathObj.strokeUniform || false,
-              strokeMiterLimit: pathObj.strokeMiterLimit || 4,
+              strokeMiterLimit: pathObj.strokeMiterLimit !== undefined && pathObj.strokeMiterLimit !== null ? pathObj.strokeMiterLimit : 4,
               shadow: pathObj.shadow || null,
               fillRule: pathObj.fillRule || 'nonzero',
               paintFirst: pathObj.paintFirst || 'fill',
               globalCompositeOperation: pathObj.globalCompositeOperation || 'source-over',
-              skewX: pathObj.skewX || 0,
-              skewY: pathObj.skewY || 0,
+              skewX: pathObj.skewX !== undefined && pathObj.skewX !== null ? pathObj.skewX : 0,
+              skewY: pathObj.skewY !== undefined && pathObj.skewY !== null ? pathObj.skewY : 0,
               flipX: pathObj.flipX || false,
-              flipY: pathObj.flipY || false,
-              // Save gradient properties
-              gradientType: (pathObj as any).gradientType || null,
-              gradientColors: (pathObj as any).gradientColors || null
+              flipY: pathObj.flipY || false
             };
           }
           
@@ -4396,10 +4570,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         let dataToSave = designData;
         let isOptimized = false;
         
-        // Only optimize if data is extremely large (over 2MB) to prevent server issues
-        if (exceedsSizeLimit(designData, 2000000)) {
+        // Only optimize if data is extremely large (over 100MB) to prevent server issues
+        if (exceedsSizeLimit(designData, 100000000)) {
           console.log('⚠️ Data extremely large, optimizing but keeping as single file...');
-          const optimization = optimizeDesignData(designData as any, 2000000);
+          const optimization = optimizeDesignData(designData as any, 100000000);
           dataToSave = optimization.optimized;
           isOptimized = optimization.isMinimal;
           console.log('🗜️ Data optimized:', {
@@ -4895,17 +5069,17 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         {/* Top Row - File and Edit Operations */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100">
           {/* Left Section - File Operations */}
-          <div className="flex items-center space-x-2">
-            {/* Keep/Save Button */}
-            <button
-              onClick={async () => await saveDesign()}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-              title="Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo"
-            >
+            <div className="flex items-center space-x-2">
+              {/* Keep/Save Button */}
+              <button
+                onClick={async () => await saveDesign()}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                title="Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo"
+              >
                               <FloppyDisk size={20} />
-            </button>
-            
-            {/* Download Dropdown */}
+              </button>
+              
+                          {/* Download Dropdown */}
             <div className="relative download-dropdown">
               <button
                 onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
@@ -4918,152 +5092,152 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               {/* Download Dropdown Menu */}
               {showDownloadDropdown && (
                 <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
-                  <button
-                    onClick={() => {
-                      downloadDesign('PNG');
-                      setShowDownloadDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-t-lg"
-                  >
+              <button
+                      onClick={() => {
+                        downloadDesign('PNG');
+                        setShowDownloadDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-t-lg"
+                    >
                     <Download size={16} className="text-green-600" />
-                    <span>PNG</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      downloadDesign('PDF');
-                      setShowDownloadDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-b-lg"
-                  >
+                      <span>PNG</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        downloadDesign('PDF');
+                        setShowDownloadDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-b-lg"
+                    >
                     <FilePdf size={4} className="w-4 h-4 text-red-600" />
-                    <span>PDF</span>
-                  </button>
-                </div>
-              )}
+                      <span>PDF</span>
+              </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
           {/* Right Section - Edit Operations */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={undo}
-              disabled={historyIndex <= 0}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Deshacer (Ctrl+Z)"
-            >
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={undo}
+                disabled={historyIndex <= 0}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Deshacer (Ctrl+Z)"
+              >
               <ArrowsOutCardinal size={5} className="w-5 h-5" />
-            </button>
-            
-            <button
-              onClick={redo}
-              disabled={historyIndex >= history.length - 1}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Rehacer (Ctrl+Y)"
-            >
+              </button>
+              
+              <button
+                onClick={redo}
+                disabled={historyIndex >= history.length - 1}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Rehacer (Ctrl+Y)"
+              >
               <ArrowsOutCardinal size={5} className="w-5 h-5" />
-            </button>
-            
-            <div className="w-px h-8 bg-gray-300 mx-2"></div>
-            
-            <button
-              onClick={duplicateSelectedObject}
-              disabled={!selectedObject}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Duplicar (Ctrl+D)"
-            >
+              </button>
+              
+              <div className="w-px h-8 bg-gray-300 mx-2"></div>
+              
+              <button
+                onClick={duplicateSelectedObject}
+                disabled={!selectedObject}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Duplicar (Ctrl+D)"
+              >
               <Pencil size={4} className="w-4 h-4" />
-            </button>
-            
-            <button
-              onClick={deleteSelectedObject}
-              disabled={!selectedObject}
-              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Eliminar (Delete)"
-            >
+              </button>
+              
+              <button
+                onClick={deleteSelectedObject}
+                disabled={!selectedObject}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Eliminar (Delete)"
+              >
               <Pencil size={4} className="w-4 h-4" />
-            </button>
+              </button>
           </div>
         </div>
 
         {/* Bottom Row - Tabs and Content */}
-        <div className="px-6 py-3">
+         <div className="px-6 py-3">
           {/* Tab Navigation */}
-          <div className="flex border-b border-gray-200 mb-4">
+           <div className="flex border-b border-gray-200 mb-4">
             <button
               onClick={() => setActiveTab('elements')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
+               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'elements'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                   ? 'text-blue-600 border-b-2 border-blue-600'
+                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Elementos
+               Elementos
             </button>
             <button
               onClick={() => setActiveTab('text')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
+               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'text'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                   ? 'text-blue-600 border-b-2 border-blue-600'
+                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Texto
+               Texto
             </button>
             <button
               onClick={() => setActiveTab('format')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
+               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'format'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                   ? 'text-blue-600 border-b-2 border-blue-600'
+                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Formato
+               Formato
             </button>
           </div>
           
           {/* Tab Content */}
-          {activeTab === 'elements' && (
-            <div className="space-y-3">
-              {/* Basic Design Tools Row */}
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-700">Agregar:</span>
-                
-                {/* Add Text */}
-                <button
-                  onClick={addText}
-                  className="flex items-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                  title="Agregar Texto"
-                >
+            {activeTab === 'elements' && (
+             <div className="space-y-3">
+               {/* Basic Design Tools Row */}
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm font-medium text-gray-700">Agregar:</span>
+                 
+                 {/* Add Text */}
+                  <button
+                    onClick={addText}
+                   className="flex items-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                    title="Agregar Texto"
+                  >
                   <TextT size={4} className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">Texto</span>
-                </button>
-                
-                {/* Add Image */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center space-x-2 px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                  title="Agregar Imagen"
-                >
+                   <span className="text-sm font-medium text-blue-800">Texto</span>
+                  </button>
+                  
+                 {/* Add Image */}
+                  <button
+                   onClick={() => fileInputRef.current?.click()}
+                   className="flex items-center space-x-2 px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                    title="Agregar Imagen"
+                  >
                   <ImageIcon size={4} className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">Imagen</span>
-                </button>
-                
+                   <span className="text-sm font-medium text-green-800">Imagen</span>
+                  </button>
+                  
 
 
-                {/* Add Shape */}
+                 {/* Add Shape */}
                 <div className="relative shapes-container">
                   <button
                     onClick={() => setShowShapeSelector(true)}
-                    className="flex items-center space-x-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                   className="flex items-center space-x-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
                     title="Agregar Forma"
                   >
                     <Square size={4} className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-medium text-purple-800">Formas</span>
+                   <span className="text-sm font-medium text-purple-800">Formas</span>
                   </button>
                   
                   {/* Shape Selector Modal */}
                   {showShapeSelector && (
-                    <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50 min-w-[280px]">
+                    <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50 min-w-[420px]">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-sm font-semibold text-gray-900">Seleccionar Forma</h3>
                         <button
@@ -5073,10 +5247,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
-                        </button>
+                  </button>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-3 gap-3">
                         {/* Square */}
                         <button
                           onClick={() => addShape('rectangle')}
@@ -5191,26 +5365,65 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                           </div>
                           <span className="text-xs font-medium text-gray-700">Onda Simple</span>
                         </button>
+                        
+                        {/* Pill Shape */}
+                        <button
+                          onClick={() => addShape('pill')}
+                          className="flex flex-col items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
+                        >
+                          <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center mb-2 group-hover:bg-pink-200 transition-colors">
+                            <svg className="w-5 h-5 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
+                              <rect x="2" y="6" width="20" height="12" rx="6" ry="6"/>
+                            </svg>
+                          </div>
+                          <span className="text-xs font-medium text-gray-700">Píldora</span>
+                        </button>
+                        
+                        {/* Half-Rounded Rectangle */}
+                        <button
+                          onClick={() => addShape('half-rounded')}
+                          className="flex flex-col items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
+                        >
+                          <div className="w-8 h-8 bg-amber-100 rounded flex items-center justify-center mb-2 group-hover:bg-amber-200 transition-colors">
+                            <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M2 6 L 14 6 Q 22 6 22 12 Q 22 18 14 18 L 2 18 Z"/>
+                            </svg>
+                          </div>
+                          <span className="text-xs font-medium text-gray-700">Medio Redondeado</span>
+                        </button>
+                        
+                        {/* Map Pin */}
+                        <button
+                          onClick={() => addShape('map-pin')}
+                          className="flex flex-col items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
+                        >
+                          <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center mb-2 group-hover:bg-red-200 transition-colors">
+                            <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                          </div>
+                          <span className="text-xs font-medium text-gray-700">Pin de Mapa</span>
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
-              </div>
-          
-              {/* Background & Real Estate Tools Row */}
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-700">Fondo:</span>
-                
-                {/* Background Color */}
+                </div>
+            
+               {/* Background & Real Estate Tools Row */}
+                <div className="flex items-center space-x-4">
+                 <span className="text-sm font-medium text-gray-700">Fondo:</span>
+                 
+                 {/* Background Color */}
                 <div className="relative color-picker-container">
-                  <button
+                 <button
                     onClick={() => setShowColorPicker(!showColorPicker)}
-                    className="flex items-center space-x-2 px-3 py-2 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                   className="flex items-center space-x-2 px-3 py-2 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                     title="Color de Fondo"
-                  >
+                 >
                     <Palette size={4} className="w-4 h-4 text-orange-600" />
-                    <span className="text-sm font-medium text-orange-800">Color</span>
-                  </button>
+                   <span className="text-sm font-medium text-orange-800">Color</span>
+                 </button>
                   
                   {/* Background Color Picker Modal */}
                   {showColorPicker && (
@@ -5268,82 +5481,82 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   )}
                 </div>
 
-                {/* Background Image Upload */}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleBackgroundImageChange}
-                  className="hidden"
-                  id="background-image-input"
-                />
-                <label
-                  htmlFor="background-image-input"
-                  className="flex items-center space-x-2 px-3 py-2 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors cursor-pointer"
-                  title="Subir Imagen de Fondo"
-                >
+                 {/* Background Image Upload */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBackgroundImageChange}
+                    className="hidden"
+                    id="background-image-input"
+                  />
+                  <label
+                    htmlFor="background-image-input"
+                   className="flex items-center space-x-2 px-3 py-2 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors cursor-pointer"
+                    title="Subir Imagen de Fondo"
+                  >
                   <ImageIcon size={4} className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm font-medium text-orange-800">Imagen</span>
-                </label>
-                
-                {/* Clear Background Image */}
-                <button
-                  onClick={() => setBackgroundImage(null)}
-                  disabled={!backgroundImage}
-                  className="px-3 py-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-                  title="Limpiar Imagen de Fondo"
-                >
-                  Limpiar
-                </button>
-              </div>
-          
-              {/* Real Estate Elements Row */}
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-700">Bienes Raíces:</span>
-                
-                <button
-                  onClick={() => addRealEstateElement('price')}
-                  className="flex items-center space-x-2 px-3 py-2 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors"
-                  title="Agregar Precio"
-                >
-                  <span className="text-lg">💰</span>
-                  <span className="text-sm font-medium text-yellow-800">Precio</span>
-                </button>
-                
-                <button
-                  onClick={() => addRealEstateElement('bedrooms')}
-                  className="flex items-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                  title="Agregar Habitaciones"
-                >
-                  <span className="text-lg">🛏️</span>
-                  <span className="text-sm font-medium text-blue-800">Habitaciones</span>
-                </button>
-                
-                <button
-                  onClick={() => addRealEstateElement('contact')}
-                  className="flex items-center space-x-2 px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                  title="Agregar Contacto"
-                >
-                  <span className="text-lg">📞</span>
-                  <span className="text-sm font-medium text-green-800">Contacto</span>
-                </button>
-                
-                <button
-                  onClick={() => addRealEstateElement('address')}
-                  className="flex items-center space-x-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
-                  title="Agregar Dirección"
-                >
-                  <span className="text-lg">📍</span>
-                  <span className="text-sm font-medium text-purple-800">Dirección</span>
-                </button>
-                
-                <button
-                  onClick={() => addRealEstateElement('propertyType')}
-                  className="flex items-center space-x-2 px-3 py-2 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                  title="Agregar Tipo de Propiedad"
-                >
-                  <span className="text-lg">🏠</span>
-                  <span className="text-sm font-medium text-red-800">Tipo</span>
-                </button>
+                   <span className="text-sm font-medium text-orange-800">Imagen</span>
+                  </label>
+                  
+                 {/* Clear Background Image */}
+                  <button
+                    onClick={() => setBackgroundImage(null)}
+                    disabled={!backgroundImage}
+                   className="px-3 py-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                    title="Limpiar Imagen de Fondo"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+            
+               {/* Real Estate Elements Row */}
+                <div className="flex items-center space-x-4">
+                 <span className="text-sm font-medium text-gray-700">Bienes Raíces:</span>
+                 
+                  <button
+                    onClick={() => addRealEstateElement('price')}
+                   className="flex items-center space-x-2 px-3 py-2 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors"
+                   title="Agregar Precio"
+                  >
+                   <span className="text-lg">💰</span>
+                   <span className="text-sm font-medium text-yellow-800">Precio</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => addRealEstateElement('bedrooms')}
+                   className="flex items-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                   title="Agregar Habitaciones"
+                  >
+                   <span className="text-lg">🛏️</span>
+                   <span className="text-sm font-medium text-blue-800">Habitaciones</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => addRealEstateElement('contact')}
+                   className="flex items-center space-x-2 px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                   title="Agregar Contacto"
+                  >
+                   <span className="text-lg">📞</span>
+                   <span className="text-sm font-medium text-green-800">Contacto</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => addRealEstateElement('address')}
+                   className="flex items-center space-x-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                   title="Agregar Dirección"
+                  >
+                   <span className="text-lg">📍</span>
+                   <span className="text-sm font-medium text-purple-800">Dirección</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => addRealEstateElement('propertyType')}
+                   className="flex items-center space-x-2 px-3 py-2 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                   title="Agregar Tipo de Propiedad"
+                  >
+                   <span className="text-lg">🏠</span>
+                   <span className="text-sm font-medium text-red-800">Tipo</span>
+                  </button>
                 
                 <button
                   onClick={addPromotionalText}
@@ -5352,8 +5565,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 >
                   <span className="text-lg">📢</span>
                   <span className="text-sm font-medium text-teal-800">Texto Promocional</span>
-                </button>
-              </div>
+                  </button>
+                </div>
               
               {/* Selected Object Color Picker */}
               {selectedObject && (
@@ -5421,91 +5634,93 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   </div>
                 </div>
               )}
-            </div>
-          )}
-          
-
-          
-          {activeTab === 'text' && selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text') && (
-            <div className="space-y-3">
-              {/* Text Content Row */}
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-700">Contenido:</span>
-                <textarea
-                  value={(selectedObject as fabric.IText).text || ''}
-                  onChange={(e) => {
-                    const newText = e.target.value;
-                    if (selectedObject && canvas) {
-                      // Prevent completely empty text
-                      if (newText.length === 0) {
-                        (selectedObject as fabric.IText).set('text', ' ');
-                      } else {
-                        (selectedObject as fabric.IText).set('text', newText);
-                      }
-                      
-                      canvas?.renderAll();
-                      saveCanvasToHistory();
-                    }
-                  }}
-                  rows={1}
-                  className="w-64 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  placeholder="Escribe tu texto aquí..."
-                />
               </div>
-              
-              {/* Text Properties Row */}
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-700">Propiedades:</span>
-                
-                {/* Font Family */}
-                                  <select
-                    value={(selectedObject as fabric.IText).fontFamily || 'Arial'}
-                    onChange={(e) => {
-                      if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                        (selectedObject as fabric.IText).set('fontFamily', e.target.value);
-                        canvas?.renderAll();
-                        saveCanvasToHistory();
-                      }
-                    }}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
+            )}
+            
+
+            
+           {activeTab === 'text' && selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text') && (
+             <div className="space-y-3">
+               {/* Text Content Row */}
+               <div className="flex items-center space-x-4">
+                 <span className="text-sm font-medium text-gray-700">Contenido:</span>
+                 <textarea
+                   value={(selectedObject as fabric.IText).text || ''}
+                        onChange={(e) => {
+                     const newText = e.target.value;
+                     if (selectedObject && canvas) {
+                       // Prevent completely empty text
+                       if (newText.length === 0) {
+                         (selectedObject as fabric.IText).set('text', ' ');
+                       } else {
+                         (selectedObject as fabric.IText).set('text', newText);
+                       }
+                       
+                            canvas?.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                   rows={1}
+                   className="w-64 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                   placeholder="Escribe tu texto aquí..."
+                 />
+                  </div>
+                  
+               {/* Text Properties Row */}
+               <div className="flex items-center space-x-4">
+                 <span className="text-sm font-medium text-gray-700">Propiedades:</span>
+                 
+                  {/* Font Family */}
+                    <select
+                      value={(selectedObject as fabric.IText).fontFamily || 'Arial'}
+                      onChange={(e) => {
+                        if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                        console.log('🎨 Changing font family from', (selectedObject as fabric.IText).fontFamily, 'to', e.target.value);
+                          (selectedObject as fabric.IText).set('fontFamily', e.target.value);
+                        console.log('✅ Font family set to:', (selectedObject as fabric.IText).fontFamily);
+                          canvas?.renderAll();
+                          saveCanvasToHistory();
+                        }
+                      }}
+                   className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 >
                     {fontFamilies.map((font) => (
                       <option key={font} value={font}>{font}</option>
                     ))}
-                  </select>
-                
-                {/* Font Size */}
-                <input
-                  type="number"
-                  min="8"
-                  max="200"
-                  value={(selectedObject as fabric.IText).fontSize || 48}
-                  onChange={(e) => {
-                    if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                      (selectedObject as fabric.IText).set('fontSize', parseInt(e.target.value));
-                      canvas?.renderAll();
-                      saveCanvasToHistory();
-                    }
-                  }}
-                  className="w-20 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="48"
-                />
-                
-                {/* Text Color */}
+                    </select>
+                  
+                  {/* Font Size */}
+                      <input
+                   type="number"
+                        min="8"
+                        max="200"
+                        value={(selectedObject as fabric.IText).fontSize || 48}
+                        onChange={(e) => {
+                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                            (selectedObject as fabric.IText).set('fontSize', parseInt(e.target.value));
+                            canvas?.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                   className="w-20 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="48"
+                 />
+                  
+                  {/* Text Color */}
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="color"
-                    value={(selectedObject as fabric.IText).fill as string || '#000000'}
-                    onChange={(e) => {
-                      if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                        (selectedObject as fabric.IText).set('fill', e.target.value);
-                        canvas?.renderAll();
-                        saveCanvasToHistory();
-                      }
-                    }}
-                    className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
-                    title="Color del texto"
-                  />
+                      <input
+                        type="color"
+                        value={(selectedObject as fabric.IText).fill as string || '#000000'}
+                        onChange={(e) => {
+                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                            (selectedObject as fabric.IText).set('fill', e.target.value);
+                            canvas?.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                   className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                   title="Color del texto"
+                 />
                   
                   {/* Quick Color Palette */}
                   <div className="flex space-x-1">
@@ -5527,47 +5742,47 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   </div>
                 </div>
 
-                {/* Bold/Italic/Underline */}
-                <button
-                  onClick={() => {
-                    if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                      const currentWeight = (selectedObject as fabric.IText).fontWeight || 'normal';
-                      const newWeight = currentWeight === 'bold' ? 'normal' : 'bold';
-                      (selectedObject as fabric.IText).set('fontWeight', newWeight);
-                      canvas?.renderAll();
-                      saveCanvasToHistory();
-                    }
-                  }}
-                  className={`px-3 py-2 text-sm rounded border transition-colors ${
-                    (selectedObject as fabric.IText).fontWeight === 'bold'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                  title="Negrita"
-                >
-                  <strong>B</strong>
-                </button>
-                
-                <button
-                  onClick={() => {
-                    if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                      const currentStyle = (selectedObject as fabric.IText).fontStyle || 'normal';
-                      const newStyle = currentStyle === 'italic' ? 'normal' : 'italic';
-                      (selectedObject as fabric.IText).set('fontStyle', newStyle);
-                      canvas?.renderAll();
-                      saveCanvasToHistory();
-                    }
-                  }}
-                  className={`px-3 py-2 text-sm rounded border transition-colors ${
-                    (selectedObject as fabric.IText).fontStyle === 'italic'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                  title="Cursiva"
-                >
-                  <em>I</em>
-                </button>
-              </div>
+                 {/* Bold/Italic/Underline */}
+                      <button
+                        onClick={() => {
+                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                       const currentWeight = (selectedObject as fabric.IText).fontWeight || 'normal';
+                       const newWeight = currentWeight === 'bold' ? 'normal' : 'bold';
+                       (selectedObject as fabric.IText).set('fontWeight', newWeight);
+                            canvas?.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                   className={`px-3 py-2 text-sm rounded border transition-colors ${
+                     (selectedObject as fabric.IText).fontWeight === 'bold'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                   title="Negrita"
+                      >
+                   <strong>B</strong>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                       const currentStyle = (selectedObject as fabric.IText).fontStyle || 'normal';
+                       const newStyle = currentStyle === 'italic' ? 'normal' : 'italic';
+                       (selectedObject as fabric.IText).set('fontStyle', newStyle);
+                            canvas?.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                   className={`px-3 py-2 text-sm rounded border transition-colors ${
+                     (selectedObject as fabric.IText).fontStyle === 'italic'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                   title="Cursiva"
+                      >
+                   <em>I</em>
+                      </button>
+               </div>
               
               {/* Text Formatting Row */}
               <div className="space-y-3">
@@ -5579,7 +5794,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     <span className="text-xs text-gray-600">Relleno:</span>
                     <input
                       type="color"
-                      value={(selectedObject.fill as string) || '#000000'}
+                      value={(selectedObject.fill as string) === 'transparent' ? '#ffffff' : ((selectedObject.fill as string) || '#000000')}
                       onChange={(e) => {
                         if (selectedObject && canvas) {
                           selectedObject.set('fill', e.target.value);
@@ -5610,7 +5825,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     <span className="text-xs text-gray-600">Contorno:</span>
                     <input
                       type="color"
-                      value={(selectedObject.stroke as string) || '#000000'}
+                      value={(selectedObject.stroke as string) === 'transparent' ? '#ffffff' : ((selectedObject.stroke as string) || '#000000')}
                       onChange={(e) => {
                         if (selectedObject && canvas) {
                           selectedObject.set('stroke', e.target.value);
@@ -5660,108 +5875,121 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     </span>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-          
-          {/* No Text Object Selected Message */}
-          {activeTab === 'text' && (!selectedObject || (selectedObject.type !== 'text' && selectedObject.type !== 'i-text')) && (
-            <div className="text-sm text-gray-500">
-              Selecciona un objeto de texto para editarlo
-            </div>
-          )}
+               </div>
+             </div>
+           )}
+           
+           {/* No Text Object Selected Message */}
+           {activeTab === 'text' && (!selectedObject || (selectedObject.type !== 'text' && selectedObject.type !== 'i-text')) && (
+             <div className="text-sm text-gray-500">
+               Selecciona un objeto de texto para editarlo
+             </div>
+           )}
 
-          {/* Format Tab - Advanced Object Formatting */}
-          {activeTab === 'format' && selectedObject && (
-            <div className="space-y-3">
-              {/* Object Properties Row */}
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-700">Formato:</span>
-                
-                {/* Fill Color */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-600">Relleno:</span>
-                  <input
-                    type="color"
-                    value={(selectedObject.fill as string) || '#000000'}
-                    onChange={(e) => {
-                      if (selectedObject) {
-                        selectedObject.set('fill', e.target.value);
-                        canvas?.renderAll();
-                        saveCanvasToHistory();
-                      }
-                    }}
-                    className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-                    title="Color de relleno"
-                  />
+           {/* Format Tab - Advanced Object Formatting */}
+           {activeTab === 'format' && selectedObject && (
+             <div className="space-y-3">
+               {/* Object Properties Row */}
+               <div className="flex items-center space-x-4">
+                 <span className="text-sm font-medium text-gray-700">Formato:</span>
+                 
+                 {/* Fill Color */}
+                 <div className="flex items-center space-x-2">
+                   <span className="text-xs text-gray-600">Relleno:</span>
+                   <input
+                     type="color"
+                     value={(selectedObject.fill as string) || '#000000'}
+                     onChange={(e) => {
+                       if (selectedObject) {
+                         selectedObject.set('fill', e.target.value);
+                            canvas?.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                     className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                     title="Color de relleno"
+                   />
+                  </div>
+                  
+                 {/* Stroke Color */}
+                 <div className="flex items-center space-x-2">
+                   <span className="text-xs text-gray-600">Borde:</span>
+                   <input
+                     type="color"
+                     value={(selectedObject.stroke as string) || '#000000'}
+                     onChange={(e) => {
+                       if (selectedObject) {
+                         selectedObject.set('stroke', e.target.value);
+                              canvas?.renderAll();
+                              saveCanvasToHistory();
+                            }
+                          }}
+                     className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                     title="Color de borde"
+                   />
+                  </div>
+                  
+                 {/* Stroke Width */}
+                 <div className="flex items-center space-x-2">
+                   <span className="text-xs text-gray-600">Ancho:</span>
+                      <input
+                        type="range"
+                     min="0"
+                        max="20"
+                        step="0.5"
+                     value={(selectedObject.strokeWidth as number) || 0}
+                        onChange={(e) => {
+                       if (selectedObject) {
+                         selectedObject.set('strokeWidth', parseFloat(e.target.value));
+                            canvas?.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                     className="w-20 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
+                     title="Ancho de borde"
+                      />
+                      <span className="text-xs text-gray-600 min-w-[2rem] text-center">
+                     {(selectedObject.strokeWidth as number) || 0}
+                      </span>
+                  </div>
+                  
+                  {/* Gradient Fill Button */}
+                  <button
+                    onClick={() => setShowGradientEditor(!showGradientEditor)}
+                    className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                      showGradientEditor 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    title="Editor de gradiente"
+                  >
+                    Gradient Fill
+                  </button>
+                  
+                 {/* Opacity */}
+                 <div className="flex items-center space-x-2">
+                   <span className="text-xs text-gray-600">Opacidad:</span>
+                      <input
+                        type="range"
+                     min="0"
+                     max="1"
+                        step="0.1"
+                     value={(selectedObject.opacity as number) || 1}
+                        onChange={(e) => {
+                       if (selectedObject) {
+                         selectedObject.set('opacity', parseFloat(e.target.value));
+                            canvas?.renderAll();
+                            saveCanvasToHistory();
+                          }
+                        }}
+                     className="w-20 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
+                     title="Opacidad"
+                      />
+                      <span className="text-xs text-gray-600 min-w-[2rem] text-center">
+                     {((selectedObject.opacity as number) || 1).toFixed(1)}
+                      </span>
+                  </div>
                 </div>
-                
-                {/* Stroke Color */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-600">Borde:</span>
-                  <input
-                    type="color"
-                    value={(selectedObject.stroke as string) || '#000000'}
-                    onChange={(e) => {
-                      if (selectedObject) {
-                        selectedObject.set('stroke', e.target.value);
-                        canvas?.renderAll();
-                        saveCanvasToHistory();
-                      }
-                    }}
-                    className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-                    title="Color de borde"
-                  />
-                </div>
-                
-                {/* Stroke Width */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-600">Ancho:</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="20"
-                    step="0.5"
-                    value={(selectedObject.strokeWidth as number) || 0}
-                    onChange={(e) => {
-                      if (selectedObject) {
-                        selectedObject.set('strokeWidth', parseFloat(e.target.value));
-                        canvas?.renderAll();
-                        saveCanvasToHistory();
-                      }
-                    }}
-                    className="w-20 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
-                    title="Ancho de borde"
-                  />
-                  <span className="text-xs text-gray-600 min-w-[2rem] text-center">
-                    {(selectedObject.strokeWidth as number) || 0}
-                  </span>
-                </div>
-                
-                {/* Opacity */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-600">Opacidad:</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={(selectedObject.opacity as number) || 1}
-                    onChange={(e) => {
-                      if (selectedObject) {
-                        selectedObject.set('opacity', parseFloat(e.target.value));
-                        canvas?.renderAll();
-                        saveCanvasToHistory();
-                      }
-                    }}
-                    className="w-20 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
-                    title="Opacidad"
-                  />
-                  <span className="text-xs text-gray-600 min-w-[2rem] text-center">
-                    {((selectedObject.opacity as number) || 1).toFixed(1)}
-                  </span>
-                </div>
-              </div>
               
               {/* Quick Color Palette and Gradients */}
               <div className="space-y-3">
@@ -5895,119 +6123,199 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               </div>
               
 
-              
-              {/* Shadow and Effects Row */}
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-700">Efectos:</span>
                 
-                {/* Shadow Toggle */}
-                <button
-                  onClick={() => {
-                    if (selectedObject) {
-                      if ((selectedObject as any).shadow) {
-                        (selectedObject as any).set('shadow', null);
-                      } else {
-                        (selectedObject as any).set('shadow', new fabric.Shadow({
-                          color: 'rgba(0,0,0,0.3)',
-                          blur: 10,
-                          offsetX: 5,
-                          offsetY: 5
-                        }));
-                      }
-                      canvas?.renderAll();
-                      saveCanvasToHistory();
-                    }
-                  }}
-                  className={`px-3 py-2 text-sm rounded border transition-colors ${
-                    (selectedObject as any).shadow
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                  title="Activar/Desactivar sombra"
-                >
-                  {(selectedObject as any).shadow ? 'Sombra ON' : 'Sombra OFF'}
-                </button>
+               {/* Shadow and Effects Row */}
+               <div className="flex items-center space-x-4">
+                 <span className="text-sm font-medium text-gray-700">Efectos:</span>
+                 
+                 {/* Shadow Toggle */}
+                 <button
+                   onClick={() => {
+                     if (selectedObject) {
+                       if ((selectedObject as any).shadow) {
+                         (selectedObject as any).set('shadow', null);
+                        } else {
+                         (selectedObject as any).set('shadow', new fabric.Shadow({
+                           color: 'rgba(0,0,0,0.3)',
+                           blur: 10,
+                           offsetX: 5,
+                           offsetY: 5
+                         }));
+                       }
+                       canvas?.renderAll();
+                       saveCanvasToHistory();
+                     }
+                   }}
+                   className={`px-3 py-2 text-sm rounded border transition-colors ${
+                     (selectedObject as any).shadow
+                       ? 'border-blue-500 bg-blue-50 text-blue-700'
+                       : 'border-gray-300 hover:border-gray-400'
+                   }`}
+                   title="Activar/Desactivar sombra"
+                 >
+                   {(selectedObject as any).shadow ? 'Sombra ON' : 'Sombra OFF'}
+                 </button>
 
-                {/* Reset to Default */}
-                <button
-                  onClick={() => {
-                    if (selectedObject) {
-                      selectedObject.set({
-                        fill: '#000000',
-                        stroke: 'transparent',
-                        strokeWidth: 0,
-                        opacity: 1,
-                        shadow: null
-                      });
-                      canvas?.renderAll();
-                      saveCanvasToHistory();
-                    }
-                  }}
-                  className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
-                  title="Restablecer formato"
-                >
-                  Reset
-                </button>
+                 {/* Reset to Default */}
+                 <button
+                   onClick={() => {
+                     if (selectedObject) {
+                       selectedObject.set({
+                         fill: '#000000',
+                         stroke: 'transparent',
+                         strokeWidth: 0,
+                         opacity: 1,
+                         shadow: null
+                       });
+                        canvas?.renderAll();
+                        saveCanvasToHistory();
+                      }
+                    }}
+                   className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                   title="Restablecer formato"
+                 >
+                   Reset
+                 </button>
+                </div>
               </div>
-            </div>
-          )}
-          
-          {/* No Object Selected Message for Format Tab */}
-          {activeTab === 'format' && !selectedObject && (
-            <div className="text-sm text-gray-500">
-              Selecciona un objeto para editar su formato
-            </div>
-          )}
+            )}
+
+            {/* Gradient Editor Panel */}
+            {showGradientEditor && selectedObject && (
+              <div className="gradient-editor-container mt-4 p-4 bg-gray-50 rounded-lg border">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">Gradient Editor</span>
+                    <button
+                      onClick={() => setShowGradientEditor(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  {/* Gradient Stops Container */}
+                  <div className="space-y-2">
+                    {gradientStops.map((stop, index) => (
+                      <div key={stop.id} className="flex items-center space-x-2 p-2 bg-white rounded border">
+                        {/* Color Picker */}
+                        <input
+                          type="color"
+                          value={stop.color}
+                          onChange={(e) => updateGradientStop(stop.id, { color: e.target.value })}
+                          className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                          title="Color del stop"
+                        />
+                        
+                        {/* Position Slider */}
+                        <div className="flex-1 flex items-center space-x-2">
+                          <span className="text-xs text-gray-600 min-w-[2rem]">0%</span>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={stop.offset}
+                            onChange={(e) => updateGradientStop(stop.id, { offset: parseInt(e.target.value) })}
+                            className="flex-1 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
+                            title="Posición del stop"
+                          />
+                          <span className="text-xs text-gray-600 min-w-[2rem]">100%</span>
+                        </div>
+                        
+                        {/* Position Label */}
+                        <span className="text-xs text-gray-600 min-w-[3rem] text-center">
+                          {stop.offset}%
+                        </span>
+                        
+                        {/* Remove Button */}
+                        {gradientStops.length > 2 && (
+                          <button
+                            onClick={() => removeGradientStop(stop.id)}
+                            className="text-red-500 hover:text-red-700 text-sm"
+                            title="Eliminar stop"
+                          >
+                            🗑
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Add Stop Button */}
+                  <button
+                    onClick={addGradientStop}
+                    className="w-full px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                  >
+                    ➕ Add Stop
+                  </button>
+                  
+                  {/* Apply Gradient Button */}
+                  <button
+                    onClick={applyGradient}
+                    className="w-full px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  >
+                    Apply Gradient
+                 </button>
+                </div>
+              </div>
+            )}
+            
+           {/* No Object Selected Message for Format Tab */}
+           {activeTab === 'format' && !selectedObject && (
+             <div className="text-sm text-gray-500">
+               Selecciona un objeto para editar su formato
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Content Area with proper spacing for merged toolbar */}
       <div className="w-full pt-64">
-        {/* Canvas */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mx-6">
-          <div className="flex justify-center overflow-auto p-4">
-            <div 
-              className="relative border-2 border-gray-300 rounded-lg shadow-lg bg-white min-w-fit"
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              <canvas
-                ref={canvasRef}
-                width={getCurrentCanvasSize().width}
-                height={getCurrentCanvasSize().height}
-                className="block max-w-full h-auto"
-                style={{ 
-                  maxWidth: '100%', 
-                  height: 'auto',
-                  display: 'block'
-                }}
-              />
-              
-              {/* Canvas Boundary Indicator */}
-              <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-400 opacity-60 rounded-lg"></div>
-              
-              {/* Drag and drop overlay */}
-              {isDragOver && (
-                <div className="absolute inset-0 bg-blue-100 bg-opacity-70 flex items-center justify-center rounded-lg">
-                  <div className="text-blue-600 font-medium text-lg">Suelta la imagen aquí</div>
+          {/* Canvas */}
+         <div className="bg-white rounded-2xl shadow-lg p-6 mx-6">
+              <div className="flex justify-center overflow-auto p-4">
+                <div 
+                  className="relative border-2 border-gray-300 rounded-lg shadow-lg bg-white min-w-fit"
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <canvas
+                    ref={canvasRef}
+                    width={getCurrentCanvasSize().width}
+                    height={getCurrentCanvasSize().height}
+                    className="block max-w-full h-auto"
+                    style={{ 
+                      maxWidth: '100%', 
+                      height: 'auto',
+                      display: 'block'
+                    }}
+                  />
+                  
+                  {/* Canvas Boundary Indicator */}
+                  <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-400 opacity-60 rounded-lg"></div>
+                  
+                  {/* Drag and drop overlay */}
+                  {isDragOver && (
+                    <div className="absolute inset-0 bg-blue-100 bg-opacity-70 flex items-center justify-center rounded-lg">
+                      <div className="text-blue-600 font-medium text-lg">Suelta la imagen aquí</div>
+                    </div>
+                  )}
+                  
+                  {/* Canvas Size Indicator */}
+                  <div className="absolute top-2 right-2 bg-gray-800 bg-opacity-80 text-white text-xs px-3 py-1 rounded-lg font-medium">
+                    {getCurrentCanvasSize().width} × {getCurrentCanvasSize().height}
+                  </div>
                 </div>
-              )}
+              </div>
               
-              {/* Canvas Size Indicator */}
-              <div className="absolute top-2 right-2 bg-gray-800 bg-opacity-80 text-white text-xs px-3 py-1 rounded-lg font-medium">
-                {getCurrentCanvasSize().width} × {getCurrentCanvasSize().height}
+              {/* Upload instructions */}
+              <div className="mt-4 text-center text-sm text-gray-600">
+                <p className="mb-2">💡 <strong>Consejos para el canvas:</strong></p>
+                <p>• Arrastra y suelta imágenes directamente en el canvas</p>
+                <p>• Usa los botones de la barra de herramientas para agregar elementos</p>
+                <p>• Haz clic en cualquier elemento para editarlo</p>
               </div>
             </div>
-          </div>
-          
-          {/* Upload instructions */}
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p className="mb-2">💡 <strong>Consejos para el canvas:</strong></p>
-            <p>• Arrastra y suelta imágenes directamente en el canvas</p>
-            <p>• Usa los botones de la barra de herramientas para agregar elementos</p>
-            <p>• Haz clic en cualquier elemento para editarlo</p>
-          </div>
-        </div>
       </div>
 
       {/* Hidden file input for image uploads */}

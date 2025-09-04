@@ -73,7 +73,7 @@ export const templatesData: Template[] = [
     name: 'Banner Web',
     description: 'Diseño optimizado para sitios web y landing pages',
     category: 'banner',
-    dimensions: '1200×400',
+    dimensions: '1200×628',
     plan: 'Free',
     link: 'https://www.canva.com/design/DAGxdhfSWIw/R_DlhmK4Chs54SVnMfUW1g/edit',
     thumbnail: '/api/templates/banner-1/thumbnail.png'
@@ -83,7 +83,7 @@ export const templatesData: Template[] = [
     name: 'Banner Promocional',
     description: 'Plantilla llamativa para campañas publicitarias',
     category: 'banner',
-    dimensions: '1200×400',
+    dimensions: '1200×628',
     plan: 'Premium',
     link: 'https://www.canva.com/design/DAGxdooAZzo/ha0vJgUnXhoZz60kYCwMQ/edit',
     thumbnail: '/api/templates/banner-2/thumbnail.png'
@@ -115,9 +115,9 @@ export const templatesData: Template[] = [
   {
     id: 'brochure-1',
     name: 'Brochure Simple',
-    description: 'Folleto de una página para información básica',
+    description: 'Folleto de una página para información básica - A4 (2480×3508 px, 300 dpi)',
     category: 'brochure',
-    dimensions: '210×297',
+    dimensions: '2480×3508',
     plan: 'Premium',
     link: 'https://www.canva.com/design/DAGxYwoU2Ug/8tbsPHPa_KtxP4DI7xe5WA/edit',
     thumbnail: '/api/templates/brochure-1/thumbnail.png'
@@ -125,9 +125,9 @@ export const templatesData: Template[] = [
   {
     id: 'brochure-2',
     name: 'Documento Profesional',
-    description: 'Plantilla elegante para documentos corporativos',
+    description: 'Plantilla elegante para documentos corporativos - A4 (2480×3508 px, 300 dpi)',
     category: 'brochure',
-    dimensions: '210×297',
+    dimensions: '2480×3508',
     plan: 'Ultra-Premium',
     link: 'https://www.canva.com/design/DAGxYzQ57GU/QfU9hr25Ux_Kk3YxA529pQ/edit',
     thumbnail: '/api/templates/badge-2/thumbnail.png'

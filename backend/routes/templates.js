@@ -112,7 +112,7 @@ const imageStorage = multer.diskStorage({
 const designUpload = multer({ 
   storage: designStorage,
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit for design data
+    fileSize: 500 * 1024 * 1024, // 500MB limit for design data
   },
   fileFilter: function (req, file, cb) {
     if (file.mimetype === 'application/json' || file.originalname.endsWith('.json')) {
@@ -126,7 +126,7 @@ const designUpload = multer({
 const generalUpload = multer({ 
   storage: generalStorage,
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit
+    fileSize: 500 * 1024 * 1024, // 500MB limit
   },
   fileFilter: function (req, file, cb) {
     // Allow common file types
@@ -152,7 +152,7 @@ const generalUpload = multer({
 const imageUpload = multer({ 
   storage: imageStorage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: 200 * 1024 * 1024, // 200MB limit
   },
   fileFilter: function (req, file, cb) {
     if (file.mimetype.startsWith('image/')) {
@@ -631,6 +631,9 @@ router.post('/', async (req, res) => {
     // Generate default name if none provided
     const templateName = name || generateDefaultTemplateName(type);
     
+    // Generate a unique template key
+    const templateKey = `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     // Create new template with default content based on type
     const newTemplate = await Template.create({
       name: templateName,
@@ -640,6 +643,7 @@ router.post('/', async (req, res) => {
       objects: getDefaultObjectsForType(type),
       backgroundColor: '#ffffff',
       dimensions: dimensions || getDefaultDimensions(type),
+      templateKey: templateKey, // Add templateKey
     });
     
     res.status(201).json(newTemplate);

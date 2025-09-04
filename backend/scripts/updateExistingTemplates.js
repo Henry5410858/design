@@ -60,7 +60,7 @@ const updateExistingTemplates = async () => {
       cityRealEstate.isRealEstate = true;
       cityRealEstate.description = 'Urban real estate banner with city skyline';
       cityRealEstate.category = 'banners';
-      cityRealEstate.canvasSize = '1200x400';
+      cityRealEstate.canvasSize = '1200x628';
       await cityRealEstate.save();
       console.log('✅ Updated City Real Estate template');
     }

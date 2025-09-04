@@ -69,7 +69,7 @@ const initialData = {
       ],
       backgroundColor: '#0f766e',
       backgroundImage: null,
-      canvasSize: '1200x400'
+      canvasSize: '1200x628'
     },
     {
       name: 'Trifold Brochure',
@@ -128,7 +128,7 @@ const initialData = {
       ],
       backgroundColor: '#FFFFFF',
       backgroundImage: null,
-      canvasSize: '1200x400'
+      canvasSize: '1200x628'
     },
     {
       name: 'Business Document',
