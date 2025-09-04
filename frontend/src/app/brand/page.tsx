@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 
 // This page should be statically generated
 export const dynamic = 'auto';
-import AppLayout from '../../components/layout/AppLayout';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Image as ImageIcon, Palette, TextT, FloppyDisk } from 'phosphor-react';
 interface BrandKit {
   _id?: string;
@@ -124,16 +124,16 @@ export default function BrandPage() {
 
   if (loading) {
     return (
-      <AppLayout>
+      <DashboardLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
         </div>
-      </AppLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <AppLayout>
+    <DashboardLayout>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -494,6 +494,6 @@ export default function BrandPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </DashboardLayout>
   );
 }

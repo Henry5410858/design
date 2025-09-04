@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import TemplateGallery from '../../components/templates/TemplateGallery';
-import AppLayout from '../../components/layout/AppLayout';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import CreateTemplateModal from '../../components/modals/CreateTemplateModal';
 
 export default function TemplateGalleryPage() {
@@ -72,7 +72,7 @@ export default function TemplateGalleryPage() {
   };
 
   return (
-    <AppLayout>
+    <DashboardLayout>
       <div className="max-w-7xl mx-auto py-6">
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 overflow-hidden p-6">
           {/* Action Buttons */}
@@ -162,6 +162,6 @@ export default function TemplateGalleryPage() {
           </div>
         </div>
       )}
-    </AppLayout>
+    </DashboardLayout>
   );
 }

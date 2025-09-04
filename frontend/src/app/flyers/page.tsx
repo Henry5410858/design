@@ -7,7 +7,7 @@ import FlyerEditor from '../../components/flyers/FlyerEditor';
 import Image from 'next/image';
 import { useUser } from '../../context/UserContext';
 import Icon from '@/components/ui/Icon';
-import AppLayout from '../../components/layout/AppLayout';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import { withContextPreservation, safeAsync } from '../../utils/contextManager';
 
 type Flyer = {
@@ -162,7 +162,7 @@ export default function FlyersPage() {
 
   if (editingFlyer) {
     return (
-      <AppLayout>
+      <DashboardLayout>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="mb-6">
             <button
@@ -176,12 +176,12 @@ export default function FlyersPage() {
           </div>
           <FlyerEditor flyer={editingFlyer} onSave={handleSave} onCancel={() => setEditingFlyer(null)} />
         </div>
-      </AppLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <AppLayout>
+    <DashboardLayout>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -328,6 +328,6 @@ export default function FlyersPage() {
           </>
         )}
       </div>
-    </AppLayout>
+    </DashboardLayout>
   );
 }

@@ -9,7 +9,7 @@ import {
 
 // This page should be statically generated
 export const dynamic = 'auto';
-import AppLayout from '../../components/layout/AppLayout';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import { createContextAwarePromise, safeAsync } from '../../utils/contextManager';
 
 export default function AIEnhancePage() {
@@ -64,7 +64,7 @@ export default function AIEnhancePage() {
   };
 
   return (
-    <AppLayout>
+    <DashboardLayout>
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
@@ -235,6 +235,6 @@ export default function AIEnhancePage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </DashboardLayout>
   );
 }

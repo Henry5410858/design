@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
-import AppLayout from '../../components/layout/AppLayout';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import { 
   SquaresFour, 
   Image as ImageIcon, 
@@ -113,7 +113,7 @@ export default function MyDesignsPage() {
   };
 
   return (
-    <AppLayout>
+    <DashboardLayout>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -434,6 +434,6 @@ export default function MyDesignsPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </DashboardLayout>
   );
 }

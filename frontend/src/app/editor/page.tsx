@@ -4,7 +4,6 @@ import { useSearchParams } from 'next/navigation';
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
 import UnifiedEditor from '../../components/editors/UnifiedEditor';
-import AppLayout from '../../components/layout/AppLayout';
 
 export default function EditorPage() {
   const searchParams = useSearchParams();

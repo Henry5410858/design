@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import CreateTemplateModal from '@/components/modals/CreateTemplateModal';
 
 export default function HomePage() {
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
 
   return (
-    <AppLayout>
+    <DashboardLayout>
       <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
         <div className="text-center max-w-4xl mx-auto">
           <div className="mb-8">
@@ -60,7 +60,7 @@ export default function HomePage() {
         isOpen={showCreateTemplateModal}
         onClose={() => setShowCreateTemplateModal(false)}
       />
-    </AppLayout>
+    </DashboardLayout>
   );
 }
 

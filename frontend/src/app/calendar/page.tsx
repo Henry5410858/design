@@ -3,14 +3,14 @@
 // Force dynamic rendering for this page
 export const dynamic = 'auto';
 
-import AppLayout from '../../components/layout/AppLayout';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import { 
   Pencil, 
   Image as ImageIcon 
 } from 'phosphor-react';
 export default function CampaignCalendarPage() {
   return (
-    <AppLayout>
+    <DashboardLayout>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -180,6 +180,6 @@ export default function CampaignCalendarPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </DashboardLayout>
   );
 }
