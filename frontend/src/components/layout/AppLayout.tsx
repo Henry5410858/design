@@ -73,10 +73,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <span className="text-xl">🎨</span>
                 <span className="font-medium text-gray-700 group-hover:text-gray-900">Templates</span>
               </a>
-              <a href="/editor" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors duration-200 group">
-                <span className="text-xl">✏️</span>
-                <span className="font-medium text-gray-700 group-hover:text-gray-900">Editor</span>
-              </a>
               <a href="/brand-kit" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors duration-200 group">
                 <span className="text-xl">🏷️</span>
                 <span className="font-medium text-gray-700 group-hover:text-gray-900">Brand Kit</span>

@@ -34,6 +34,12 @@ const templateTypes: TemplateType[] = [
     description: 'Professional marketplace flyers and leaflets'
   },
   {
+    value: 'real-estate-flyer',
+    label: 'Real Estate Flyer',
+    icon: '🏠',
+    description: 'Professional real estate flyers with FOR SALE badges'
+  },
+  {
     value: 'fb-feed-banner',
     label: 'FB Feed Banner',
     icon: '🚩',
@@ -132,6 +138,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
       'square-post': { width: 1080, height: 1080 },
       'story': { width: 1080, height: 1920 },
       'marketplace-flyer': { width: 1200, height: 1500 },
+      'real-estate-flyer': { width: 1200, height: 1500 },
       'fb-feed-banner': { width: 1200, height: 628 },
       'digital-badge': { width: 1080, height: 1350 },
       'brochure': { width: 2480, height: 3508 }

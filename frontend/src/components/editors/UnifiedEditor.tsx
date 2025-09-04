@@ -268,6 +268,25 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const [templates, setTemplates] = useState<any[]>([]);
   // Removed default templates - editors now only work with specific templates
 
+  // Helper function to get a safe color value from fill property
+  const getSafeColorValue = (fill: any): string => {
+    if (typeof fill === 'string') {
+      return fill;
+    }
+    if (fill && typeof fill === 'object' && fill.type === 'gradient') {
+      // For gradient objects, return the first color stop or a default
+      if (fill.colorStops && fill.colorStops.length > 0) {
+        return fill.colorStops[0].color;
+      }
+    }
+    return '#000000';
+  };
+
+  // Helper function to check if fill is a gradient
+  const isGradientFill = (fill: any): boolean => {
+    return fill && typeof fill === 'object' && fill.type === 'gradient';
+  };
+
   // Color palettes
   const colorPalettes = {
     brand: [
@@ -1379,6 +1398,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       y2: 0
     };
     
+    console.log('💾 Gradient metadata stored on object:', {
+      gradientType: (selectedObject as any).gradientType,
+      gradientColors: (selectedObject as any).gradientColors,
+      gradientStops: (selectedObject as any).gradientStops,
+      gradientCoords: (selectedObject as any).gradientCoords
+    });
+    
     canvas.renderAll();
     
     // Save to history
@@ -1389,6 +1415,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
 
   // Helper function to restore gradient from saved data
   const restoreGradient = (obj: any, fabricObj: fabric.Object) => {
+    console.log(`🔍 restoreGradient called for ${obj.type}:`, {
+      gradientType: obj.gradientType,
+      gradientColors: obj.gradientColors,
+      gradientStops: obj.gradientStops,
+      gradientCoords: obj.gradientCoords
+    });
+    
     if (obj.gradientType && obj.gradientColors && obj.gradientColors.length >= 2) {
       let gradient;
       
@@ -2514,12 +2547,20 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
                     case 'rect':
           case 'rectangle':
+            // Determine initial fill - use solid color if it's a gradient object, let restoreGradient handle it
+            let initialFill = '#3b82f6'; // default
+            if (typeof obj.fill === 'string') {
+              initialFill = obj.fill;
+            } else if (obj.color) {
+              initialFill = obj.color;
+            }
+            
             const rect = new fabric.Rect({
               left: obj.left || obj.x || 0,
               top: obj.top || obj.y || 0,
               width: obj.width || 200,
               height: obj.height || 200,
-              fill: obj.fill || obj.color || '#3b82f6',
+              fill: initialFill,
               stroke: obj.stroke || obj.borderColor || 'transparent',
               strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
               rx: obj.rx || 0,  // Rounded corner radius X
@@ -2535,7 +2576,22 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             });
             
             // Restore gradient using helper function
-            restoreGradient(obj, rect);
+            console.log(`🔍 About to call restoreGradient for rect:`, {
+              gradientType: obj.gradientType,
+              gradientColors: obj.gradientColors,
+              hasGradientType: !!obj.gradientType,
+              hasGradientColors: !!obj.gradientColors,
+              gradientColorsLength: obj.gradientColors ? obj.gradientColors.length : 0,
+              currentFill: rect.fill
+            });
+            
+            // Always call restoreGradient if gradient metadata exists
+            if (obj.gradientType && obj.gradientColors && obj.gradientColors.length >= 2) {
+              console.log(`🔍 Calling restoreGradient for rect with gradient metadata`);
+              restoreGradient(obj, rect);
+            } else {
+              console.log(`🔍 Skipping restoreGradient for rect - no gradient metadata`);
+            }
             
             canvas.add(rect);
             console.log(`✅ Rectangle object loaded with rx: ${obj.rx}, ry: ${obj.ry}`);
@@ -2973,7 +3029,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         top: obj.top,
         path: obj.path,
         pathData: (obj as any).pathData,
-        isPath: (obj as any).isPath
+        isPath: (obj as any).isPath,
+        gradientType: obj.gradientType,
+        gradientColors: obj.gradientColors,
+        gradientStops: obj.gradientStops,
+        gradientCoords: obj.gradientCoords
       });
       console.log(`📋 Full object ${index + 1} data:`, JSON.stringify(obj, null, 2));
           
@@ -3058,12 +3118,20 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               console.log('🚫 Skipping duplicate image object (same as background):', obj.src);
             }
           } else if (obj.type === 'rect' || obj.type === 'rectangle') {
+            // Determine initial fill - use solid color if it's a gradient object, let restoreGradient handle it
+            let initialFill = '#cccccc'; // default
+            if (typeof obj.fill === 'string') {
+              initialFill = obj.fill;
+            } else if (obj.color) {
+              initialFill = obj.color;
+            }
+            
             const rect = new fabric.Rect({
               left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
               top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
               width: obj.width !== undefined && obj.width !== null ? obj.width : 100,
               height: obj.height !== undefined && obj.height !== null ? obj.height : 100,
-              fill: obj.fill || obj.color || '#cccccc',
+              fill: initialFill, // Set initial fill to a solid color
               stroke: obj.stroke || 'transparent',
               strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
               strokeLineCap: obj.strokeLineCap || 'butt',
@@ -3077,6 +3145,25 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               selectable: true,
               hasControls: true
             });
+            
+            // Restore gradient using helper function
+            console.log(`🔍 About to call restoreGradient for rect (loadUserSavedDesign):`, {
+              gradientType: obj.gradientType,
+              gradientColors: obj.gradientColors,
+              hasGradientType: !!obj.gradientType,
+              hasGradientColors: !!obj.gradientColors,
+              gradientColorsLength: obj.gradientColors ? obj.gradientColors.length : 0,
+              currentFill: rect.fill
+            });
+            
+            // Always call restoreGradient if gradient metadata exists
+            if (obj.gradientType && obj.gradientColors && obj.gradientColors.length >= 2) {
+              console.log(`🔍 Calling restoreGradient for rect with gradient metadata (loadUserSavedDesign)`);
+              restoreGradient(obj, rect);
+            } else {
+              console.log(`🔍 Skipping restoreGradient for rect - no gradient metadata (loadUserSavedDesign)`);
+            }
+            
             canvas.add(rect);
             console.log(`✅ Rectangle loaded with all properties:`, {
               left: rect.left,
@@ -4317,6 +4404,23 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       console.log('🔢 Number of objects on canvas:', canvasObjects.length);
       console.log('🎯 Object types:', canvasObjects.map(obj => obj.type));
       
+      // Debug gradient data on objects
+      canvasObjects.forEach((obj, index) => {
+        console.log(`🔍 Object ${index + 1} (${obj.type}) properties:`, {
+          type: obj.type,
+          fill: obj.fill,
+          hasGradientType: !!(obj as any).gradientType,
+          gradientType: (obj as any).gradientType,
+          gradientColors: (obj as any).gradientColors,
+          gradientStops: (obj as any).gradientStops,
+          gradientCoords: (obj as any).gradientCoords,
+          left: obj.left,
+          top: obj.top,
+          width: obj.width,
+          height: obj.height
+        });
+      });
+      
       // Create a more compact design data structure
       const designData = {
         id,
@@ -4557,6 +4661,16 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       };
       
       console.log('📋 Design data prepared:', designData);
+      console.log('🔍 Objects in design data:', designData.objects.map((obj, index) => ({
+        index: index + 1,
+        type: obj.type,
+        hasGradientType: !!obj.gradientType,
+        gradientType: obj.gradientType,
+        gradientColors: obj.gradientColors,
+        gradientStops: obj.gradientStops,
+        gradientCoords: obj.gradientCoords,
+        fill: obj.fill
+      })));
       
       // Always save as one single file (user requested)
       const dataSize = getDataSize(designData);
@@ -4716,123 +4830,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           console.error('❌ Error saving to backend:', backendError);
           console.error('❌ Backend error details:', backendError);
           
-          // Show error to user and fall back to localStorage
+          // Show error to user - no localStorage fallback
           const errorMessage = backendError instanceof Error ? backendError.message : 'Backend save failed';
-          console.log('🔄 Falling back to localStorage due to backend error...');
-        }
-      
-      // Try to save to localStorage with quota management and optimization
-      console.log('💾 Saving to localStorage...');
-      const savedDesigns = JSON.parse(localStorage.getItem('savedDesigns') || '[]');
-      console.log('📚 Existing saved designs:', savedDesigns.length);
-      
-      // Check if we need to clear old designs to save space
-      if (savedDesigns.length > 5) {
-        console.log('🗑️ Clearing old designs to save space...');
-        // Keep only the 3 most recent designs
-        const recentDesigns = savedDesigns.slice(-3);
-        localStorage.setItem('savedDesigns', JSON.stringify(recentDesigns));
-        console.log('✅ Old designs cleared, kept 3 most recent');
-      }
-      
-      const existingIndex = savedDesigns.findIndex((d: any) => d.id === id);
-      console.log('🔍 Existing design index:', existingIndex);
-      
-      // Optimize data for localStorage if needed
-      let dataToSave = designData;
-      let isOptimized = false;
-      
-                      if (exceedsSizeLimit(designData, 200000)) { // 200KB limit for localStorage
-        console.log('⚠️ Data too large for localStorage, optimizing...');
-        
-        // For very large data, use ultra-minimal optimization
-        if (getDataSize(designData) > 1000000) { // 1MB or more
-          console.log('🚨 Very large data detected, using ultra-minimal optimization...');
-          dataToSave = createUltraMinimalDesignData(designData as any);
-          isOptimized = true;
-          console.log('🗜️ Ultra-minimal data created for localStorage:', {
-            originalSize: getDataSize(designData),
-            optimizedSize: getDataSize(dataToSave),
-            reduction: `${Math.round((1 - getDataSize(dataToSave) / getDataSize(designData)) * 100)}%`
-          });
-        } else {
-          const optimization = optimizeDesignData(designData as any, 200000);
-          dataToSave = optimization.optimized;
-          isOptimized = optimization.isMinimal;
-          console.log('🗜️ Data optimized for localStorage:', {
-            originalSize: optimization.originalSize,
-            optimizedSize: optimization.optimizedSize,
-            reduction: `${Math.round((1 - optimization.optimizedSize / optimization.originalSize) * 100)}%`
-          });
-        }
-      }
-      
-      if (existingIndex >= 0) {
-        savedDesigns[existingIndex] = dataToSave;
-        console.log('✅ Diseño actualizado:', dataToSave.id);
-      } else {
-        savedDesigns.push(dataToSave);
-        console.log('✅ Nuevo diseño guardado:', dataToSave.id);
-      }
-      
-      // Try to save with error handling for quota
-      try {
-        localStorage.setItem('savedDesigns', JSON.stringify(savedDesigns));
-        console.log('💾 localStorage updated successfully');
-        
-        // Show success message with more details
-        let message = '';
-        if (templateKey) {
-          message = `Template "${templateKey}" actualizado exitosamente!`;
-        } else if (existingIndex >= 0) {
-          message = `Diseño "${dataToSave.id}" actualizado exitosamente!`;
-        } else {
-          message = `Nuevo diseño "${dataToSave.id}" guardado exitosamente!`;
-        }
-        
-        message += '\n📁 Datos guardados en un solo archivo';
-        
-        if (isOptimized) {
-          message += '\n🗜️ Datos optimizados para reducir tamaño';
-        }
-        
-        alert(message);
-        console.log('💾 Diseño guardado en localStorage:', designData);
-        
-        // Note: No more default templates - all templates must be user-created
-        console.log('💾 Design saved successfully. Template managed in database.');
-        
-      } catch (quotaError) {
-        console.error('❌ Quota exceeded, trying to save with ultra-minimal data...');
-        
-        // Use the ultra-minimal optimization system
-        const ultraMinimalData = createUltraMinimalDesignData(designData as any);
-        const ultraMinimalSize = getDataSize(ultraMinimalData);
-        const originalSize = getDataSize(designData);
-        
-        console.log('🗜️ Ultra-minimal data created:', {
-          originalSize: originalSize,
-          optimizedSize: ultraMinimalSize,
-          reduction: `${Math.round((1 - ultraMinimalSize / originalSize) * 100)}%`
-        });
-        
-        // If even ultra-minimal data is too large, skip localStorage entirely
-        if (ultraMinimalSize > 50000) { // 50KB limit
-          console.log('⚠️ Even ultra-minimal data is too large, skipping localStorage...');
-          alert(`Diseño demasiado grande para localStorage (${Math.round(originalSize / 1024)}KB).\n💾 Los datos se guardaron en el servidor pero no localmente.\n🗜️ Reducción intentada: ${Math.round((1 - ultraMinimalSize / originalSize) * 100)}%`);
-          console.log('✅ Design saved to server only, skipped localStorage due to size');
-          return; // Exit without trying localStorage
-        }
-        
-        // Clear all old designs and save only this one
-        localStorage.clear();
-        localStorage.setItem('savedDesigns', JSON.stringify([ultraMinimalData]));
-        
-        alert(`Diseño guardado con datos ultra-minimales debido a limitaciones de espacio.\n🗜️ Reducción: ${Math.round((1 - ultraMinimalSize / originalSize) * 100)}%\n📝 Solo se guardaron los primeros 5 objetos.`);
-        console.log('💾 Diseño guardado con datos ultra-minimales:', ultraMinimalData);
-        
-        // Note: No more default templates - all templates must be user-created
-        console.log('✅ Ultra-minimal design saved successfully. Template managed in database.');
+          alert(`❌ Error al guardar: ${errorMessage}\n\nPor favor, intenta nuevamente o contacta al soporte técnico.`);
+          return;
       }
       
     } catch (error) {
@@ -4908,157 +4909,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   };
 
-  // Load saved design
-  const loadSavedDesign = (designId: string) => {
-    console.log('🚀 loadSavedDesign called with ID:', designId);
-    
-    try {
-      console.log('📚 Getting saved designs from localStorage...');
-      const savedDesigns = JSON.parse(localStorage.getItem('savedDesigns') || '[]');
-      console.log('📚 Saved designs found:', savedDesigns.length);
-      
-      const design = savedDesigns.find((d: any) => d.id === designId);
-      console.log('🔍 Looking for design ID:', designId);
-      console.log('🎯 Design found:', !!design);
-      
-      if (!design) {
-        console.error('❌ Design not found for ID:', designId);
-        alert('Diseño no encontrado.');
-        return;
-      }
-      
-      console.log('📋 Design data:', design);
-      
-      if (!canvas) {
-        console.error('❌ Canvas is not ready');
-        alert('El canvas no está listo. Espera un momento e intenta nuevamente.');
-        return;
-      }
-      
-      console.log('🎨 Canvas is ready, clearing current content...');
-      // Clear current canvas
-      canvas.clear();
-      
-      console.log('🎨 Setting background color:', design.backgroundColor);
-      // Set background - but don't load default background images
-      setBackgroundColor(design.backgroundColor);
-      setBackgroundImage(null); // Force no background images for templates
-      
-      // Load objects manually since we don't save canvasState anymore
-      console.log('🎨 Recreating objects from saved data...');
-      
-      // Set canvas background
-      canvas.backgroundColor = design.backgroundColor;
-      canvas.renderAll();
-      
-      // Recreate all objects
-      design.objects.forEach((obj: any) => {
-        console.log('🔧 Creating object:', obj.type, obj);
-        
-        if (obj.type === 'text' || obj.type === 'i-text') {
-          // Create text object
-          const text = new fabric.IText(obj.text || 'Texto', {
-            left: obj.left || 0,
-            top: obj.top || 0,
-            fontSize: obj.fontSize || 48,
-            fontFamily: obj.fontFamily || 'Arial',
-            fontWeight: obj.fontWeight || 'normal',
-            fill: obj.fill || '#000000',
-            textAlign: obj.textAlign || 'left',
-            selectable: true,
-            editable: true
-          });
-          canvas.add(text);
-          
-        } else if (obj.type === 'image') {
-          // Create image object from saved data
-          if (obj.src) {
-            (fabric.Image.fromURL as any)(obj.src, (img: fabric.Image) => {
-              img.set({
-                left: obj.left || 0,
-                top: obj.top || 0,
-                scaleX: obj.scaleX || 1,
-                scaleY: obj.scaleY || 1,
-                angle: obj.angle || 0,
-                opacity: obj.opacity || 1,
-                selectable: true,
-                evented: true,
-                lockMovementX: false,
-                lockMovementY: false,
-                lockRotation: false,
-                lockScalingX: false,
-                lockScalingY: false,
-                cornerStyle: 'circle',
-                cornerColor: '#00525b',
-                cornerSize: 8,
-                transparentCorners: false,
-                borderColor: '#00525b',
-                borderScaleFactor: 1
-              });
-              canvas.add(img);
-              canvas.renderAll();
-            });
-          } else {
-            // Fallback to placeholder if no src
-          const rect = new fabric.Rect({
-            left: obj.left || 0,
-            top: obj.top || 0,
-            width: obj.width || 100,
-            height: obj.height || 100,
-            fill: obj.fill || '#cccccc',
-            selectable: true
-          });
-          canvas.add(rect);
-          }
-          
-        } else if (obj.type === 'rect') {
-          // Create rectangle
-          const rect = new fabric.Rect({
-            left: obj.left || 0,
-            top: obj.top || 0,
-            width: obj.width || 100,
-            height: obj.height || 100,
-            fill: obj.fill || '#cccccc',
-            stroke: obj.stroke || 'transparent',
-            selectable: true
-          });
-          canvas.add(rect);
-          
-        } else if (obj.type === 'circle') {
-          // Create circle
-          const circle = new fabric.Circle({
-            left: obj.left || 0,
-            top: obj.top || 0,
-            radius: (obj.width || 50) / 2,
-            fill: obj.fill || '#cccccc',
-            stroke: obj.stroke || 'transparent',
-            selectable: true
-          });
-          canvas.add(circle);
-        }
-      });
-      
-      canvas.renderAll();
-      console.log('✅ Diseño cargado exitosamente:', designId);
-      alert(`Diseño "${designId}" cargado exitosamente!`);
-      
-    } catch (error) {
-      console.error('❌ Error al cargar el diseño:', error);
-      console.error('❌ Error details:', error);
-      alert('Error al cargar el diseño. Revisa la consola para más detalles.');
-    }
-  };
 
-  // Get list of saved designs
-  const getSavedDesigns = () => {
-    try {
-      const savedDesigns = JSON.parse(localStorage.getItem('savedDesigns') || '[]');
-      return savedDesigns;
-    } catch (error) {
-      console.error('❌ Error al obtener diseños guardados:', error);
-      return [];
-    }
-  };
 
   const currentConfig = editorConfigs[editorTypeState as keyof typeof editorConfigs] || editorConfigs.flyer;
 
@@ -5568,72 +5419,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   </button>
                 </div>
               
-              {/* Selected Object Color Picker */}
-              {selectedObject && (
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-700">Objeto seleccionado:</span>
-                  
-                  {/* Fill Color */}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-600">Relleno:</span>
-                    <input
-                      type="color"
-                      value={(selectedObject.fill as string) || '#000000'}
-                      onChange={(e) => {
-                        if (selectedObject && canvas) {
-                          selectedObject.set('fill', e.target.value);
-                          canvas.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-                      title="Color de relleno"
-                    />
-                  </div>
-                  
-                  {/* Stroke Color */}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-600">Borde:</span>
-                    <input
-                      type="color"
-                      value={(selectedObject.stroke as string) || '#000000'}
-                      onChange={(e) => {
-                        if (selectedObject && canvas) {
-                          selectedObject.set('stroke', e.target.value);
-                          canvas.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-                      title="Color de borde"
-                    />
-                  </div>
-                  
-                  {/* Stroke Width */}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-600">Ancho borde:</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="20"
-                      step="0.5"
-                      value={(selectedObject.strokeWidth as number) || 0}
-                      onChange={(e) => {
-                        if (selectedObject && canvas) {
-                          selectedObject.set('strokeWidth', parseFloat(e.target.value));
-                          canvas.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="w-20 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
-                      title="Ancho de borde"
-                    />
-                    <span className="text-xs text-gray-600 min-w-[2rem] text-center">
-                      {(selectedObject.strokeWidth as number) || 0}
-                    </span>
-                  </div>
-                </div>
-              )}
               </div>
             )}
             
@@ -5710,7 +5495,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 <div className="flex items-center space-x-2">
                       <input
                         type="color"
-                        value={(selectedObject as fabric.IText).fill as string || '#000000'}
+                        value={getSafeColorValue((selectedObject as fabric.IText).fill)}
                         onChange={(e) => {
                           if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
                             (selectedObject as fabric.IText).set('fill', e.target.value);
@@ -5794,7 +5579,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     <span className="text-xs text-gray-600">Relleno:</span>
                     <input
                       type="color"
-                      value={(selectedObject.fill as string) === 'transparent' ? '#ffffff' : ((selectedObject.fill as string) || '#000000')}
+                      value={getSafeColorValue(selectedObject.fill) === 'transparent' ? '#ffffff' : getSafeColorValue(selectedObject.fill)}
                       onChange={(e) => {
                         if (selectedObject && canvas) {
                           selectedObject.set('fill', e.target.value);
@@ -5804,7 +5589,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                       }}
                       className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
                       title="Color de relleno del texto"
+                      disabled={isGradientFill(selectedObject.fill)}
                     />
+                    {isGradientFill(selectedObject.fill) && (
+                      <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                        Gradiente
+                      </span>
+                    )}
                     <button
                       onClick={() => {
                         if (selectedObject && canvas) {
@@ -5825,7 +5616,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     <span className="text-xs text-gray-600">Contorno:</span>
                     <input
                       type="color"
-                      value={(selectedObject.stroke as string) === 'transparent' ? '#ffffff' : ((selectedObject.stroke as string) || '#000000')}
+                      value={getSafeColorValue(selectedObject.stroke) === 'transparent' ? '#ffffff' : getSafeColorValue(selectedObject.stroke)}
                       onChange={(e) => {
                         if (selectedObject && canvas) {
                           selectedObject.set('stroke', e.target.value);
@@ -5889,16 +5680,21 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
            {/* Format Tab - Advanced Object Formatting */}
            {activeTab === 'format' && selectedObject && (
              <div className="space-y-3">
-               {/* Object Properties Row */}
-               <div className="flex items-center space-x-4">
-                 <span className="text-sm font-medium text-gray-700">Formato:</span>
+               {/* Single Row with Two Blocks */}
+               <div className="flex space-x-6">
                  
+                 {/* Block 1: Basic Formatting Tools */}
+                 <div className="flex-1 bg-gray-50 p-4 rounded-lg border">
+                   <div className="space-y-3">
+                     <span className="text-sm font-medium text-gray-700">Formato Básico:</span>
+                     
+                     <div className="flex items-center space-x-4">
                  {/* Fill Color */}
                  <div className="flex items-center space-x-2">
                    <span className="text-xs text-gray-600">Relleno:</span>
                    <input
                      type="color"
-                     value={(selectedObject.fill as string) || '#000000'}
+                           value={getSafeColorValue(selectedObject.fill)}
                      onChange={(e) => {
                        if (selectedObject) {
                          selectedObject.set('fill', e.target.value);
@@ -5908,7 +5704,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                         }}
                      className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
                      title="Color de relleno"
+                           disabled={isGradientFill(selectedObject.fill)}
                    />
+                         {isGradientFill(selectedObject.fill) && (
+                           <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                             Gradiente
+                           </span>
+                         )}
                   </div>
                   
                  {/* Stroke Color */}
@@ -5916,7 +5718,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                    <span className="text-xs text-gray-600">Borde:</span>
                    <input
                      type="color"
-                     value={(selectedObject.stroke as string) || '#000000'}
+                           value={getSafeColorValue(selectedObject.stroke)}
                      onChange={(e) => {
                        if (selectedObject) {
                          selectedObject.set('stroke', e.target.value);
@@ -5953,19 +5755,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                       </span>
                   </div>
                   
-                  {/* Gradient Fill Button */}
-                  <button
-                    onClick={() => setShowGradientEditor(!showGradientEditor)}
-                    className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                      showGradientEditor 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                    title="Editor de gradiente"
-                  >
-                    Gradient Fill
-                  </button>
-                  
                  {/* Opacity */}
                  <div className="flex items-center space-x-2">
                    <span className="text-xs text-gray-600">Opacidad:</span>
@@ -5990,143 +5779,40 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                       </span>
                   </div>
                 </div>
-              
-              {/* Quick Color Palette and Gradients */}
-              <div className="space-y-3">
-                {/* 7 Predefined Colors */}
-                <div className="space-y-2">
-                  <span className="text-sm font-medium text-gray-700">Colores rápidos:</span>
-                  <div className="grid grid-cols-7 gap-2">
-                    {[
-                      '#01aac7', // Teal
-                      '#00525b', // Dark Teal
-                      '#32e0c5', // Light Teal
-                      '#3f005f', // Dark Purple
-                      '#230038', // Very Dark Purple
-                      '#ffffff', // White
-                      '#000000'  // Black
-                    ].map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => {
-                          if (selectedObject && canvas) {
-                            selectedObject.set('fill', color);
-                            canvas.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="w-8 h-8 rounded border border-gray-300 hover:scale-110 transition-transform"
-                        style={{ backgroundColor: color }}
-                        title={`Usar ${color}`}
-                      />
-                    ))}
-                  </div>
-                </div>
                 
-                {/* Gradient Options */}
-                <div className="space-y-2">
-                  <span className="text-sm font-medium text-gray-700">Gradientes:</span>
-                  
-                  {/* Current Gradient Info Display */}
-                  {selectedObject && (selectedObject as any).gradientType && (
-                    <div className="p-2 bg-gray-50 rounded border">
-                      <span className="text-xs text-gray-600">Gradiente actual:</span>
-                      <div className="text-sm font-medium text-gray-800 capitalize">
-                        {(() => {
-                          const gradientType = (selectedObject as any).gradientType;
-                          if (gradientType === 'teal-blue') return 'Teal → Azul';
-                          if (gradientType === 'blue-teal') return 'Azul → Teal';
-                          return gradientType;
-                        })()}
-                      </div>
-                      {(selectedObject as any).gradientColors && (
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className="text-xs text-gray-500">Colores:</span>
-                          {(selectedObject as any).gradientColors.map((color: string, index: number) => (
-                            <div key={index} className="flex items-center space-x-1">
-                              <div 
-                                className="w-3 h-3 rounded border border-gray-300" 
-                                style={{ backgroundColor: color }}
-                              />
-                              <span className="text-xs text-gray-600">{color}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        if (selectedObject && canvas) {
-                          // Create teal to blue gradient
-                          const gradient = new fabric.Gradient({
-                            type: 'linear',
-                            coords: {
-                              x1: 0,
-                              y1: 0,
-                              x2: selectedObject.width || 200,
-                              y2: 0
-                            },
-                            colorStops: [
-                              { offset: 0, color: '#01aac7' },   // Teal on left
-                              { offset: 1, color: '#00525b' }     // Blue on right
-                            ]
-                          });
-                          selectedObject.set('fill', gradient);
-                          // Store gradient type identifier
-                          (selectedObject as any).gradientType = 'teal-blue';
-                          (selectedObject as any).gradientColors = ['#01aac7', '#00525b'];
-                          canvas.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="px-3 py-2 bg-gradient-to-r from-teal-400 to-blue-600 text-white text-xs rounded hover:scale-105 transition-transform"
-                      title="Gradiente Teal a Azul"
-                    >
-                      Teal → Azul
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        if (selectedObject && canvas) {
-                          // Create blue to teal gradient
-                          const gradient = new fabric.Gradient({
-                            type: 'linear',
-                            coords: {
-                              x1: 0,
-                              y1: 0,
-                              x2: selectedObject.width || 200,
-                              y2: 0
-                            },
-                            colorStops: [
-                              { offset: 0, color: '#00525b' },   // Blue on left
-                              { offset: 1, color: '#01aac7' }     // Teal on right
-                            ]
-                          });
-                          selectedObject.set('fill', gradient);
-                          // Store gradient type identifier
-                          (selectedObject as any).gradientType = 'blue-teal';
-                          (selectedObject as any).gradientColors = ['#00525b', '#01aac7'];
-                          canvas.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                      className="px-3 py-2 bg-gradient-to-r from-blue-600 to-teal-400 text-white text-xs rounded hover:scale-105 transition-transform"
-                      title="Gradiente Azul a Teal"
-                    >
-                      Azul → Teal
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-
-                
-               {/* Shadow and Effects Row */}
-               <div className="flex items-center space-x-4">
-                 <span className="text-sm font-medium text-gray-700">Efectos:</span>
+                     {/* Quick Color Palette */}
+                     <div className="space-y-2">
+                       <span className="text-xs text-gray-600">Colores rápidos:</span>
+                       <div className="grid grid-cols-7 gap-2">
+                         {[
+                           '#01aac7', // Teal
+                           '#00525b', // Dark Teal
+                           '#32e0c5', // Light Teal
+                           '#3f005f', // Dark Purple
+                           '#230038', // Very Dark Purple
+                           '#ffffff', // White
+                           '#000000'  // Black
+                         ].map((color) => (
+                           <button
+                             key={color}
+                             onClick={() => {
+                               if (selectedObject && canvas) {
+                                 selectedObject.set('fill', color);
+                                 canvas.renderAll();
+                                 saveCanvasToHistory();
+                               }
+                             }}
+                             className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition-transform"
+                             style={{ backgroundColor: color }}
+                             title={`Usar ${color}`}
+                           />
+                         ))}
+                       </div>
+                     </div>
+                     
+                     {/* Effects */}
+                     <div className="flex items-center space-x-3">
+                       <span className="text-xs text-gray-600">Efectos:</span>
                  
                  {/* Shadow Toggle */}
                  <button
@@ -6146,7 +5832,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                        saveCanvasToHistory();
                      }
                    }}
-                   className={`px-3 py-2 text-sm rounded border transition-colors ${
+                         className={`px-2 py-1 text-xs rounded border transition-colors ${
                      (selectedObject as any).shadow
                        ? 'border-blue-500 bg-blue-50 text-blue-700'
                        : 'border-gray-300 hover:border-gray-400'
@@ -6171,94 +5857,102 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                         saveCanvasToHistory();
                       }
                     }}
-                   className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                         className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
                    title="Restablecer formato"
                  >
                    Reset
                  </button>
                 </div>
               </div>
+                 </div>
+                 
+                 {/* Block 2: Gradient Tools */}
+                 <div className="flex-1 bg-blue-50 p-4 rounded-lg border">
+                   <div className="space-y-3">
+                     <span className="text-sm font-medium text-gray-700">Editor de Gradiente:</span>
+                     
+                     {/* Inline Gradient Editor */}
+                     {selectedObject && (
+                       <div className="gradient-editor-container">
+                         <div className="space-y-3">
+                           <div className="flex items-center justify-between">
+                             <span className="text-xs text-gray-600">Gradient Stops:</span>
+                             <button
+                               onClick={() => setShowGradientEditor(false)}
+                               className="text-gray-400 hover:text-gray-600"
+                             >
+                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                               </svg>
+                             </button>
+                           </div>
+                           
+                           {/* Gradient Stops Container */}
+                           <div className="space-y-2">
+                             {gradientStops.map((stop, index) => (
+                               <div key={stop.id} className="flex items-center space-x-2">
+                                 <input
+                                   type="color"
+                                   value={stop.color}
+                                   onChange={(e) => updateGradientStop(stop.id, { color: e.target.value })}
+                                   className="w-6 h-6 rounded border border-gray-300 cursor-pointer"
+                                 />
+                                 <input
+                                   type="range"
+                                   min="0"
+                                   max="100"
+                                   value={stop.offset}
+                                   onChange={(e) => updateGradientStop(stop.id, { offset: parseInt(e.target.value) })}
+                                   className="flex-1 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
+                                 />
+                                 <span className="text-xs text-gray-600 w-8 text-center">{stop.offset}%</span>
+                                 {gradientStops.length > 2 && (
+                                   <button
+                                     onClick={() => removeGradientStop(stop.id)}
+                                     className="text-red-500 hover:text-red-700 text-xs"
+                                   >
+                                     🗑
+                                   </button>
+                                 )}
+                               </div>
+                             ))}
+                           </div>
+                           
+                           {/* Add Stop Button */}
+                           <button
+                             onClick={addGradientStop}
+                             className="w-full px-3 py-2 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
+                           >
+                             ➕ Add Stop
+                           </button>
+                           
+                           {/* Apply Gradient Button */}
+                           <button
+                             onClick={applyGradient}
+                             className="w-full px-3 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                           >
+                             Apply Gradient
+                           </button>
+                           
+                           {/* Gradient Status */}
+                           {isGradientFill(selectedObject.fill) && (
+                             <div className="p-2 bg-blue-100 rounded border border-blue-200">
+                               <span className="text-xs text-blue-800 font-medium">Gradiente aplicado</span>
+                               <div className="text-xs text-blue-600 mt-1">
+                                 Tipo: {(selectedObject as any).gradientType || 'custom'}
+                               </div>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 </div>
+                 
+               </div>
+             </div>
             )}
 
-            {/* Gradient Editor Panel */}
-            {showGradientEditor && selectedObject && (
-              <div className="gradient-editor-container mt-4 p-4 bg-gray-50 rounded-lg border">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Gradient Editor</span>
-                    <button
-                      onClick={() => setShowGradientEditor(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  
-                  {/* Gradient Stops Container */}
-                  <div className="space-y-2">
-                    {gradientStops.map((stop, index) => (
-                      <div key={stop.id} className="flex items-center space-x-2 p-2 bg-white rounded border">
-                        {/* Color Picker */}
-                        <input
-                          type="color"
-                          value={stop.color}
-                          onChange={(e) => updateGradientStop(stop.id, { color: e.target.value })}
-                          className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
-                          title="Color del stop"
-                        />
-                        
-                        {/* Position Slider */}
-                        <div className="flex-1 flex items-center space-x-2">
-                          <span className="text-xs text-gray-600 min-w-[2rem]">0%</span>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={stop.offset}
-                            onChange={(e) => updateGradientStop(stop.id, { offset: parseInt(e.target.value) })}
-                            className="flex-1 h-1 bg-gray-200 rounded appearance-none cursor-pointer"
-                            title="Posición del stop"
-                          />
-                          <span className="text-xs text-gray-600 min-w-[2rem]">100%</span>
-                        </div>
-                        
-                        {/* Position Label */}
-                        <span className="text-xs text-gray-600 min-w-[3rem] text-center">
-                          {stop.offset}%
-                        </span>
-                        
-                        {/* Remove Button */}
-                        {gradientStops.length > 2 && (
-                          <button
-                            onClick={() => removeGradientStop(stop.id)}
-                            className="text-red-500 hover:text-red-700 text-sm"
-                            title="Eliminar stop"
-                          >
-                            🗑
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Add Stop Button */}
-                  <button
-                    onClick={addGradientStop}
-                    className="w-full px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                  >
-                    ➕ Add Stop
-                  </button>
-                  
-                  {/* Apply Gradient Button */}
-                  <button
-                    onClick={applyGradient}
-                    className="w-full px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                  >
-                    Apply Gradient
-                 </button>
-                </div>
-              </div>
-            )}
             
            {/* No Object Selected Message for Format Tab */}
            {activeTab === 'format' && !selectedObject && (

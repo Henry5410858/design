@@ -252,6 +252,257 @@ function getDefaultObjectsForType(type) {
           color: '#6B7280',
         }
       ];
+    case 'real-estate-flyer':
+      return [
+        // Dark blue banner background
+        {
+          id: 'banner-bg',
+          type: 'rect',
+          x: 0,
+          y: 0,
+          width: 1200,
+          height: 300,
+          fill: '#1e3a8a',
+          stroke: 'transparent',
+          strokeWidth: 0,
+          selectable: false,
+          evented: false,
+          isBackground: true
+        },
+        // Main title "REAL ESTATE"
+        {
+          id: 'main-title',
+          type: 'text',
+          x: 600,
+          y: 100,
+          width: 400,
+          height: 60,
+          text: 'REAL ESTATE',
+          fontSize: 48,
+          fontFamily: 'Arial',
+          fontWeight: 'bold',
+          fill: '#ffffff',
+          textAlign: 'center',
+          selectable: true
+        },
+        // Subtitle "Find your dream home"
+        {
+          id: 'subtitle',
+          type: 'text',
+          x: 600,
+          y: 160,
+          width: 400,
+          height: 40,
+          text: 'Find your dream home',
+          fontSize: 24,
+          fontFamily: 'Arial',
+          fontWeight: 'normal',
+          fill: '#ffffff',
+          textAlign: 'center',
+          selectable: true
+        },
+        // House image placeholder (white rectangle)
+        {
+          id: 'house-image',
+          type: 'rect',
+          x: 200,
+          y: 350,
+          width: 800,
+          height: 600,
+          fill: '#f3f4f6',
+          stroke: '#d1d5db',
+          strokeWidth: 2,
+          selectable: true
+        },
+        // "House Image" placeholder text
+        {
+          id: 'image-placeholder',
+          type: 'text',
+          x: 600,
+          y: 650,
+          width: 200,
+          height: 40,
+          text: 'House Image',
+          fontSize: 24,
+          fontFamily: 'Arial',
+          fontWeight: 'normal',
+          fill: '#6b7280',
+          textAlign: 'center',
+          selectable: true
+        },
+        // FOR SALE badge background (hexagonal shape)
+        {
+          id: 'badge-bg',
+          type: 'path',
+          x: 800,
+          y: 800,
+          width: 200,
+          height: 150,
+          path: 'M 50 0 L 150 0 L 200 75 L 150 150 L 50 150 L 0 75 Z',
+          fill: '#dc2626',
+          stroke: 'transparent',
+          strokeWidth: 0,
+          selectable: true
+        },
+        // "FOR" text in badge
+        {
+          id: 'badge-for',
+          type: 'text',
+          x: 900,
+          y: 820,
+          width: 100,
+          height: 30,
+          text: 'FOR',
+          fontSize: 20,
+          fontFamily: 'Arial',
+          fontWeight: 'bold',
+          fill: '#ffffff',
+          textAlign: 'center',
+          selectable: true
+        },
+        // "SALE" text in badge
+        {
+          id: 'badge-sale',
+          type: 'text',
+          x: 900,
+          y: 850,
+          width: 100,
+          height: 30,
+          text: 'SALE',
+          fontSize: 20,
+          fontFamily: 'Arial',
+          fontWeight: 'bold',
+          fill: '#ffffff',
+          textAlign: 'center',
+          selectable: true
+        },
+        // Price "$850,000" in badge
+        {
+          id: 'badge-price',
+          type: 'text',
+          x: 900,
+          y: 880,
+          width: 100,
+          height: 40,
+          text: '$850,000',
+          fontSize: 28,
+          fontFamily: 'Arial',
+          fontWeight: 'bold',
+          fill: '#ffffff',
+          textAlign: 'center',
+          selectable: true
+        },
+        // Bottom section background
+        {
+          id: 'bottom-bg',
+          type: 'rect',
+          x: 0,
+          y: 1000,
+          width: 1200,
+          height: 500,
+          fill: '#f9fafb',
+          stroke: 'transparent',
+          strokeWidth: 0,
+          selectable: false,
+          evented: false,
+          isBackground: true
+        },
+        // "ABOUT THE PROPERTY" header
+        {
+          id: 'property-header',
+          type: 'text',
+          x: 100,
+          y: 1100,
+          width: 400,
+          height: 40,
+          text: 'ABOUT THE PROPERTY',
+          fontSize: 24,
+          fontFamily: 'Arial',
+          fontWeight: 'bold',
+          fill: '#1e3a8a',
+          textAlign: 'left',
+          selectable: true
+        },
+        // Property description
+        {
+          id: 'property-desc',
+          type: 'text',
+          x: 100,
+          y: 1150,
+          width: 400,
+          height: 100,
+          text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque vulputate augue sit amet erat interdum, at volutpat mauris elementum.',
+          fontSize: 16,
+          fontFamily: 'Arial',
+          fontWeight: 'normal',
+          fill: '#374151',
+          textAlign: 'left',
+          selectable: true
+        },
+        // "VIEW MORE" button background
+        {
+          id: 'button-bg',
+          type: 'rect',
+          x: 100,
+          y: 1280,
+          width: 150,
+          height: 50,
+          fill: '#1e3a8a',
+          stroke: 'transparent',
+          strokeWidth: 0,
+          rx: 8,
+          ry: 8,
+          selectable: true
+        },
+        // "VIEW MORE" button text
+        {
+          id: 'button-text',
+          type: 'text',
+          x: 175,
+          y: 1295,
+          width: 100,
+          height: 20,
+          text: 'VIEW MORE',
+          fontSize: 16,
+          fontFamily: 'Arial',
+          fontWeight: 'bold',
+          fill: '#ffffff',
+          textAlign: 'center',
+          selectable: true
+        },
+        // Phone number
+        {
+          id: 'phone',
+          type: 'text',
+          x: 700,
+          y: 1100,
+          width: 200,
+          height: 30,
+          text: '123-456-7890',
+          fontSize: 18,
+          fontFamily: 'Arial',
+          fontWeight: 'normal',
+          fill: '#374151',
+          textAlign: 'left',
+          selectable: true
+        },
+        // Website
+        {
+          id: 'website',
+          type: 'text',
+          x: 700,
+          y: 1140,
+          width: 200,
+          height: 30,
+          text: 'www.example.com',
+          fontSize: 18,
+          fontFamily: 'Arial',
+          fontWeight: 'normal',
+          fill: '#374151',
+          textAlign: 'left',
+          selectable: true
+        }
+      ];
     case 'fb-feed-banner':
       return [
         {
@@ -338,6 +589,7 @@ function getCategoryForType(type) {
     'square-post': 'social-posts',
     'story': 'stories', 
     'marketplace-flyer': 'flyers',
+    'real-estate-flyer': 'flyers',
     'fb-feed-banner': 'banners',
     'digital-badge': 'badges',
     'brochure': 'documents'
@@ -351,6 +603,7 @@ function generateDefaultTemplateName(type) {
     'square-post': 'IG/FB Square Post',
     'story': 'IG/FB/WSP Story',
     'marketplace-flyer': 'Marketplace Flyer',
+    'real-estate-flyer': 'Real Estate Flyer',
     'fb-feed-banner': 'FB Feed Banner',
     'digital-badge': 'Digital Badge',
     'brochure': 'Brochure'
@@ -371,6 +624,7 @@ function getDefaultDimensions(type) {
     'square-post': { width: 1080, height: 1080 },
     'story': { width: 1080, height: 1920 },
     'marketplace-flyer': { width: 1200, height: 1500 },
+    'real-estate-flyer': { width: 1200, height: 1500 },
     'fb-feed-banner': { width: 1200, height: 628 },
     'digital-badge': { width: 1080, height: 1350 },
     'brochure': { width: 2480, height: 3508 }
@@ -623,7 +877,7 @@ router.post('/', async (req, res) => {
     }
     
     // Validate template type
-    const validTypes = ['square-post', 'story', 'marketplace-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'];
+    const validTypes = ['square-post', 'story', 'marketplace-flyer', 'real-estate-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({ error: 'Invalid template type' });
     }

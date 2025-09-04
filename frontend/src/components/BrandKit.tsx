@@ -4,6 +4,16 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { BrandKit as BrandKitType } from '@/types';
 
 const BrandKit: React.FC = React.memo(() => {
+  // Predefined color palette based on the image
+  const predefinedColors = [
+    '#00525b', // Dark teal/blue-green
+    '#01aac7', // Bright turquoise/aqua blue
+    '#32e0c5', // Light turquoise/mint green
+    '#ffffff', // Pure white
+    '#3f005f', // Rich deep purple
+    '#230038'  // Very dark purple/indigo
+  ];
+
   const [brandKit, setBrandKit] = useState<BrandKitType>({
     primaryColor: '#00525b',
     secondaryColor: '#01aac7'
@@ -68,28 +78,8 @@ const BrandKit: React.FC = React.memo(() => {
     fileInputRef.current?.click();
   }, []);
 
-  const handlePrimaryColorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    updateColor('primaryColor', e.target.value);
-  }, [updateColor]);
-
-  const handleSecondaryColorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    updateColor('secondaryColor', e.target.value);
-  }, [updateColor]);
-
-  const handleAccentColorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    updateColor('accentColor', e.target.value);
-  }, [updateColor]);
-
-  const handlePrimaryTextChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    updateColor('primaryColor', e.target.value);
-  }, [updateColor]);
-
-  const handleSecondaryTextChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    updateColor('secondaryColor', e.target.value);
-  }, [updateColor]);
-
-  const handleAccentTextChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    updateColor('accentColor', e.target.value);
+  const handleColorSelection = useCallback((type: keyof BrandKitType, color: string) => {
+    updateColor(type, color);
   }, [updateColor]);
 
   return (
@@ -198,21 +188,22 @@ const BrandKit: React.FC = React.memo(() => {
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Color Primario
                   </label>
-                  <div className="flex items-center space-x-4">
-                    <input
-                      type="color"
-                      value={brandKit.primaryColor}
-                      onChange={handlePrimaryColorChange}
-                      className="w-16 h-16 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-gray-300 transition-colors duration-200"
-                    />
-                    <input
-                      type="text"
-                      value={brandKit.primaryColor}
-                      onChange={handlePrimaryTextChange}
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      placeholder="#00525b"
-                    />
+                  <div className="grid grid-cols-6 gap-3">
+                    {predefinedColors.map((color) => (
+                      <button
+                        key={`primary-${color}`}
+                        onClick={() => handleColorSelection('primaryColor', color)}
+                        className={`w-12 h-12 rounded-xl border-2 transition-all duration-200 hover:scale-110 ${
+                          brandKit.primaryColor === color
+                            ? 'border-gray-800 shadow-lg'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
                   </div>
+                  <p className="text-sm text-gray-500 mt-2">Seleccionado: {brandKit.primaryColor}</p>
                 </div>
 
                 {/* Secondary Color */}
@@ -220,21 +211,22 @@ const BrandKit: React.FC = React.memo(() => {
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Color Secundario
                   </label>
-                  <div className="flex items-center space-x-4">
-                    <input
-                      type="color"
-                      value={brandKit.secondaryColor}
-                      onChange={handleSecondaryColorChange}
-                      className="w-16 h-16 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-gray-300 transition-colors duration-200"
-                    />
-                    <input
-                      type="text"
-                      value={brandKit.secondaryColor}
-                      onChange={handleSecondaryTextChange}
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      placeholder="#01aac7"
-                    />
+                  <div className="grid grid-cols-6 gap-3">
+                    {predefinedColors.map((color) => (
+                      <button
+                        key={`secondary-${color}`}
+                        onClick={() => handleColorSelection('secondaryColor', color)}
+                        className={`w-12 h-12 rounded-xl border-2 transition-all duration-200 hover:scale-110 ${
+                          brandKit.secondaryColor === color
+                            ? 'border-gray-800 shadow-lg'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
                   </div>
+                  <p className="text-sm text-gray-500 mt-2">Seleccionado: {brandKit.secondaryColor}</p>
                 </div>
 
                 {/* Accent Color */}
@@ -242,21 +234,22 @@ const BrandKit: React.FC = React.memo(() => {
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Color de Acento (Opcional)
                   </label>
-                  <div className="flex items-center space-x-4">
-                    <input
-                      type="color"
-                      value={accentColorValue}
-                      onChange={handleAccentColorChange}
-                      className="w-16 h-16 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-gray-300 transition-colors duration-200"
-                    />
-                    <input
-                      type="text"
-                      value={accentColorValue}
-                      onChange={handleAccentTextChange}
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      placeholder="#32e0c5"
-                    />
+                  <div className="grid grid-cols-6 gap-3">
+                    {predefinedColors.map((color) => (
+                      <button
+                        key={`accent-${color}`}
+                        onClick={() => handleColorSelection('accentColor', color)}
+                        className={`w-12 h-12 rounded-xl border-2 transition-all duration-200 hover:scale-110 ${
+                          accentColorValue === color
+                            ? 'border-gray-800 shadow-lg'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
                   </div>
+                  <p className="text-sm text-gray-500 mt-2">Seleccionado: {accentColorValue}</p>
                 </div>
               </div>
             </div>

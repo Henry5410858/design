@@ -66,6 +66,16 @@ export const templatesData: Template[] = [
     link: 'https://www.canva.com/design/DAGxdko4uls/5HqQf0ytSvyxw-ipbragTg/edit?ui=eyJEIjp7IlEiOnsiQSI6dHJ1ZX19fQ',
     thumbnail: '/api/templates/flyer-2/thumbnail.png'
   },
+  {
+    id: 'flyer-3',
+    name: 'Real Estate Flyer',
+    description: 'Flyer profesional para bienes raíces con banner azul, imagen de casa y badge FOR SALE',
+    category: 'flyer',
+    dimensions: '210×297',
+    plan: 'Premium',
+    link: '/editor/flyers/real-estate-flyer',
+    thumbnail: '/api/templates/flyer-3/thumbnail.png'
+  },
 
   // BANNER TEMPLATES
   {
