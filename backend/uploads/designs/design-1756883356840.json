@@ -1,0 +1,14 @@
+{
+  "id": "new",
+  "editorType": "flyer",
+  "canvasSize": "1200x1800",
+  "backgroundColor": "#ffffff",
+  "backgroundImage": null,
+  "templateKey": null,
+  "objects": [],
+  "metadata": {
+    "createdAt": "2025-09-03T07:09:16.840Z",
+    "updatedAt": "2025-09-03T07:09:16.840Z",
+    "version": "1.0.0"
+  }
+}
