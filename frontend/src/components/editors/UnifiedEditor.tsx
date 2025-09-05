@@ -13,7 +13,6 @@ import {
 } from 'phosphor-react';
 import { useUser } from '@/context/UserContext';
 import * as fabric from 'fabric';
-import { api } from '../../utils/api';
 import { jsPDF } from 'jspdf';
 import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
 
@@ -1100,7 +1099,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log('🚀 Loading templates from database...');
         
         // Load all templates
-        const allTemplatesResponse = await api.getTemplates();
+        const allTemplatesResponse = await fetch('http://localhost:4000/api/templates');
         if (allTemplatesResponse.ok) {
           const allTemplates = await allTemplatesResponse.json();
           setTemplates(allTemplates);
@@ -2240,7 +2239,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // Check if design file exists
   const checkDesignFileExists = async (filename: string): Promise<boolean> => {
     try {
-      const response = await api.getTemplateDesign(filename);
+      const response = await fetch(`http://localhost:4000/api/templates/design/${filename}`);
       return response.ok;
     } catch (error) {
       console.warn('⚠️ Error checking design file existence:', error);
@@ -2524,62 +2523,93 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         const template = await response.json();
         console.log('✅ Template metadata loaded from database:', template);
         
-        // Check for _id-based design file first (new approach)
-        const idBasedFilename = `${template._id}.json`;
-        console.log('📁 Checking _id-based design file:', idBasedFilename);
-        const idBasedFileExists = await checkDesignFileExists(idBasedFilename);
-        
-        if (idBasedFileExists) {
-          console.log('✅ _id-based design file exists, loading...');
-          const designResponse = await fetch(`http://localhost:4000/api/templates/design/${idBasedFilename}`);
-          if (designResponse.ok) {
-            const designData = await designResponse.json();
-            console.log('🎨 Design data loaded from _id-based file:', designData);
-            await loadTemplateFromData(templateKey, designData);
-            return;
+        // If template has a design file path in database, load it directly (priority)
+        if (template.designfilepath) {
+          console.log('📁 Loading design from file path:', template.designfilepath);
+          
+          try {
+            // Extract filename from the path (e.g., "uploads/designs/filename.json" -> "filename.json")
+            const filename = template.designfilepath.split('/').pop();
+            console.log('📁 Extracted filename:', filename);
+            
+            const designResponse = await fetch(`http://localhost:4000/api/templates/design/${filename}`);
+            if (designResponse.ok) {
+              const responseData = await designResponse.json();
+              console.log('🎨 Design response loaded from file path:', responseData);
+              
+              // Extract design data from response (it might be wrapped in a response object)
+              const designData = responseData.designData || responseData;
+              console.log('🎨 Extracted design data:', designData);
+              
+              await loadTemplateFromData(templateKey, designData);
+              return;
+            } else {
+              console.warn('⚠️ Failed to load design file from path:', template.designfilepath);
+            }
+          } catch (error) {
+            console.error('❌ Error loading design file from path:', template.designfilepath, error);
           }
-        } else {
-          console.log('📋 _id-based design file not found, checking legacy files...');
         }
         
-        // Check for template-specific design file (legacy approach)
-        const templateFilename = `${templateKey}-design.json`;
-        console.log('📁 Checking template-specific design file:', templateFilename);
-        const fileExists = await checkDesignFileExists(templateFilename);
-        
-        if (fileExists) {
-          console.log('✅ Template-specific design file exists, loading...');
-          const designResponse = await fetch(`http://localhost:4000/api/templates/design/${templateFilename}`);
-          if (designResponse.ok) {
-            const designData = await designResponse.json();
-            console.log('🎨 Design data loaded from template file:', designData);
-            await loadTemplateFromData(templateKey, designData);
-            return;
-          }
-        } else {
-          console.log('📋 Template-specific design file not found, checking database...');
-        }
-        
-        // If template has a design file in database, check if it exists
+        // Fallback: Check old designFilename field for backward compatibility
         if (template.designFilename) {
-          console.log('📁 Checking database design file:', template.designFilename);
+          console.log('📁 Checking legacy database design file:', template.designFilename);
           const fileExists = await checkDesignFileExists(template.designFilename);
           
           if (fileExists) {
-            console.log('✅ Database design file exists, loading...');
+            console.log('✅ Legacy database design file exists, loading...');
             const designResponse = await fetch(`http://localhost:4000/api/templates/design/${template.designFilename}`);
             if (designResponse.ok) {
-              const designData = await designResponse.json();
-              console.log('🎨 Design data loaded from database file:', designData);
+              const responseData = await designResponse.json();
+              console.log('🎨 Design response loaded from legacy file:', responseData);
+              
+              // Extract design data from response (it might be wrapped in a response object)
+              const designData = responseData.designData || responseData;
+              console.log('🎨 Extracted design data:', designData);
+              
               await loadTemplateFromData(templateKey, designData);
               return;
             }
           } else {
-            console.warn('⚠️ Database design file does not exist:', template.designFilename);
+            console.warn('⚠️ Legacy database design file does not exist:', template.designFilename);
             console.log('🔄 Falling back to template data from database...');
             
             // Clean up the orphaned design file reference
             await cleanupOrphanedDesignFile(templateKey);
+          }
+        } else {
+          console.log('📋 No designFilename in database, checking fallback options...');
+          
+          // Check for _id-based design file (fallback)
+          const idBasedFilename = `${template._id}.json`;
+          console.log('📁 Checking _id-based design file:', idBasedFilename);
+          const idBasedFileExists = await checkDesignFileExists(idBasedFilename);
+          
+          if (idBasedFileExists) {
+            console.log('✅ _id-based design file exists, loading...');
+            const designResponse = await fetch(`http://localhost:4000/api/templates/design/${idBasedFilename}`);
+            if (designResponse.ok) {
+              const designData = await designResponse.json();
+              console.log('🎨 Design data loaded from _id-based file:', designData);
+              await loadTemplateFromData(templateKey, designData);
+              return;
+            }
+          }
+          
+          // Check for template-specific design file (fallback)
+          const templateFilename = `${templateKey}-design.json`;
+          console.log('📁 Checking template-specific design file:', templateFilename);
+          const fileExists = await checkDesignFileExists(templateFilename);
+          
+          if (fileExists) {
+            console.log('✅ Template-specific design file exists, loading...');
+            const designResponse = await fetch(`http://localhost:4000/api/templates/design/${templateFilename}`);
+            if (designResponse.ok) {
+              const designData = await designResponse.json();
+              console.log('🎨 Design data loaded from template file:', designData);
+              await loadTemplateFromData(templateKey, designData);
+              return;
+            }
           }
         }
         
@@ -2618,8 +2648,24 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       return;
     }
     
-    // Clear current canvas
+    // Clear current canvas completely
     canvas.clear();
+    canvas.renderAll();
+    
+    // Clear any existing objects from state
+    setObjects([]);
+    setSelectedObjects([]);
+    setSelectedObject(null);
+    
+    // Clear history to prevent conflicts
+    setHistory([]);
+    setHistoryIndex(-1);
+    
+    // Reset background
+    setBackgroundColor('#ffffff');
+    setBackgroundImage(null);
+    
+    console.log('🧹 Canvas and state completely cleared');
     
     // Set background with fallbacks - ensure no default background images
     const backgroundColor = templateData.backgroundColor || '#ffffff';
@@ -3069,6 +3115,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log('✅ Fresh template loaded successfully:', templateKey);
         console.log('🎨 Final canvas objects:', finalObjectCount, '(clean canvas)');
       }
+      
+      // Final render to ensure everything is displayed
+      canvas.renderAll();
       
       // Log all loaded objects for debugging
       const allObjects = canvas.getObjects();

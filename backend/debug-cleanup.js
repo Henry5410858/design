@@ -10,7 +10,7 @@ const debugCleanupIssue = () => {
   console.log('📋 ANALYZING THE CLEANUP ISSUE:\n');
   
   // Setup test environment
-  const uploadsDir = path.resolve(__dirname, '../uploads');
+  const uploadsDir = path.resolve(__dirname, '../z');
   const designsDir = path.resolve(__dirname, '../uploads/designs');
   
   if (!fs.existsSync(uploadsDir)) {

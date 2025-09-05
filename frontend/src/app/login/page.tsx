@@ -26,28 +26,16 @@ export default function LoginPage() {
     setError('');
     
     try {
-      // For demo purposes, accept any email/password combination
-      // In production, this would validate against the backend
       if (email && password) {
-        // Use the demo login API
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: 'demo_token' }),
-        });
-        
-        if (res.ok) {
-          const { token } = await res.json();
-          await login(token);
-          router.push('/');
-        } else {
-          setError('Error de conexión. Intenta de nuevo.');
-        }
+        // Use the AuthContext login function
+        await login(email, password);
+        router.push('/');
       } else {
         setError('Por favor ingresa email y contraseña');
       }
     } catch (err) {
-      setError('Error de conexión. Intenta de nuevo.');
+      console.error('Login error:', err);
+      setError(err.message || 'Error de conexión. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
     }

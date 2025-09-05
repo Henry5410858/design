@@ -2,8 +2,6 @@
  * Utility functions for exporting canvas data without opening the editor
  */
 
-import { api } from './api';
-
 export interface TemplateData {
   _id: string;
   name: string;
@@ -37,7 +35,7 @@ export interface CanvasExportOptions {
  */
 export async function getTemplateData(templateId: string): Promise<TemplateData | null> {
   try {
-    const response = await api.getTemplate(templateId);
+    const response = await fetch(`http://localhost:4000/api/templates/${templateId}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch template ${templateId}`);
     }
@@ -53,7 +51,7 @@ export async function getTemplateData(templateId: string): Promise<TemplateData 
  */
 export async function getDesignData(designFilename: string): Promise<DesignData | null> {
   try {
-    const response = await api.getTemplateDesign(designFilename);
+    const response = await fetch(`http://localhost:4000/api/templates/design/${designFilename}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch design data ${designFilename}`);
     }

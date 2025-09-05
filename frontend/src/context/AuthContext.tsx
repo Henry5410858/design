@@ -6,7 +6,7 @@ import { User, AuthToken, LoginResponse } from '@/types';
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (token: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<boolean>;
 }
@@ -37,50 +37,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔐 checkAuth: Token from localStorage:', token ? 'exists' : 'none');
       
       if (!token) {
-        // No token exists - create a demo session automatically
-        console.log('🔐 checkAuth: No token found, creating demo session...');
-        
-        try {
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ token: 'demo_token' })
-          });
-
-          console.log('🔐 checkAuth: Demo login response status:', response.status);
-
-          if (response.ok) {
-            const loginData: LoginResponse = await response.json();
-            console.log('🔐 checkAuth: Demo login successful, user:', loginData.user.name);
-            
-            // Store token and user data
-            localStorage.setItem('token', loginData.token);
-            localStorage.setItem('tokenExpiry', loginData.expiresAt.toString());
-            setUser(loginData.user);
-            setIsLoading(false);
-            return true;
-          }
-        } catch (demoError) {
-          console.log('🔐 checkAuth: Demo login failed:', demoError);
-        }
-        
-        // If demo login fails, just set loading to false
-        console.log('🔐 checkAuth: Setting loading to false, no user');
-        
-        // Create a fallback demo user if API fails
-        const fallbackUser: User = {
-          id: 'demo_user',
-          name: 'Usuario Demo',
-          email: 'demo@example.com',
-          plan: 'Premium'
-        };
-        
-        console.log('🔐 checkAuth: Creating fallback demo user');
-        setUser(fallbackUser);
+        // No token exists - user needs to login
+        console.log('🔐 checkAuth: No token found, user needs to login');
+        setUser(null);
         setIsLoading(false);
-        return true;
+        return false;
       }
 
       // Check if token is expired
@@ -96,10 +57,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Validate token with backend
       console.log('🔐 checkAuth: Validating existing token...');
-      const response = await fetch('/api/auth/validate', {
+      const response = await fetch('http://localhost:4000/api/auth/validate', {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ token })
       });
 
       console.log('🔐 checkAuth: Token validation response status:', response.status);
@@ -161,29 +124,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [checkAuth, isLoading]);
 
-  // Login with token from main platform
-  const login = useCallback(async (token: string): Promise<void> => {
+  // Login with email and password
+  const login = useCallback(async (email: string, password: string): Promise<void> => {
     try {
       setIsLoading(true);
       
-      // Validate token and get user data
-      const response = await fetch('/api/auth/login', {
+      // Send email and password to backend for authentication
+      const response = await fetch('http://localhost:4000/api/auth/signin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ token })
+        body: JSON.stringify({ email, password })
       });
 
       if (response.ok) {
-        const loginData: LoginResponse = await response.json();
+        const loginData = await response.json();
+        
+        // Construct user object with name field
+        const userData = {
+          ...loginData.user,
+          name: `${loginData.user.firstName || ''} ${loginData.user.lastName || ''}`.trim() || loginData.user.email
+        };
+        
+        // Calculate expiry time (7 days from now, matching backend JWT expiry)
+        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
         
         // Store token and user data
         localStorage.setItem('token', loginData.token);
-        localStorage.setItem('tokenExpiry', loginData.expiresAt.toString());
-        setUser(loginData.user);
+        localStorage.setItem('tokenExpiry', expiresAt.toString());
+        setUser(userData);
       } else {
-        throw new Error('Invalid token');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Invalid credentials');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -195,14 +168,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Logout user
   const logout = useCallback(() => {
+    console.log('🔐 Logout: Starting logout process...');
+    
+    // Clear localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('tokenExpiry');
     // Clear custom template background data on logout
     localStorage.removeItem('customTemplateBackgrounds');
     localStorage.removeItem('templateBackgrounds');
+    
+    // Clear any potential cookies (in case they exist)
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    
+    console.log('🔐 Logout: Cleared all storage and cookies');
+    
+    // Clear user state
     setUser(null);
     
-    // Redirect to login page
+    console.log('🔐 Logout: Cleared user state, redirecting to login...');
+    
+    // Force redirect to login page
     window.location.href = '/login';
   }, []);
 

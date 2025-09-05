@@ -49,8 +49,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const handleLogout = useCallback(() => {
     logout();
     setIsUserDropdownOpen(false);
-    router.push('/login');
-  }, [logout, router]);
+  }, [logout]);
 
   const handleProfileClick = useCallback(() => {
     router.push('/change-userinfo');
@@ -85,12 +84,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   // Check if user is authenticated - only run when user or isLoading changes
   useEffect(() => {
-    if (!isLoading && !user) {
-      // Redirect to main platform login
-      const mainPlatformUrl = process.env.NEXT_PUBLIC_MAIN_PLATFORM_URL || '/';
-      window.location.href = mainPlatformUrl;
+    if (!isLoading && !user && pathname !== '/login' && pathname !== '/signup') {
+      // Only redirect if not already on auth pages
+      console.log('🔐 DashboardLayout: User not authenticated, redirecting to login...');
+      window.location.href = '/login';
     }
-  }, [user, isLoading]); // Only depend on user and isLoading
+  }, [user, isLoading, pathname]); // Include pathname to check current route
 
   // Handle responsive behavior - only run once on mount
   useEffect(() => {
