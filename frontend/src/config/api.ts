@@ -1,7 +1,6 @@
 // API Configuration
-// For production, you need to deploy your backend separately and update this URL
-// Options: Railway, Render, Heroku, DigitalOcean, etc.
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// Using Vercel API routes for both development and production
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
 export const API_ENDPOINTS = {
   // Auth endpoints
