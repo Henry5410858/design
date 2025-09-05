@@ -2654,7 +2654,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     
     // Clear any existing objects from state
     setObjects([]);
-    setSelectedObjects([]);
     setSelectedObject(null);
     
     // Clear history to prevent conflicts

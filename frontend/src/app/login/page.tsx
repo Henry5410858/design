@@ -35,7 +35,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Error de conexión. Intenta de nuevo.');
+      setError(err instanceof Error ? err.message : 'Error de conexión. Intenta de nuevo.');
     } finally {
       setIsLoading(false);
     }
