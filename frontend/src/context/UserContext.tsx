@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
+import API_ENDPOINTS from '@/config/api';
 type User = { id: string; plan: 'Free' | 'Premium' | 'Ultra-Premium' } | null;
 const UserContext = createContext<{ user: User; setUser: (u: User) => void }>({ user: null, setUser: () => {} });
 
@@ -34,7 +35,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const currentPathname = pathname;
         const currentRouter = router;
         
-        const res = await fetch('http://localhost:4000/api/auth/validate', {
+        const res = await fetch(API_ENDPOINTS.VALIDATE, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),

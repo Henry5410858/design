@@ -1,6 +1,7 @@
 import { DesignData, ObjectData, SaveOptions } from './types';
 import { getDataSize, exceedsSizeLimit, optimizeDesignData, chunkObjects } from './dataOptimizer';
 
+import API_ENDPOINTS from '@/config/api';
 // Save design data to separate files with automatic optimization
 export const saveDesignToFiles = async (
   designData: DesignData,
@@ -113,7 +114,7 @@ export const saveDesignToFiles = async (
 
 // Save data to a specific file
 const saveToFile = async (filename: string, data: any): Promise<void> => {
-  const response = await fetch('http://localhost:4000/api/templates/save-design', {
+  const response = await fetch(API_ENDPOINTS.SAVE_DESIGN, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -136,7 +137,7 @@ const saveToFile = async (filename: string, data: any): Promise<void> => {
 export const loadDesignFromFiles = async (baseFilename: string): Promise<DesignData | null> => {
   try {
     // Load metadata first
-    const metadataResponse = await fetch(`http://localhost:4000/api/templates/design/${baseFilename}-metadata.json`);
+    const metadataResponse = await fetch(API_ENDPOINTS.GET_DESIGN(baseFilename + '-metadata.json'));
     if (!metadataResponse.ok) {
       throw new Error('Failed to load metadata file');
     }
@@ -144,7 +145,7 @@ export const loadDesignFromFiles = async (baseFilename: string): Promise<DesignD
     const metadata = metadataResult.designData;
     
     // Load objects
-    const objectsResponse = await fetch(`http://localhost:4000/api/templates/design/${baseFilename}-objects.json`);
+    const objectsResponse = await fetch(API_ENDPOINTS.GET_DESIGN(baseFilename + '-objects.json'));
     if (!objectsResponse.ok) {
       throw new Error('Failed to load objects file');
     }

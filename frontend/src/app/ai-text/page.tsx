@@ -6,6 +6,7 @@ import { useState } from 'react';
 export const dynamic = 'auto';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Lightning, ArrowsOutCardinal, Star, Pencil } from 'phosphor-react';
+import API_ENDPOINTS from '@/config/api';
 export default function AITextPage() {
   const [flyerType, setFlyerType] = useState('');
   const [headlines, setHeadlines] = useState<string[]>([]);
@@ -16,7 +17,7 @@ export default function AITextPage() {
     
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:4000/api/ai-text', {
+      const response = await fetch(API_ENDPOINTS.AI_TEXT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

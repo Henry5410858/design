@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { BrandKit as BrandKitType } from '@/types';
 
+import API_ENDPOINTS from '@/config/api';
 const BrandKit: React.FC = React.memo(() => {
   // Predefined color palette based on the image
   const predefinedColors = [
@@ -31,9 +32,9 @@ const BrandKit: React.FC = React.memo(() => {
           return;
         }
 
-        console.log('🔍 BrandKit: Making request to http://localhost:4000/api/brand-kit with token:', token.substring(0, 20) + '...');
+        console.log('🔍 BrandKit: Making request to', API_ENDPOINTS.BRAND_KIT, 'with token:', token.substring(0, 20) + '...');
         
-        const response = await fetch('http://localhost:4000/api/brand-kit', {
+        const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -87,7 +88,7 @@ const BrandKit: React.FC = React.memo(() => {
         
         console.log('🔍 BrandKit: Saving brand kit data:', saveData);
         
-        const response = await fetch('http://localhost:4000/api/brand-kit', {
+        const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -140,7 +141,7 @@ const BrandKit: React.FC = React.memo(() => {
             size: file.size
           };
 
-          const response = await fetch('http://localhost:4000/api/brand-kit', {
+          const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
             method: 'PATCH',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -172,7 +173,7 @@ const BrandKit: React.FC = React.memo(() => {
         return;
       }
 
-      const response = await fetch('http://localhost:4000/api/brand-kit', {
+      const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,

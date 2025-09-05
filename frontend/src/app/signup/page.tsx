@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Envelope, Lock } from 'phosphor-react';
+import API_ENDPOINTS from '@/config/api';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -49,7 +50,7 @@ export default function SignupPage() {
     setIsLoading(true);
     
     try {
-      const res = await fetch('http://localhost:4000/api/auth/signup', {
+      const res = await fetch(API_ENDPOINTS.SIGNUP, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

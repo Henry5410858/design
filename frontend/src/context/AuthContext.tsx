@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, AuthToken, LoginResponse } from '@/types';
+import API_ENDPOINTS from '@/config/api';
 
 interface AuthContextType {
   user: User | null;
@@ -57,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Validate token with backend
       console.log('🔐 checkAuth: Validating existing token...');
-      const response = await fetch('http://localhost:4000/api/auth/validate', {
+      const response = await fetch(API_ENDPOINTS.VALIDATE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -130,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       
       // Send email and password to backend for authentication
-      const response = await fetch('http://localhost:4000/api/auth/signin', {
+      const response = await fetch(API_ENDPOINTS.SIGNIN, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

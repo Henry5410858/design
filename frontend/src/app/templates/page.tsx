@@ -7,6 +7,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { Upload, X, Check, Download } from 'phosphor-react';
 import { exportTemplateAsImage, getTemplateData, getDesignData } from '../../utils/canvasExport';
 
+import API_ENDPOINTS from '@/config/api';
 export default function TemplateGalleryPage() {
   const { showSuccess, showError, showInfo, showWarning } = useNotification();
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set());
@@ -69,7 +70,7 @@ export default function TemplateGalleryPage() {
     try {
       // Delete selected templates from database
       const deletePromises = Array.from(selectedTemplates).map(templateId =>
-        fetch(`http://localhost:4000/api/templates/${templateId}`, {
+        fetch(API_ENDPOINTS.TEMPLATE_BY_ID(templateId), {
           method: 'DELETE',
         })
       );

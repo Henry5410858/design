@@ -35,7 +35,7 @@ export interface CanvasExportOptions {
  */
 export async function getTemplateData(templateId: string): Promise<TemplateData | null> {
   try {
-    const response = await fetch(`http://localhost:4000/api/templates/${templateId}`);
+    const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_ID(templateId));
     if (!response.ok) {
       throw new Error(`Failed to fetch template ${templateId}`);
     }
@@ -51,7 +51,7 @@ export async function getTemplateData(templateId: string): Promise<TemplateData 
  */
 export async function getDesignData(designFilename: string): Promise<DesignData | null> {
   try {
-    const response = await fetch(`http://localhost:4000/api/templates/design/${designFilename}`);
+    const response = await fetch(API_ENDPOINTS.GET_DESIGN(designFilename));
     if (!response.ok) {
       throw new Error(`Failed to fetch design data ${designFilename}`);
     }

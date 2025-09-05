@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 
+import API_ENDPOINTS from '@/config/api';
 type Flyer = {
   _id?: string;
   title: string;
@@ -25,7 +26,7 @@ const BLOCK_TYPES = [
 async function uploadImageToS3(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('image', file);
-  const res = await fetch('http://localhost:4000/api/templates/upload', {
+  const res = await fetch(API_ENDPOINTS.TEMPLATES + '/upload', {
     method: 'POST',
     body: formData,
   });

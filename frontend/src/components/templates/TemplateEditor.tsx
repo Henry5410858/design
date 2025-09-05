@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import { getTokenFromStorage } from '../../context/UserContext';
 
+import API_ENDPOINTS from '@/config/api';
 // CSS for smooth animations
 const animationStyles = `
   @keyframes fadeInScale {
@@ -288,7 +289,7 @@ export default function TemplateEditor({ id }: { id: string }) {
       return;
     }
     
-    fetch(`http://localhost:4000/api/templates/${id}`)
+    fetch(API_ENDPOINTS.TEMPLATE_BY_ID(id))
       .then(res => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -311,7 +312,7 @@ export default function TemplateEditor({ id }: { id: string }) {
 
   // Fetch brand kit
   useEffect(() => {
-    fetch('http://localhost:4000/api/brand-kit', {
+    fetch(API_ENDPOINTS.BRAND_KIT, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -374,7 +375,7 @@ export default function TemplateEditor({ id }: { id: string }) {
       const formData = new FormData();
       formData.append('image', e.target.files[0]);
       const token = getTokenFromStorage();
-      const res = await fetch('http://localhost:4000/api/brand-kit/uploads', {
+      const res = await fetch(API_ENDPOINTS.BRAND_KIT + '/uploads', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData,
@@ -429,7 +430,7 @@ export default function TemplateEditor({ id }: { id: string }) {
           console.error('Image failed to load:', error); // Debug log
         };
         
-        img.src = data.url.startsWith('/uploads/') ? 'http://localhost:4000' + data.url : data.url;
+        img.src = data.url.startsWith('/uploads/') ? API_ENDPOINTS.UPLOADS + data.url : data.url;
       } else {
         console.error('No URL in upload response:', data); // Debug log
       }
@@ -484,7 +485,7 @@ export default function TemplateEditor({ id }: { id: string }) {
 
   // Duplicate template
   const duplicateTemplate = async () => {
-    const res = await fetch(`http://localhost:4000/api/templates/${id}/duplicate`, { method: 'POST' });
+    const res = await fetch(API_ENDPOINTS.DUPLICATE_TEMPLATE(id), { method: 'POST' });
     const data = await res.json();
     router.push(`/editor/${data.id}`);
   };
@@ -507,7 +508,7 @@ export default function TemplateEditor({ id }: { id: string }) {
           img.crossOrigin = 'anonymous';
           img.onload = () => resolve(true);
           img.onerror = () => resolve(false);
-          img.src = obj.src!.startsWith('/uploads/') ? 'http://localhost:4000' + obj.src : obj.src!;
+          img.src = obj.src!.startsWith('/uploads/') ? API_ENDPOINTS.UPLOADS + obj.src : obj.src!;
         });
       });
     
@@ -591,7 +592,7 @@ export default function TemplateEditor({ id }: { id: string }) {
           img.crossOrigin = 'anonymous';
           img.onload = () => resolve(true);
           img.onerror = () => resolve(false);
-          img.src = obj.src!.startsWith('/uploads/') ? 'http://localhost:4000' + obj.src : obj.src!;
+          img.src = obj.src!.startsWith('/uploads/') ? API_ENDPOINTS.UPLOADS + obj.src : obj.src!;
         });
       });
     
@@ -767,7 +768,7 @@ export default function TemplateEditor({ id }: { id: string }) {
       console.log('Saving template with data:', { objects, backgroundColor });
       
       // First save the template data
-      const response = await fetch(`http://localhost:4000/api/templates/${id}`, {
+      const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_ID(id), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -799,7 +800,7 @@ export default function TemplateEditor({ id }: { id: string }) {
                   img.crossOrigin = 'anonymous';
                   img.onload = () => resolve(true);
                   img.onerror = () => resolve(false);
-                  img.src = obj.src!.startsWith('/uploads/') ? 'http://localhost:4000' + obj.src : obj.src!;
+                  img.src = obj.src!.startsWith('/uploads/') ? API_ENDPOINTS.UPLOADS + obj.src : obj.src!;
                 });
               });
             
@@ -869,7 +870,7 @@ export default function TemplateEditor({ id }: { id: string }) {
               const formData = new FormData();
               formData.append('thumbnail', thumbnailBlob, 'thumbnail.png');
               
-              const thumbnailResponse = await fetch(`http://localhost:4000/api/templates/${id}/thumbnail`, {
+              const thumbnailResponse = await fetch(API_ENDPOINTS.UPLOAD_THUMBNAIL(id), {
                 method: 'POST',
                 body: formData,
               });
@@ -1161,7 +1162,7 @@ export default function TemplateEditor({ id }: { id: string }) {
         {obj.type === 'image' && obj.src && (
           <div className="relative w-full h-full">
             <img
-              src={obj.src.startsWith('/uploads/') ? 'http://localhost:4000' + obj.src : obj.src}
+              src={obj.src.startsWith('/uploads/') ? API_ENDPOINTS.UPLOADS + obj.src : obj.src}
               alt=""
               style={{ 
                 width: '100%', 
@@ -1174,7 +1175,7 @@ export default function TemplateEditor({ id }: { id: string }) {
               }}
               draggable={false}
               onContextMenu={e => e.preventDefault()}
-              onError={e => { (e.target as HTMLImageElement).src = 'http://localhost:4000/uploads/default-flyer-thumb.png'; }}
+              onError={e => { (e.target as HTMLImageElement).src = API_ENDPOINTS.UPLOADS + '/default-flyer-thumb.png'; }}
               crossOrigin="anonymous"
             />
             

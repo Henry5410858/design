@@ -13,6 +13,7 @@ import {
 } from 'phosphor-react';
 import { useUser } from '@/context/UserContext';
 import * as fabric from 'fabric';
+import API_ENDPOINTS from '@/config/api';
 import { jsPDF } from 'jspdf';
 import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
 
@@ -1099,7 +1100,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log('🚀 Loading templates from database...');
         
         // Load all templates
-        const allTemplatesResponse = await fetch('http://localhost:4000/api/templates');
+        const allTemplatesResponse = await fetch(API_ENDPOINTS.TEMPLATES);
         if (allTemplatesResponse.ok) {
           const allTemplates = await allTemplatesResponse.json();
           setTemplates(allTemplates);
@@ -2239,7 +2240,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // Check if design file exists
   const checkDesignFileExists = async (filename: string): Promise<boolean> => {
     try {
-      const response = await fetch(`http://localhost:4000/api/templates/design/${filename}`);
+      const response = await fetch(API_ENDPOINTS.GET_DESIGN(filename));
       return response.ok;
     } catch (error) {
       console.warn('⚠️ Error checking design file existence:', error);
@@ -2251,7 +2252,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const cleanupOrphanedDesignFile = async (templateKey: string) => {
     try {
       console.log('🧹 Cleaning up orphaned design file reference for template:', templateKey);
-      const response = await fetch(`http://localhost:4000/api/templates/by-key/${templateKey}`, {
+      const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_KEY(templateKey), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -2278,7 +2279,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     
     try {
       // Fetch template by ID from database
-      const response = await fetch(`http://localhost:4000/api/templates/${templateId}`);
+      const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_ID(templateId));
       if (response.ok) {
         const template = await response.json();
         console.log('✅ Template loaded by ID:', template);
@@ -2290,7 +2291,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           
           if (fileExists) {
           console.log('✅ Design file exists, loading user-saved design...');
-          const designResponse = await fetch(`http://localhost:4000/api/templates/design/${designFilename}`);
+          const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(designFilename));
           if (designResponse.ok) {
             const designData = await designResponse.json();
             console.log('🎨 User-saved design data loaded from file:', designData);
@@ -2309,7 +2310,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
             if (legacyFileExists) {
               console.log('✅ Legacy design file exists, loading user-saved design...');
-            const designResponse = await fetch(`http://localhost:4000/api/templates/design/${template.designFilename}`);
+            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(template.designFilename));
             if (designResponse.ok) {
               const designData = await designResponse.json();
                 console.log('🎨 User-saved design data loaded from legacy file:', designData);
@@ -2358,7 +2359,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           return;
         }
 
-        const response = await fetch('http://localhost:4000/api/brand-kit/logo', {
+        const response = await fetch(API_ENDPOINTS.BRAND_KIT_LOGO, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -2518,7 +2519,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     
     try {
       // First try to load from database
-      const response = await fetch(`http://localhost:4000/api/templates/by-key/${templateKey}`);
+      const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_KEY(templateKey));
       if (response.ok) {
         const template = await response.json();
         console.log('✅ Template metadata loaded from database:', template);
@@ -2532,7 +2533,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             const filename = template.designfilepath.split('/').pop();
             console.log('📁 Extracted filename:', filename);
             
-            const designResponse = await fetch(`http://localhost:4000/api/templates/design/${filename}`);
+            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(filename));
             if (designResponse.ok) {
               const responseData = await designResponse.json();
               console.log('🎨 Design response loaded from file path:', responseData);
@@ -2558,7 +2559,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           
           if (fileExists) {
             console.log('✅ Legacy database design file exists, loading...');
-            const designResponse = await fetch(`http://localhost:4000/api/templates/design/${template.designFilename}`);
+            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(template.designFilename));
             if (designResponse.ok) {
               const responseData = await designResponse.json();
               console.log('🎨 Design response loaded from legacy file:', responseData);
@@ -2587,7 +2588,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           
           if (idBasedFileExists) {
             console.log('✅ _id-based design file exists, loading...');
-            const designResponse = await fetch(`http://localhost:4000/api/templates/design/${idBasedFilename}`);
+            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(idBasedFilename));
             if (designResponse.ok) {
               const designData = await designResponse.json();
               console.log('🎨 Design data loaded from _id-based file:', designData);
@@ -2603,7 +2604,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           
           if (fileExists) {
             console.log('✅ Template-specific design file exists, loading...');
-            const designResponse = await fetch(`http://localhost:4000/api/templates/design/${templateFilename}`);
+            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(templateFilename));
             if (designResponse.ok) {
               const designData = await designResponse.json();
               console.log('🎨 Design data loaded from template file:', designData);
@@ -3041,7 +3042,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     if (templateData.designFilename) {
       console.log('📁 Loading user-saved design data from file:', templateData.designFilename);
       try {
-        const designResponse = await fetch(`http://localhost:4000/api/templates/design/${templateData.designFilename}`);
+        const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(templateData.designFilename));
         if (designResponse.ok) {
           const designData = await designResponse.json();
           console.log('✅ User-saved design data loaded from file:', designData);
@@ -4949,7 +4950,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           
           // Get current template data to store original filename for rollback
           try {
-            const currentTemplateResponse = await fetch(`http://localhost:4000/api/templates/by-key/${templateKey}`);
+            const currentTemplateResponse = await fetch(API_ENDPOINTS.TEMPLATE_BY_KEY(templateKey));
             if (currentTemplateResponse.ok) {
               const currentTemplate = await currentTemplateResponse.json();
               originalDesignFilename = currentTemplate.designFilename;
@@ -4970,7 +4971,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           console.log('📋 Template update data (minimal):', templateUpdateData);
           
           // Update template in database FIRST
-          const response = await fetch(`http://localhost:4000/api/templates/by-key/${templateKey}`, {
+          const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_KEY(templateKey), {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -4992,7 +4993,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         
         // STEP 2: Save file AFTER database update
         console.log('📁 Now saving design data to file:', filename);
-          const fileResponse = await fetch('http://localhost:4000/api/templates/save-design', {
+          const fileResponse = await fetch(API_ENDPOINTS.SAVE_DESIGN, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -5023,7 +5024,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             updatedAt: new Date().toISOString()
           };
           
-              const rollbackResponse = await fetch(`http://localhost:4000/api/templates/by-key/${templateKey}`, {
+              const rollbackResponse = await fetch(API_ENDPOINTS.TEMPLATE_BY_KEY(templateKey), {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

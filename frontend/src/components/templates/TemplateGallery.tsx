@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../ui/Card';
 import { useTheme } from '@/context/ThemeContext';
+import API_ENDPOINTS from '@/config/api';
 import { 
   SquaresFour, 
   Download, 
@@ -54,7 +55,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         console.log('🔄 Fetching templates from API...');
         
         // Fetch all templates
-        const response = await fetch('http://localhost:4000/api/templates');
+        const response = await fetch(API_ENDPOINTS.TEMPLATES);
         if (response.ok) {
           const apiTemplates = await response.json();
           console.log('✅ Templates fetched from API:', apiTemplates.length);

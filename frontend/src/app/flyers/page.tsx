@@ -10,6 +10,7 @@ import Icon from '@/components/ui/Icon';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { withContextPreservation, safeAsync } from '../../utils/contextManager';
 
+import API_ENDPOINTS from '@/config/api';
 type Flyer = {
   _id: string;
   title: string;
@@ -42,7 +43,7 @@ export default function FlyersPage() {
   const fetchFlyers = withContextPreservation(async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/templates?category=flyers');
+      const res = await fetch(API_ENDPOINTS.TEMPLATES + '?category=' + flyers);
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
@@ -79,7 +80,7 @@ export default function FlyersPage() {
     try {
       if (flyer._id) {
         // Update existing flyer
-        const response = await fetch(`http://localhost:4000/api/templates/${flyer._id}`, {
+        const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_ID(flyer._id), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -93,7 +94,7 @@ export default function FlyersPage() {
         }
       } else {
         // Create new flyer
-        const response = await fetch('http://localhost:4000/api/templates', {
+        const response = await fetch(API_ENDPOINTS.TEMPLATES, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -130,7 +131,7 @@ export default function FlyersPage() {
     }
     
     try {
-      const response = await fetch(`http://localhost:4000/api/templates/${id}`, {
+      const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_ID(id), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -255,7 +256,7 @@ export default function FlyersPage() {
                   {flyer.previewImage && (
                     <div className="relative">
                       <Image 
-                        src={flyer.previewImage.startsWith('http') ? flyer.previewImage : `http://localhost:4000${flyer.previewImage}`}
+                        src={flyer.previewImage.startsWith('http') ? flyer.previewImage : `${API_ENDPOINTS.UPLOADS}${flyer.previewImage}`}
                         alt={flyer.title} 
                         width={400} 
                         height={200} 

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 export const dynamic = 'auto';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Image as ImageIcon, Palette, TextT, FloppyDisk } from 'phosphor-react';
+import API_ENDPOINTS from '@/config/api';
 interface BrandKit {
   _id?: string;
   logo?: string | null;
@@ -37,12 +38,12 @@ export default function BrandPage() {
 
   const fetchBrandKit = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/brand-kit');
+      const response = await fetch(API_ENDPOINTS.BRAND_KIT);
       if (response.ok) {
         const data = await response.json();
         setBrandKit(data);
         if (data.logo) {
-          setLogoPreview(`http://localhost:4000${data.logo}`);
+          setLogoPreview(`${API_ENDPOINTS.UPLOADS}${data.logo}`);
         }
       }
     } catch (error) {
@@ -72,7 +73,7 @@ export default function BrandPage() {
       const formData = new FormData();
       formData.append('logo', logoFile);
 
-      const response = await fetch('http://localhost:4000/api/brand-kit/upload-logo', {
+      const response = await fetch(API_ENDPOINTS.BRAND_KIT + '/upload-logo', {
         method: 'POST',
         body: formData,
       });
@@ -80,7 +81,7 @@ export default function BrandPage() {
       if (response.ok) {
         const data = await response.json();
         setBrandKit(prev => ({ ...prev, logo: data.logo }));
-        setLogoPreview(`http://localhost:4000${data.logo}`);
+        setLogoPreview(`${API_ENDPOINTS.UPLOADS}${data.logo}`);
         setLogoFile(null);
         setMessage({ type: 'success', text: '¡Logo subido exitosamente!' });
       } else {
@@ -97,7 +98,7 @@ export default function BrandPage() {
 
     setSaving(true);
     try {
-      const response = await fetch('http://localhost:4000/api/brand-kit', {
+      const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

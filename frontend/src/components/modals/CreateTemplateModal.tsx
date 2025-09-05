@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNotification } from '@/context/NotificationContext';
+import API_ENDPOINTS from '@/config/api';
 
 interface CreateTemplateModalProps {
   isOpen: boolean;
@@ -98,7 +99,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await fetch('http://localhost:4000/api/brand-kit/logo', {
+          const response = await fetch(API_ENDPOINTS.BRAND_KIT_LOGO, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -117,7 +118,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
       }
 
       // Create new template in backend
-      const response = await fetch('http://localhost:4000/api/templates', {
+      const response = await fetch(API_ENDPOINTS.TEMPLATES, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
