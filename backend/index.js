@@ -29,9 +29,9 @@ if (!fs.existsSync(uploadsDir)) {
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/templates', require('./routes/templates'));
-// Temporarily remove auth middleware for testing
-const brandKitRouter = require('./routes/brandKit');
-app.use('/api/brand-kit', brandKitRouter);
+// Temporarily comment out brand-kit routes to test
+// const brandKitRouter = require('./routes/brandKit');
+// app.use('/api/brand-kit', brandKitRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads/files', express.static(path.join(__dirname, 'uploads/files')));
 app.use('/uploads/images', express.static(path.join(__dirname, 'uploads/images')));

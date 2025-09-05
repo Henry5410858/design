@@ -3,8 +3,13 @@ const router = express.Router();
 const BrandKit = require('../models/BrandKit');
 const auth = require('../middleware/auth');
 
+// Simple test endpoint
+router.get('/test', (req, res) => {
+  res.json({ message: 'Brand kit router is working' });
+});
+
 // Test endpoint to check auth
-router.get('/test', auth, async (req, res) => {
+router.get('/test-auth', auth, async (req, res) => {
   res.json({
     success: true,
     message: 'Auth working',
@@ -164,35 +169,13 @@ router.delete('/', auth, async (req, res) => {
   }
 });
 
-// Get brand kit logo only
-router.get('/logo', auth, async (req, res) => {
-  try {
-    const brandKit = await BrandKit.getByUserId(req.user.id);
-    
-    if (!brandKit || !brandKit.logo || !brandKit.logo.data) {
-      return res.json({
-        success: true,
-        logo: null
-      });
-    }
-
-    res.json({
-      success: true,
-      logo: {
-        data: brandKit.logo.data,
-        filename: brandKit.logo.filename,
-        mimetype: brandKit.logo.mimetype,
-        size: brandKit.logo.size
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching brand kit logo:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching brand kit logo',
-      error: error.message
-    });
-  }
+// Get brand kit logo only - temporarily without auth for testing
+router.get('/logo', (req, res) => {
+  // Simple response without any database operations
+  res.json({
+    success: true,
+    logo: null
+  });
 });
 
 module.exports = router;
