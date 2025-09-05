@@ -52,11 +52,17 @@ router.post('/signup', async (req, res) => {
 // POST /api/auth/signin
 router.post('/signin', async (req, res) => {
   const { email, password } = req.body;
+  console.log('🔐 Signin attempt:', { email, password: password ? 'provided' : 'missing' });
+  
   if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
   try {
     const user = await User.findOne({ email });
+    console.log('🔐 User found:', user ? 'yes' : 'no');
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    
+    console.log('🔐 Comparing password...');
     const match = await bcrypt.compare(password, user.password);
+    console.log('🔐 Password match:', match);
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
     // Generate a real JWT
     const token = jwt.sign(
