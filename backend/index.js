@@ -15,6 +15,15 @@ app.use(express.urlencoded({ limit: '500mb', extended: true }));
 // Increase raw body size limit for file uploads
 app.use(express.raw({ limit: '500mb' }));
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/designcenter', {
   useNewUrlParser: true,

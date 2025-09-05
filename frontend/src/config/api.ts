@@ -1,5 +1,7 @@
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://turbo-enigma-eight.vercel.app';
+// For production, you need to deploy your backend separately and update this URL
+// Options: Railway, Render, Heroku, DigitalOcean, etc.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export const API_ENDPOINTS = {
   // Auth endpoints
