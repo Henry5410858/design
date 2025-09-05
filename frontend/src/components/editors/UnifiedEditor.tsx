@@ -5117,14 +5117,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                               <FloppyDisk size={20} />
               </button>
               
-                          {/* Test Brand Kit Logo Button */}
-              <button
-                onClick={() => addBrandKitLogoIfNeeded()}
-                className="p-2 rounded-lg bg-green-100 hover:bg-green-200 transition-colors"
-                title="Test Brand Kit Logo"
-              >
-                <span className="text-green-600">🏷️</span>
-              </button>
 
                           {/* Download Dropdown */}
             <div className="relative download-dropdown">
