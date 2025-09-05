@@ -13,6 +13,7 @@ import {
 } from 'phosphor-react';
 import { useUser } from '@/context/UserContext';
 import * as fabric from 'fabric';
+import { api } from '../../utils/api';
 import { jsPDF } from 'jspdf';
 import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
 
@@ -1099,7 +1100,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log('🚀 Loading templates from database...');
         
         // Load all templates
-        const allTemplatesResponse = await fetch('http://localhost:4000/api/templates');
+        const allTemplatesResponse = await api.getTemplates();
         if (allTemplatesResponse.ok) {
           const allTemplates = await allTemplatesResponse.json();
           setTemplates(allTemplates);
@@ -2239,7 +2240,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // Check if design file exists
   const checkDesignFileExists = async (filename: string): Promise<boolean> => {
     try {
-      const response = await fetch(`http://localhost:4000/api/templates/design/${filename}`);
+      const response = await api.getTemplateDesign(filename);
       return response.ok;
     } catch (error) {
       console.warn('⚠️ Error checking design file existence:', error);

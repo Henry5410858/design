@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { BrandKit as BrandKitType } from '@/types';
+import { api, apiRequest } from '../utils/api';
 
 const BrandKit: React.FC = React.memo(() => {
   // Predefined color palette based on the image
@@ -31,14 +32,9 @@ const BrandKit: React.FC = React.memo(() => {
           return;
         }
 
-        console.log('🔍 BrandKit: Making request to http://localhost:4000/api/brand-kit with token:', token.substring(0, 20) + '...');
+        console.log('🔍 BrandKit: Making request to brand-kit API with token:', token.substring(0, 20) + '...');
         
-        const response = await fetch('http://localhost:4000/api/brand-kit', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await api.getBrandKit(token);
 
         console.log('🔍 BrandKit: Response status:', response.status);
         
@@ -87,14 +83,10 @@ const BrandKit: React.FC = React.memo(() => {
         
         console.log('🔍 BrandKit: Saving brand kit data:', saveData);
         
-        const response = await fetch('http://localhost:4000/api/brand-kit', {
+        const response = await apiRequest('api/brand-kit', {
           method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
           body: JSON.stringify(saveData)
-        });
+        }, token);
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -140,14 +132,10 @@ const BrandKit: React.FC = React.memo(() => {
             size: file.size
           };
 
-          const response = await fetch('http://localhost:4000/api/brand-kit', {
+          const response = await apiRequest('api/brand-kit', {
             method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ logo: logoData })
-          });
+          }, token);
 
           if (!response.ok) {
             console.error('Failed to save logo:', response.statusText);
@@ -172,14 +160,10 @@ const BrandKit: React.FC = React.memo(() => {
         return;
       }
 
-      const response = await fetch('http://localhost:4000/api/brand-kit', {
+      const response = await apiRequest('api/brand-kit', {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ logo: null })
-      });
+      }, token);
 
       if (!response.ok) {
         console.error('Failed to remove logo:', response.statusText);
