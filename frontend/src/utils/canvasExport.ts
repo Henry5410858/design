@@ -2,6 +2,8 @@
  * Utility functions for exporting canvas data without opening the editor
  */
 
+import API_ENDPOINTS from '@/config/api';
+
 export interface TemplateData {
   _id: string;
   name: string;
