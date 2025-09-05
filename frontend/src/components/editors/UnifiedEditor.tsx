@@ -5614,12 +5614,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
            {activeTab === 'text' && selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text') && (
              <div className="space-y-3">
-               {/* Text Content Row */}
-               <div className="flex items-center space-x-4">
-                 <span className="text-sm font-medium text-gray-700">Contenido:</span>
+               {/* Text Content */}
+               <div className="space-y-2">
+                 <h4 className="text-sm font-medium text-gray-700">Contenido</h4>
                  <textarea
                    value={(selectedObject as fabric.IText).text || ''}
-                        onChange={(e) => {
+                   onChange={(e) => {
                      const newText = e.target.value;
                      if (selectedObject && canvas) {
                        // Prevent completely empty text
@@ -5629,132 +5629,146 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                          (selectedObject as fabric.IText).set('text', newText);
                        }
                        
-                            canvas?.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                   rows={1}
-                   className="w-64 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                       canvas?.renderAll();
+                       saveCanvasToHistory();
+                     }
+                   }}
+                   rows={2}
+                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                    placeholder="Escribe tu texto aquí..."
                  />
-                  </div>
+               </div>
                   
-               {/* Text Properties Row */}
-               <div className="flex items-center space-x-4">
-                 <span className="text-sm font-medium text-gray-700">Propiedades:</span>
+               {/* Text Properties */}
+               <div className="space-y-3">
+                 <h4 className="text-sm font-medium text-gray-700">Propiedades</h4>
                  
-                  {/* Font Family */}
-                    <select
-                      value={(selectedObject as fabric.IText).fontFamily || 'Arial'}
-                      onChange={(e) => {
-                        if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                        console.log('🎨 Changing font family from', (selectedObject as fabric.IText).fontFamily, 'to', e.target.value);
-                          (selectedObject as fabric.IText).set('fontFamily', e.target.value);
-                        console.log('✅ Font family set to:', (selectedObject as fabric.IText).fontFamily);
-                          canvas?.renderAll();
-                          saveCanvasToHistory();
-                        }
-                      }}
-                   className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 >
-                    {fontFamilies.map((font) => (
-                      <option key={font} value={font}>{font}</option>
-                    ))}
-                    </select>
+                 {/* Font Family */}
+                 <div className="space-y-1">
+                   <label className="text-xs text-gray-600">Fuente</label>
+                   <select
+                     value={(selectedObject as fabric.IText).fontFamily || 'Arial'}
+                     onChange={(e) => {
+                       if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                         console.log('🎨 Changing font family from', (selectedObject as fabric.IText).fontFamily, 'to', e.target.value);
+                         (selectedObject as fabric.IText).set('fontFamily', e.target.value);
+                         console.log('✅ Font family set to:', (selectedObject as fabric.IText).fontFamily);
+                         canvas?.renderAll();
+                         saveCanvasToHistory();
+                       }
+                     }}
+                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   >
+                     {fontFamilies.map((font) => (
+                       <option key={font} value={font}>{font}</option>
+                     ))}
+                   </select>
+                 </div>
+                 
+                 {/* Font Size */}
+                 <div className="space-y-1">
+                   <label className="text-xs text-gray-600">Tamaño</label>
+                   <input
+                     type="number"
+                     min="8"
+                     max="200"
+                     value={(selectedObject as fabric.IText).fontSize || 48}
+                     onChange={(e) => {
+                       if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                         (selectedObject as fabric.IText).set('fontSize', parseInt(e.target.value));
+                         canvas?.renderAll();
+                         saveCanvasToHistory();
+                       }
+                     }}
+                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="48"
+                   />
+                 </div>
                   
-                  {/* Font Size */}
-                      <input
-                   type="number"
-                        min="8"
-                        max="200"
-                        value={(selectedObject as fabric.IText).fontSize || 48}
-                        onChange={(e) => {
-                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                            (selectedObject as fabric.IText).set('fontSize', parseInt(e.target.value));
-                            canvas?.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                   className="w-20 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                   placeholder="48"
-                 />
-                  
-                  {/* Text Color */}
-                <div className="flex items-center space-x-2">
-                      <input
-                        type="color"
-                        value={getSafeColorValue((selectedObject as fabric.IText).fill)}
-                        onChange={(e) => {
-                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                            (selectedObject as fabric.IText).set('fill', e.target.value);
-                            canvas?.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                   className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
-                   title="Color del texto"
-                 />
-                  
-                  {/* Quick Color Palette */}
-                  <div className="flex space-x-1">
-                    {colorPalettes.brand.slice(0, 6).map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => {
-                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                            (selectedObject as fabric.IText).set('fill', color);
-                            canvas?.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                        className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition-transform"
-                        style={{ backgroundColor: color }}
-                        title={`Usar ${color}`}
-                      />
-                    ))}
-                  </div>
-                </div>
+                 {/* Text Color */}
+                 <div className="space-y-2">
+                   <label className="text-xs text-gray-600">Color</label>
+                   <div className="flex items-center space-x-2">
+                     <input
+                       type="color"
+                       value={getSafeColorValue((selectedObject as fabric.IText).fill)}
+                       onChange={(e) => {
+                         if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                           (selectedObject as fabric.IText).set('fill', e.target.value);
+                           canvas?.renderAll();
+                           saveCanvasToHistory();
+                         }
+                       }}
+                       className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                       title="Color del texto"
+                     />
+                     
+                     {/* Quick Color Palette */}
+                     <div className="flex space-x-1">
+                       {colorPalettes.brand.slice(0, 6).map((color) => (
+                         <button
+                           key={color}
+                           onClick={() => {
+                             if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                               (selectedObject as fabric.IText).set('fill', color);
+                               canvas?.renderAll();
+                               saveCanvasToHistory();
+                             }
+                           }}
+                           className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition-transform"
+                           style={{ backgroundColor: color }}
+                           title={`Usar ${color}`}
+                         />
+                       ))}
+                     </div>
+                   </div>
+                 </div>
 
-                 {/* Bold/Italic/Underline */}
-                      <button
-                        onClick={() => {
-                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                       const currentWeight = (selectedObject as fabric.IText).fontWeight || 'normal';
-                       const newWeight = currentWeight === 'bold' ? 'normal' : 'bold';
-                       (selectedObject as fabric.IText).set('fontWeight', newWeight);
-                            canvas?.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                   className={`px-3 py-2 text-sm rounded border transition-colors ${
-                     (selectedObject as fabric.IText).fontWeight === 'bold'
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                   title="Negrita"
-                      >
-                   <strong>B</strong>
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
-                       const currentStyle = (selectedObject as fabric.IText).fontStyle || 'normal';
-                       const newStyle = currentStyle === 'italic' ? 'normal' : 'italic';
-                       (selectedObject as fabric.IText).set('fontStyle', newStyle);
-                            canvas?.renderAll();
-                            saveCanvasToHistory();
-                          }
-                        }}
-                   className={`px-3 py-2 text-sm rounded border transition-colors ${
-                     (selectedObject as fabric.IText).fontStyle === 'italic'
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                   title="Cursiva"
-                      >
-                   <em>I</em>
-                      </button>
+                 {/* Text Formatting */}
+                 <div className="space-y-2">
+                   <label className="text-xs text-gray-600">Formato</label>
+                   <div className="flex space-x-2">
+                     <button
+                       onClick={() => {
+                         if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                           const currentWeight = (selectedObject as fabric.IText).fontWeight || 'normal';
+                           const newWeight = currentWeight === 'bold' ? 'normal' : 'bold';
+                           (selectedObject as fabric.IText).set('fontWeight', newWeight);
+                           canvas?.renderAll();
+                           saveCanvasToHistory();
+                         }
+                       }}
+                       className={`flex-1 px-3 py-2 text-sm rounded border transition-colors ${
+                         (selectedObject as fabric.IText).fontWeight === 'bold'
+                           ? 'border-blue-500 bg-blue-50 text-blue-700'
+                           : 'border-gray-300 hover:border-gray-400'
+                       }`}
+                       title="Negrita"
+                     >
+                       <strong>B</strong>
+                     </button>
+                     
+                     <button
+                       onClick={() => {
+                         if (selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text')) {
+                           const currentStyle = (selectedObject as fabric.IText).fontStyle || 'normal';
+                           const newStyle = currentStyle === 'italic' ? 'normal' : 'italic';
+                           (selectedObject as fabric.IText).set('fontStyle', newStyle);
+                           canvas?.renderAll();
+                           saveCanvasToHistory();
+                         }
+                       }}
+                       className={`flex-1 px-3 py-2 text-sm rounded border transition-colors ${
+                         (selectedObject as fabric.IText).fontStyle === 'italic'
+                           ? 'border-blue-500 bg-blue-50 text-blue-700'
+                           : 'border-gray-300 hover:border-gray-400'
+                       }`}
+                       title="Cursiva"
+                     >
+                       <em>I</em>
+                     </button>
+                   </div>
+                 </div>
                </div>
               
               {/* Text Formatting Row */}

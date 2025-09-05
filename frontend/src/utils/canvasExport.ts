@@ -141,10 +141,10 @@ export async function generateCanvasImage(
             resolve(false);
           };
           
-          bgImg.src = designData.designData.backgroundImage;
+          bgImg.src = designData.designData?.backgroundImage || '';
         });
       } catch (error) {
-        console.error('Error loading background image:', error);
+        console.error('Error loading background image:', error);v
       }
     }
 
