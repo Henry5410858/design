@@ -2471,17 +2471,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         });
         
         // Add a test rectangle to verify the function is working
-        const testRect = new fabric.Rect({
-          left: 100,
-          top: 100,
-          width: 50,
-          height: 50,
-          fill: 'red',
-          selectable: true
-        });
-        canvas.add(testRect);
-        canvas.renderAll();
-        console.log('🔴 Added test red rectangle to verify function is working');
+        // Test rectangle removed - no longer needed
         console.log('🔍 Canvas dimensions:', { width: canvas.width, height: canvas.height });
         console.log('🔍 Canvas viewport:', { 
           vpt: canvas.viewportTransform, 
@@ -4316,21 +4306,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
     
     // Create a simple test image
-    const testImage = new fabric.Rect({
-      left: 100,
-      top: 100,
-      width: 100,
-      height: 100,
-      fill: 'red',
-      selectable: true,
-      resizable: true,
-      hasControls: true,
-      hasBorders: true
-    });
-    
-    canvas.add(testImage);
-    canvas.setActiveObject(testImage);
-    canvas.renderAll();
+    // Test red rectangle removed - no longer needed
     
     console.log('Test image added successfully');
     alert('Imagen de prueba agregada. Revisa la consola para más detalles.');
@@ -4355,7 +4331,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       top: 0,
       width: canvas.getWidth(),
       height: canvas.getHeight(),
-      fill: 'rgba(255, 0, 0, 0.5)', // More visible red
+      fill: 'rgba(0, 0, 0, 0.1)', // Light gray instead of red
       selectable: false,
       evented: false
     });
@@ -5269,42 +5245,42 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           {/* Tab Content */}
             {activeTab === 'elements' && (
              <div className="space-y-3">
-               {/* Basic Design Tools Row */}
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-700">Agregar:</span>
+               {/* Basic Design Tools */}
+               <div className="space-y-2">
+                 <h4 className="text-sm font-medium text-gray-700">Agregar Elementos</h4>
                  
                  {/* Add Text */}
-                  <button
-                    onClick={addText}
-                   className="flex items-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                    title="Agregar Texto"
-                  >
-                  <TextT size={4} className="w-4 h-4 text-blue-600" />
+                 <button
+                   onClick={addText}
+                   className="w-full flex items-center space-x-3 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                   title="Agregar Texto"
+                 >
+                   <TextT size={16} className="text-blue-600" />
                    <span className="text-sm font-medium text-blue-800">Texto</span>
-                  </button>
-                  
+                 </button>
+                 
                  {/* Add Image */}
-                  <button
+                 <button
                    onClick={() => fileInputRef.current?.click()}
-                   className="flex items-center space-x-2 px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                    title="Agregar Imagen"
-                  >
-                  <ImageIcon size={4} className="w-4 h-4 text-green-600" />
+                   className="w-full flex items-center space-x-3 px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                   title="Agregar Imagen"
+                 >
+                   <ImageIcon size={16} className="text-green-600" />
                    <span className="text-sm font-medium text-green-800">Imagen</span>
-                  </button>
+                 </button>
                   
 
 
                  {/* Add Shape */}
-                <div className="relative shapes-container">
-                  <button
-                    onClick={() => setShowShapeSelector(true)}
-                   className="flex items-center space-x-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
-                    title="Agregar Forma"
-                  >
-                    <Square size={4} className="w-4 h-4 text-purple-600" />
-                   <span className="text-sm font-medium text-purple-800">Formas</span>
-                  </button>
+                 <div className="relative shapes-container">
+                   <button
+                     onClick={() => setShowShapeSelector(true)}
+                     className="w-full flex items-center space-x-3 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                     title="Agregar Forma"
+                   >
+                     <Square size={16} className="text-purple-600" />
+                     <span className="text-sm font-medium text-purple-800">Formas</span>
+                   </button>
                   
                   {/* Shape Selector Modal */}
                   {showShapeSelector && (
@@ -5478,23 +5454,23 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                       </div>
                     </div>
                   )}
-                </div>
-                </div>
+                 </div>
+               </div>
             
-               {/* Background & Real Estate Tools Row */}
-                <div className="flex items-center space-x-4">
-                 <span className="text-sm font-medium text-gray-700">Fondo:</span>
+               {/* Background Tools */}
+               <div className="space-y-2">
+                 <h4 className="text-sm font-medium text-gray-700">Fondo</h4>
                  
                  {/* Background Color */}
-                <div className="relative color-picker-container">
-                 <button
-                    onClick={() => setShowColorPicker(!showColorPicker)}
-                   className="flex items-center space-x-2 px-3 py-2 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
-                    title="Color de Fondo"
-                 >
-                    <Palette size={4} className="w-4 h-4 text-orange-600" />
-                   <span className="text-sm font-medium text-orange-800">Color</span>
-                 </button>
+                 <div className="relative color-picker-container">
+                   <button
+                     onClick={() => setShowColorPicker(!showColorPicker)}
+                     className="w-full flex items-center space-x-3 px-3 py-2 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                     title="Color de Fondo"
+                   >
+                     <Palette size={16} className="text-orange-600" />
+                     <span className="text-sm font-medium text-orange-800">Color</span>
+                   </button>
                   
                   {/* Background Color Picker Modal */}
                   {showColorPicker && (
@@ -5580,64 +5556,64 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   </button>
                 </div>
             
-               {/* Real Estate Elements Row */}
-                <div className="flex items-center space-x-4">
-                 <span className="text-sm font-medium text-gray-700">Bienes Raíces:</span>
+               {/* Real Estate Elements */}
+               <div className="space-y-2">
+                 <h4 className="text-sm font-medium text-gray-700">Bienes Raíces</h4>
                  
-                  <button
-                    onClick={() => addRealEstateElement('price')}
-                   className="flex items-center space-x-2 px-3 py-2 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors"
+                 <button
+                   onClick={() => addRealEstateElement('price')}
+                   className="w-full flex items-center space-x-3 px-3 py-2 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors"
                    title="Agregar Precio"
-                  >
+                 >
                    <span className="text-lg">💰</span>
                    <span className="text-sm font-medium text-yellow-800">Precio</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => addRealEstateElement('bedrooms')}
-                   className="flex items-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                 </button>
+                 
+                 <button
+                   onClick={() => addRealEstateElement('bedrooms')}
+                   className="w-full flex items-center space-x-3 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                    title="Agregar Habitaciones"
-                  >
+                 >
                    <span className="text-lg">🛏️</span>
                    <span className="text-sm font-medium text-blue-800">Habitaciones</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => addRealEstateElement('contact')}
-                   className="flex items-center space-x-2 px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                 </button>
+                 
+                 <button
+                   onClick={() => addRealEstateElement('contact')}
+                   className="w-full flex items-center space-x-3 px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                    title="Agregar Contacto"
-                  >
+                 >
                    <span className="text-lg">📞</span>
                    <span className="text-sm font-medium text-green-800">Contacto</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => addRealEstateElement('address')}
-                   className="flex items-center space-x-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                 </button>
+                 
+                 <button
+                   onClick={() => addRealEstateElement('address')}
+                   className="w-full flex items-center space-x-3 px-3 py-2 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
                    title="Agregar Dirección"
-                  >
+                 >
                    <span className="text-lg">📍</span>
                    <span className="text-sm font-medium text-purple-800">Dirección</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => addRealEstateElement('propertyType')}
-                   className="flex items-center space-x-2 px-3 py-2 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                 </button>
+                 
+                 <button
+                   onClick={() => addRealEstateElement('propertyType')}
+                   className="w-full flex items-center space-x-3 px-3 py-2 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                    title="Agregar Tipo de Propiedad"
-                  >
+                 >
                    <span className="text-lg">🏠</span>
                    <span className="text-sm font-medium text-red-800">Tipo</span>
-                  </button>
-                
-                <button
-                  onClick={addPromotionalText}
-                  className="flex items-center space-x-2 px-3 py-2 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors"
-                  title="Agregar Texto Promocional"
-                >
-                  <span className="text-lg">📢</span>
-                  <span className="text-sm font-medium text-teal-800">Texto Promocional</span>
-                  </button>
-                </div>
+                 </button>
+                 
+                 <button
+                   onClick={addPromotionalText}
+                   className="w-full flex items-center space-x-3 px-3 py-2 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors"
+                   title="Agregar Texto Promocional"
+                 >
+                   <span className="text-lg">📢</span>
+                   <span className="text-sm font-medium text-teal-800">Texto Promocional</span>
+                 </button>
+               </div>
               
               </div>
             )}
