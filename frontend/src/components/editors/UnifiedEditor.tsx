@@ -5773,12 +5773,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               
               {/* Text Formatting Row */}
               <div className="space-y-3">
-                <span className="text-sm font-medium text-gray-700">Formato de Texto:</span>
+                <h4 className="text-sm font-medium text-gray-700">Colores</h4>
                 
-                <div className="flex items-center space-x-4">
+                <div className="space-y-3">
                   {/* Text Fill Color Picker */}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-600">Relleno:</span>
+                  <div className="space-y-2">
+                    <label className="text-xs text-gray-600">Relleno</label>
+                    <div className="flex items-center space-x-2">
                     <input
                       type="color"
                       value={getSafeColorValue(selectedObject.fill) === 'transparent' ? '#ffffff' : getSafeColorValue(selectedObject.fill)}
@@ -5811,11 +5812,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     >
                       Sin color
                     </button>
+                    </div>
                   </div>
                   
                   {/* Text Outline Color Picker */}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-600">Contorno:</span>
+                  <div className="space-y-2">
+                    <label className="text-xs text-gray-600">Contorno</label>
+                    <div className="flex items-center space-x-2">
                     <input
                       type="color"
                       value={getSafeColorValue(selectedObject.stroke) === 'transparent' ? '#ffffff' : getSafeColorValue(selectedObject.stroke)}
@@ -5842,6 +5845,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     >
                       Sin color
                     </button>
+                    </div>
                   </div>
                   
                   {/* Text Outline Width */}

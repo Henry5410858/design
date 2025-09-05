@@ -19,7 +19,9 @@
     "debug-cleanup": "node debug-cleanup.js",
     "check-db": "node test-database-state.js",
     "debug-cleanup-issue": "node debug-cleanup-issue.js",
-    "cleanup-orphaned": "node cleanup-orphaned-files.js"
+    "cleanup-orphaned": "node cleanup-orphaned-files.js",
+    "migrate-atlas": "node scripts/migrateToAtlas.js",
+    "test-atlas": "node scripts/testAtlasConnection.js"
   },
   "keywords": [],
   "author": "",

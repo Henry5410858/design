@@ -16,7 +16,7 @@ app.use(express.urlencoded({ limit: '500mb', extended: true }));
 app.use(express.raw({ limit: '500mb' }));
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/designcenter', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/design_center', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
