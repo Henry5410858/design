@@ -144,7 +144,7 @@ export async function generateCanvasImage(
           bgImg.src = designData.designData?.backgroundImage || '';
         });
       } catch (error) {
-        console.error('Error loading background image:', error);v
+        console.error('Error loading background image:', error);
       }
     }
 
