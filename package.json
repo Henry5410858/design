@@ -1,4 +1,7 @@
 {
+  "name": "reddragon-design-center",
+  "version": "1.0.0",
+  "private": true,
   "scripts": {
     "frontend": "cd frontend && npm run dev",
     "build-frontend": "cd frontend && npm run build",
@@ -6,12 +9,17 @@
     "build-backend": "cd backend && npm run build",
     "start": "node index.js",
     "dev": "concurrently \"npm run frontend\" \"npm run backend\"",
-    "build": "concurrently \"npm run build-frontend\" \"npm run build-backend\""
+    "build": "concurrently \"npm run build-frontend\" \"npm run build-backend\"",
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install"
   },
   "dependencies": {
     "concurrently": "^9.2.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.2",
     "jszip": "^3.10.1"
-  }
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
 }
