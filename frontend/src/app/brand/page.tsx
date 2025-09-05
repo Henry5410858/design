@@ -134,7 +134,88 @@ export default function BrandPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="flex min-h-screen">
+        {/* Brand Kit Sidebar */}
+        <div className="w-64 bg-white border-r border-gray-200 shadow-sm">
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Kit de Marca</h2>
+            <nav className="space-y-2">
+              <a href="#logo" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+                <ImageIcon size={16} />
+                Logo e Identidad
+              </a>
+              <a href="#colors" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+                <Palette size={16} />
+                Colores
+              </a>
+              <a href="#typography" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+                <TextT size={16} />
+                Tipografía
+              </a>
+              <a href="#preview" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+                <ImageIcon size={16} />
+                Vista Previa
+              </a>
+            </nav>
+            
+            {/* Quick Actions */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-500 mb-3">Acciones Rápidas</h3>
+              <div className="space-y-2">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-brand-primary rounded-lg hover:bg-brand-primary-dark transition-colors disabled:opacity-50"
+                >
+                  <FloppyDisk size={16} />
+                  {saving ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  <span>🔄</span>
+                  Recargar
+                </button>
+              </div>
+            </div>
+            
+            {/* Brand Status */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-500 mb-3">Estado de la Marca</h3>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Logo:</span>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    logoPreview ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {logoPreview ? 'Configurado' : 'Pendiente'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Colores:</span>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    brandKit?.colors ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {brandKit?.colors ? 'Configurado' : 'Pendiente'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Tipografía:</span>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    brandKit?.fonts ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {brandKit?.fonts ? 'Configurado' : 'Pendiente'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Kit de Marca</h1>
@@ -156,7 +237,7 @@ export default function BrandPage() {
           {/* Left Column - Brand Settings */}
           <div className="lg:col-span-2 space-y-6">
             {/* Logo & Basic Branding */}
-            <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
+            <div id="logo" className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-brand-primary/10 rounded-xl">
                   <ImageIcon size={5} className="w-5 h-5 text-brand-primary" />
@@ -221,7 +302,7 @@ export default function BrandPage() {
             </div>
 
             {/* Colors */}
-            <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
+            <div id="colors" className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-brand-secondary/10 rounded-xl">
                   <Palette size={5} className="w-5 h-5 text-brand-secondary" />
@@ -326,7 +407,7 @@ export default function BrandPage() {
             </div>
 
             {/* Typography */}
-            <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
+            <div id="typography" className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-success/10 rounded-xl">
                   <TextT size={5} className="w-5 h-5 text-success" />
@@ -409,7 +490,7 @@ export default function BrandPage() {
           {/* Right Column - Brand Preview */}
           <div className="space-y-6">
             {/* Brand Preview */}
-            <div className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
+            <div id="preview" className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-brand-primary/10 rounded-xl">
                   <ImageIcon size={5} className="w-5 h-5 text-brand-primary" />
@@ -491,6 +572,8 @@ export default function BrandPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
           </div>
         </div>
       </div>

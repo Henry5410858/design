@@ -5125,9 +5125,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const currentConfig = editorConfigs[editorTypeState as keyof typeof editorConfigs] || editorConfigs.flyer;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Main Toolbar - Full Width Top Bar with Integrated Tabs */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar Toolbar */}
+      <div className="w-80 bg-white border-r border-gray-200 shadow-sm flex flex-col">
         {/* Top Row - File and Edit Operations */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100">
           {/* Left Section - File Operations */}
@@ -6183,8 +6183,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           </div>
         </div>
 
-      {/* Content Area with proper spacing for merged toolbar */}
-      <div className="w-full pt-64">
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto">
           {/* Canvas */}
          <div className="bg-white rounded-2xl shadow-lg p-6 mx-6">
               <div className="flex justify-center overflow-auto p-4">

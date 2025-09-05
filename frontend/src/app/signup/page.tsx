@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Envelope, Lock } from 'phosphor-react';
 
@@ -21,6 +21,13 @@ export default function SignupPage() {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('token')) {
+      router.replace('/');
+    }
+  }, [router]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({

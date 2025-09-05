@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Mock user data - replace with actual API call to main platform
     const mockUser = {
-      id: 'user_123',
+      id: '507f1f77bcf86cd799439011', // Valid MongoDB ObjectId format
       name: 'Usuario Demo',
       email: 'usuario@demo.com',
       plan: 'Premium' as const

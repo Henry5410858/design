@@ -9,6 +9,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Brand colors
+        brand: {
+          primary: 'var(--brand-primary)',
+          'primary-dark': 'var(--brand-primary-dark)',
+          secondary: 'var(--brand-secondary)',
+          'secondary-dark': 'var(--brand-secondary-dark)',
+        },
         // Custom dark theme colors
         dark: {
           bg: 'var(--bg-primary)',

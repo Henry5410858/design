@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useNotification } from '@/context/NotificationContext';
 
 interface CreateTemplateModalProps {
   isOpen: boolean;
@@ -63,6 +64,9 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
   const [selectedType, setSelectedType] = useState<string>('square-post');
   const [templateName, setTemplateName] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
+  
+  // Notification context
+  const { showSuccess, showError, showWarning } = useNotification();
 
   // Set initial template name when modal opens
   useEffect(() => {
@@ -83,12 +87,12 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
     
     // Validate template name length
     if (templateName.trim().length < 3) {
-      alert('Template name must be at least 3 characters long');
+      showWarning('Template name must be at least 3 characters long');
       return;
     }
     
     if (templateName.trim().length > 100) {
-      alert('Template name must be less than 100 characters');
+      showWarning('Template name must be less than 100 characters');
       return;
     }
 
@@ -143,15 +147,15 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
         window.open(editorUrl, '_blank');
         
         // Show success message
-        alert(`✅ Template "${templateName}" created successfully!\n\nA new editor tab has been opened with your template.`);
+        showSuccess(`Template "${templateName}" created successfully! A new editor tab has been opened with your template.`);
         onClose();
       } else {
         console.error('Failed to create template');
-        alert('❌ Failed to create template. Please try again.');
+        showError('Failed to create template. Please try again.');
       }
     } catch (error) {
       console.error('Error creating template:', error);
-      alert('❌ Error creating template. Please check your connection and try again.');
+      showError('Error creating template. Please check your connection and try again.');
     } finally {
       setIsCreating(false);
     }

@@ -195,12 +195,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Logout user
   const logout = useCallback(() => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('token');
     localStorage.removeItem('tokenExpiry');
+    // Clear custom template background data on logout
+    localStorage.removeItem('customTemplateBackgrounds');
+    localStorage.removeItem('templateBackgrounds');
     setUser(null);
     
-    // Redirect to main platform
-    window.location.href = process.env.NEXT_PUBLIC_MAIN_PLATFORM_URL || '/';
+    // Redirect to login page
+    window.location.href = '/login';
   }, []);
 
   const value: AuthContextType = {

@@ -49,7 +49,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const handleLogout = useCallback(() => {
     logout();
     setIsUserDropdownOpen(false);
-  }, [logout]);
+    router.push('/login');
+  }, [logout, router]);
 
   const handleProfileClick = useCallback(() => {
     router.push('/change-userinfo');

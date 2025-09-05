@@ -50,7 +50,7 @@ const BrandKit: React.FC = React.memo(() => {
             setBrandKit({
               primaryColor: brandKitData.primaryColor,
               secondaryColor: brandKitData.secondaryColor,
-              accentColor: brandKitData.accentColor
+              accentColor: brandKitData.accentColor || '#32e0c5'
             });
             
             if (brandKitData.logo && brandKitData.logo.data) {
@@ -78,17 +78,29 @@ const BrandKit: React.FC = React.memo(() => {
           return;
         }
 
+        // Only send fields that have valid values
+        const saveData = {
+          primaryColor: brandKit.primaryColor,
+          secondaryColor: brandKit.secondaryColor,
+          accentColor: brandKit.accentColor || '#32e0c5'
+        };
+        
+        console.log('🔍 BrandKit: Saving brand kit data:', saveData);
+        
         const response = await fetch('http://localhost:4000/api/brand-kit', {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(brandKit)
+          body: JSON.stringify(saveData)
         });
 
         if (!response.ok) {
-          console.error('Failed to save brand kit:', response.statusText);
+          const errorText = await response.text();
+          console.error('Failed to save brand kit:', response.status, response.statusText, errorText);
+        } else {
+          console.log('✅ BrandKit: Successfully saved brand kit');
         }
       } catch (error) {
         console.error('Error saving brand kit:', error);

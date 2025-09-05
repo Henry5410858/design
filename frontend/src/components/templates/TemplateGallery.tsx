@@ -16,8 +16,8 @@ interface TemplateItem {
   dimensions: string;
   description: string;
   thumbnail: string;
-  type?: 'flyer' | 'social' | 'story' | 'badge' | 'banner' | 'document' | 'brochure';
-  editorType?: 'flyer' | 'social' | 'story' | 'badge' | 'banner' | 'document' | 'brochure';
+  type?: 'flyer' | 'social' | 'story' | 'badge' | 'banner' | 'document';
+  editorType?: 'flyer' | 'social' | 'story' | 'badge' | 'banner' | 'document';
   templateKey?: string; // For real estate templates
 }
 
@@ -26,13 +26,19 @@ interface TemplateGalleryProps {
   isSelectionMode?: boolean;
   selectedTemplates?: Set<string>;
   onTemplateSelection?: (templateId: string, isSelected: boolean) => void;
+  customBackgroundImage?: string | null;
+  templatesWithCustomBackground?: Set<string>;
+  isExportMode?: boolean;
 }
 
 const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   onDownloadTemplate,
   isSelectionMode = false,
   selectedTemplates = new Set(),
-  onTemplateSelection
+  onTemplateSelection,
+  customBackgroundImage,
+  templatesWithCustomBackground = new Set(),
+  isExportMode = false
 }) => {
   const { theme } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState<'all' | TemplateItem['category']>('all');
@@ -92,8 +98,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     { id: 'stories', name: 'Stories', icon: <ImageIcon size={24} />, color: 'from-purple-500 to-purple-700' },
     { id: 'banners', name: 'Banners', icon: <Stack size={24} />, color: 'from-orange-500 to-orange-700' },
     { id: 'social-posts', name: 'Posts Redes', icon: <ImageIcon size={24} />, color: 'from-pink-500 to-pink-700' },
-    { id: 'documents', name: 'Documentos', icon: <FilePdf size={24} />, color: 'from-red-500 to-red-700' },
-    { id: 'brochures', name: 'Brochures', icon: <ImageIcon size={24} />, color: 'from-indigo-500 to-indigo-700' }
+    { id: 'documents', name: 'Documentos', icon: <FilePdf size={24} />, color: 'from-red-500 to-red-700' }
   ];
 
   // Enhanced templates with editor types and template keys
@@ -211,7 +216,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       dimensions: '1200x1800',
       thumbnail: '/api/placeholder/400/300',
       description: 'Brochure profesional trifold para villas',
-      editorType: 'brochure',
+      editorType: 'document',
       templateKey: 'trifoldBrochure'
     },
     {
@@ -318,18 +323,43 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
 
       {/* Thumbnail */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 bg-gray-200">
-              {template.category === 'stories' ? <ImageIcon size={24} className="text-gray-600" /> :
-                template.category === 'documents' ? <FilePdf size={24} className="text-gray-600" /> :
-                template.category === 'banners' ? <Stack size={24} className="text-gray-600" /> :
-                template.category === 'badges' ? <ImageIcon size={24} className="text-gray-600" /> :
-                <ImageIcon size={24} className="text-gray-600" />}
+        {templatesWithCustomBackground.has(template.id) && customBackgroundImage ? (
+          // Show custom background image
+          <div className="relative w-full h-full">
+            <img 
+              src={customBackgroundImage} 
+              alt={`Custom background for ${template.name}`}
+              className="w-full h-full object-cover"
+            />
+            {/* Template info overlay */}
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1 bg-white/20 backdrop-blur-sm">
+                  {template.category === 'stories' ? <ImageIcon size={16} className="text-white" /> :
+                    template.category === 'documents' ? <FilePdf size={16} className="text-white" /> :
+                    template.category === 'banners' ? <Stack size={16} className="text-white" /> :
+                    template.category === 'badges' ? <ImageIcon size={16} className="text-white" /> :
+                    <ImageIcon size={16} className="text-white" />}
+                </div>
+                <span className="text-xs font-medium">{template.name}</span>
+              </div>
             </div>
-            <span className="text-sm font-medium text-gray-700">{template.name}</span>
           </div>
-        </div>
+        ) : (
+          // Show default template thumbnail
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 bg-gray-200">
+                {template.category === 'stories' ? <ImageIcon size={24} className="text-gray-600" /> :
+                  template.category === 'documents' ? <FilePdf size={24} className="text-gray-600" /> :
+                  template.category === 'banners' ? <Stack size={24} className="text-gray-600" /> :
+                  template.category === 'badges' ? <ImageIcon size={24} className="text-gray-600" /> :
+                  <ImageIcon size={24} className="text-gray-600" />}
+              </div>
+              <span className="text-sm font-medium text-gray-700">{template.name}</span>
+            </div>
+          </div>
+        )}
         
         {/* Hover Overlay */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center bg-black/40">
