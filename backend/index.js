@@ -6,7 +6,34 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-app.use(cors());
+// CORS configuration for development and production
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow Vercel domains
+    if (origin.includes('vercel.app') || origin.includes('turbo-enigma')) {
+      return callback(null, true);
+    }
+    
+    // Allow your specific production domain
+    if (origin === 'https://turbo-enigma-jw51.vercel.app') {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 
 // Increase payload size limits
 app.use(express.json({ limit: '500mb' }));

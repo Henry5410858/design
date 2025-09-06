@@ -2,11 +2,22 @@
 // For production, you need to deploy your backend separately and update this URL
 // Options: Railway, Render, Heroku, DigitalOcean, etc.
 
-// Ensure we use localhost for development
+// API Configuration for development and production
 const isDevelopment = process.env.NODE_ENV === 'development';
-const API_BASE_URL = isDevelopment 
-  ? 'http://localhost:4000' 
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Determine API base URL based on environment
+let API_BASE_URL;
+if (isDevelopment) {
+  // Development: use localhost backend
+  API_BASE_URL = 'http://localhost:4000';
+} else if (isProduction) {
+  // Production: use environment variable or fallback to deployed backend
+  API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://your-backend-domain.com';
+} else {
+  // Fallback
+  API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+}
 
 export const API_ENDPOINTS = {
   // Auth endpoints
