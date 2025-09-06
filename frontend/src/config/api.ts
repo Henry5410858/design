@@ -12,8 +12,8 @@ if (isDevelopment) {
   // Development: use localhost backend
   API_BASE_URL = 'http://localhost:4000';
 } else if (isProduction) {
-  // Production: use environment variable or fallback to deployed backend
-  API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://turbo-enigma-jw51.vercel.app';
+  // Production: use Vercel API routes (same domain)
+  API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 } else {
   // Fallback
   API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
