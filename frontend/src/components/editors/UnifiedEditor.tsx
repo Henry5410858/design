@@ -1084,6 +1084,18 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   }, [canvas, editorTypeState, canvasSize, backgroundColor]);
 
+  // Handle canvas size changes from template data
+  useEffect(() => {
+    if (canvas && canvasSize) {
+      console.log('🔄 Canvas size changed, updating dimensions:', canvasSize);
+      const [width, height] = canvasSize.split('x').map(Number);
+      if (width && height) {
+        canvas.setDimensions({ width, height });
+        canvas.renderAll();
+      }
+    }
+  }, [canvasSize, canvas]);
+
   // Cleanup canvas on unmount
   useEffect(() => {
     return () => {
@@ -2667,9 +2679,22 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     
     console.log('🧹 Canvas and state completely cleared');
     
-    // Set background with fallbacks - ensure no default background images
+    // Set canvas size from template data
+    if (templateData.canvasSize) {
+      console.log('📐 Setting canvas size from template data:', templateData.canvasSize);
+      setCanvasSize(templateData.canvasSize);
+      
+      // Parse canvas size and set canvas dimensions
+      const [width, height] = templateData.canvasSize.split('x').map(Number);
+      if (width && height) {
+        canvas.setDimensions({ width, height });
+        console.log('📐 Canvas dimensions set to:', width, 'x', height);
+      }
+    }
+    
+    // Set background with fallbacks
     const backgroundColor = templateData.backgroundColor || '#ffffff';
-    const backgroundImage: string | null = null; // Force no background images for templates
+    const backgroundImage = templateData.backgroundImage || null; // Allow background images from JSON
     
     setBackgroundColor(backgroundColor);
     setBackgroundImage(backgroundImage);
@@ -2677,8 +2702,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     // Set canvas background color
     canvas.backgroundColor = backgroundColor;
     
-    // Background images disabled for templates - only use background color
-    console.log('🚫 Background images disabled for templates - using background color only');
+    // Set background image if present
+    if (backgroundImage) {
+      console.log('🖼️ Setting background image from template data');
+      // Note: Fabric.js background image handling would go here if needed
+    } else {
+      console.log('🎨 Using background color only:', backgroundColor);
+    }
     
     // Enhanced object loading function
     const loadObjectToCanvas = (obj: any, index: number) => {
