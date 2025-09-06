@@ -93,11 +93,18 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('🔍 Template by ID API called');
-    await connectDB();
+    console.log('🔍 Template by ID API called (dynamic route)');
     
+    // First, let's test if the route is being hit at all
     const { id } = await params;
     console.log('🔍 Template ID received:', id);
+    
+    // Return a simple response first to test if the route works
+    if (!id) {
+      return NextResponse.json({ error: 'No ID provided' }, { status: 400 });
+    }
+    
+    await connectDB();
     
     if (!id || id === 'undefined' || id === 'null') {
       return NextResponse.json(
