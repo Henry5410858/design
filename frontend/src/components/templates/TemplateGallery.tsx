@@ -46,19 +46,33 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Fetch templates from API
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
         setLoading(true);
+        setApiError(null);
         console.log('🔄 Fetching templates from API...');
+        console.log('🔗 API Endpoint:', API_ENDPOINTS.TEMPLATES);
         
         // Fetch all templates
-        const response = await fetch(API_ENDPOINTS.TEMPLATES);
+        console.log('🌐 Making fetch request to:', API_ENDPOINTS.TEMPLATES);
+        const response = await fetch(API_ENDPOINTS.TEMPLATES, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response ok:', response.ok);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+        
         if (response.ok) {
           const apiTemplates = await response.json();
           console.log('✅ Templates fetched from API:', apiTemplates.length);
+          console.log('📋 Raw API data:', apiTemplates);
           
           // Convert API templates to TemplateItem format
           const convertedTemplates: TemplateItem[] = apiTemplates.map((template: any) => ({
@@ -75,15 +89,24 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           
           setTemplates(convertedTemplates);
           console.log('✅ Templates converted and set:', convertedTemplates.length);
+          console.log('📋 Converted templates:', convertedTemplates);
         } else {
+          const errorText = await response.text();
           console.error('❌ Failed to fetch templates from API');
-          // Fallback to sample templates
-          setTemplates(sampleTemplates);
+          console.error('❌ Error response:', errorText);
+          console.error('❌ Response status:', response.status);
+          // Don't fall back to sample templates - show error instead
+          console.log('🔄 Setting empty templates due to API error');
+          setTemplates([]);
+          setApiError(`API Error: ${response.status} - ${errorText}`);
         }
       } catch (error) {
         console.error('❌ Error fetching templates:', error);
-        // Fallback to sample templates
-        setTemplates(sampleTemplates);
+        console.error('❌ Error details:', error);
+        // Don't fall back to sample templates - show error instead
+        console.log('🔄 Setting empty templates due to error');
+        setTemplates([]);
+        setApiError(`Network Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally { 
         setLoading(false);
       }
@@ -482,8 +505,25 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         </div>
       )}
 
+      {/* API Error State */}
+      {apiError && (
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <ImageIcon size={32} className="text-red-600" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error al cargar plantillas</h3>
+          <p className="text-red-600 mb-4">{apiError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       {/* Templates Organized by Category */}
-      {!loading && (
+      {!loading && !apiError && (
         <div className="space-y-12">
           {Object.entries(groupedTemplates).map(([categoryId, categoryTemplates]) => {
             const categoryInfo = getCategoryInfo(categoryId);
@@ -511,7 +551,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       )}
 
       {/* Empty State */}
-      {!loading && filteredTemplates.length === 0 && (
+      {!loading && !apiError && filteredTemplates.length === 0 && (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
             <ImageIcon size={32} className="text-gray-400" />
