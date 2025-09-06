@@ -104,18 +104,41 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // For now, return a simple response indicating the file doesn't exist
-    // In a real implementation, you would read the design file from the file system
-    // or from a cloud storage service like AWS S3, Google Cloud Storage, etc.
+    // For production, we need to fetch the design data from the database
+    // since the file system is not available in Vercel
     console.log('📁 Design file requested:', filename);
     
+    // Try to find a template that has this designFilename
+    const template = await Template.findOne({ designFilename: filename });
+    
+    if (template) {
+      console.log('✅ Found template with designFilename:', template.name);
+      
+      // Return the template's objects as design data
+      return NextResponse.json({
+        success: true,
+        designData: {
+          id: template._id.toString(),
+          editorType: template.type,
+          canvasSize: template.canvasSize,
+          backgroundColor: template.backgroundColor,
+          backgroundImage: template.backgroundImage,
+          templateKey: template.templateKey,
+          objects: template.objects || [],
+          metadata: {
+            createdAt: template.createdAt,
+            updatedAt: template.updatedAt,
+            version: "1.0.0"
+          }
+        }
+      });
+    }
+    
+    // If no template found, return 404
+    console.log('❌ No template found with designFilename:', filename);
     return NextResponse.json(
-      { 
-        message: 'Design file endpoint working',
-        filename: filename,
-        note: 'This endpoint needs to be connected to actual file storage'
-      },
-      { status: 200 }
+      { error: 'Design file not found' },
+      { status: 404 }
     );
     
   } catch (error) {
