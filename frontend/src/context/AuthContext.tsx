@@ -61,15 +61,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await fetch(API_ENDPOINTS.VALIDATE, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ token })
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       console.log('🔐 checkAuth: Token validation response status:', response.status);
 
       if (response.ok) {
-        const userData: User = await response.json();
+        const validationData = await response.json();
+        console.log('🔐 checkAuth: Token valid, validation data:', validationData);
+        
+        // Construct user object with name field
+        const userData: User = {
+          ...validationData.user,
+          name: validationData.user.username || validationData.user.email
+        };
+        
         console.log('🔐 checkAuth: Token valid, user:', userData.name);
         setUser(userData);
         setIsLoading(false);
@@ -141,12 +149,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response.ok) {
         const loginData = await response.json();
+        console.log('🔐 Login: Login successful, data:', loginData);
         
         // Construct user object with name field
-        const userData = {
+        const userData: User = {
           ...loginData.user,
-          name: `${loginData.user.firstName || ''} ${loginData.user.lastName || ''}`.trim() || loginData.user.email
+          name: loginData.user.username || loginData.user.email
         };
+        
+        console.log('🔐 Login: Constructed user data:', userData);
         
         // Calculate expiry time (7 days from now, matching backend JWT expiry)
         const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
@@ -155,6 +166,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('token', loginData.token);
         localStorage.setItem('tokenExpiry', expiresAt.toString());
         setUser(userData);
+        
+        console.log('🔐 Login: User state set, token stored');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Invalid credentials');
