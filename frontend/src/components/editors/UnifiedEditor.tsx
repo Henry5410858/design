@@ -86,6 +86,11 @@ interface BrandKit {
 }
 
 export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }: UnifiedEditorProps) {
+  // Console log for UnifiedEditor component initialization
+  console.log('🎯 UnifiedEditor Component Initialized');
+  console.log('📝 Template ID:', id);
+  console.log('🔑 Template Key:', templateKey);
+  console.log('📋 Editor Type:', editorType);
   // Editor type configurations - moved to top to avoid initialization order issues
   const editorConfigs = {
     // Legacy types (for backward compatibility)

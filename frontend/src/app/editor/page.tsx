@@ -11,6 +11,13 @@ export default function EditorPage() {
   const templateKey = searchParams.get('template') || '';
   const templateId = searchParams.get('id') || 'new';
 
+  // Console log for template editor page ID
+  console.log('🎯 Template Editor Page - Main Editor');
+  console.log('📝 Template ID:', templateId);
+  console.log('🔑 Template Key:', templateKey);
+  console.log('📋 Editor Type:', editorType);
+  console.log('🌐 Current URL:', window.location.href);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <UnifiedEditor 
