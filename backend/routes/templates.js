@@ -751,6 +751,58 @@ router.get('/test', (req, res) => {
   res.json({ message: 'Templates API is working', timestamp: new Date().toISOString() });
 });
 
+// GET /api/templates/design - Get design data from file via query parameter (must come before /:id)
+router.get('/design', async (req, res) => {
+  try {
+    const { filename } = req.query;
+    console.log('🔍 GET /api/templates/design called with filename:', filename);
+    
+    if (!filename || filename === 'undefined' || filename === 'null') {
+      return res.status(400).json({ error: 'Design filename is required' });
+    }
+    
+    const filePath = path.resolve(__dirname, '../uploads/designs', filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Design file not found' });
+    }
+
+    const designData = fs.readFileSync(filePath, 'utf8');
+    const parsedData = JSON.parse(designData);
+    
+    res.json({ 
+      success: true, 
+      designData: parsedData
+    });
+  } catch (error) {
+    console.error('Error reading design data:', error);
+    res.status(500).json({ error: 'Failed to read design data' });
+  }
+});
+
+// GET /api/templates/design/:filename - Get design data from file (legacy path parameter)
+router.get('/design/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.resolve(__dirname, '../uploads/designs', filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Design file not found' });
+    }
+
+    const designData = fs.readFileSync(filePath, 'utf8');
+    const parsedData = JSON.parse(designData);
+    
+    res.json({ 
+      success: true, 
+      designData: parsedData
+    });
+  } catch (error) {
+    console.error('Error reading design data:', error);
+    res.status(500).json({ error: 'Failed to read design data' });
+  }
+});
+
 // GET /api/templates/:id - Get template by ID (must come after specific routes)
 router.get('/:id', async (req, res) => {
   try {
@@ -931,28 +983,6 @@ router.post('/save-design', designUpload.single('designData'), async (req, res) 
   }
 });
 
-// GET /api/templates/design/:filename - Get design data from file
-router.get('/design/:filename', async (req, res) => {
-  try {
-    const { filename } = req.params;
-    const filePath = path.resolve(__dirname, '../uploads/designs', filename);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Design file not found' });
-    }
-
-    const designData = fs.readFileSync(filePath, 'utf8');
-    const parsedData = JSON.parse(designData);
-    
-    res.json({ 
-      success: true, 
-      designData: parsedData
-    });
-  } catch (error) {
-    console.error('Error reading design data:', error);
-    res.status(500).json({ error: 'Failed to read design data' });
-  }
-});
 
 // POST /api/templates/save-design-large - Handle very large design data
 router.post('/save-design-large', async (req, res) => {
