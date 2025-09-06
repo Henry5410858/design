@@ -93,9 +93,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('🔍 Template by ID API called');
     await connectDB();
     
     const { id } = await params;
+    console.log('🔍 Template ID received:', id);
     
     if (!id || id === 'undefined' || id === 'null') {
       return NextResponse.json(
