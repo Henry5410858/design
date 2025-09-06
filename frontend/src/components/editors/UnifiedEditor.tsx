@@ -2301,45 +2301,52 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         const template = await response.json();
         console.log('✅ Template loaded by ID:', template);
         
-        // Check if template has a design file using _id-based filename
-        const designFilename = `${templateId}.json`;
-        console.log('📁 Checking design file with _id-based filename:', designFilename);
-        const fileExists = await checkDesignFileExists(designFilename);
+        // Priority 1: Use designFilename field from database (primary method)
+        if (template.designFilename) {
+          console.log('📁 Loading design from designFilename field:', template.designFilename);
           
-          if (fileExists) {
+          try {
+            const fileExists = await checkDesignFileExists(template.designFilename);
+            
+            if (fileExists) {
+              console.log('✅ Design file exists, loading from designFilename...');
+              const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(template.designFilename));
+              if (designResponse.ok) {
+                const designData = await designResponse.json();
+                console.log('🎨 User-saved design data loaded from designFilename:', designData);
+                
+                // Load user-saved design directly (not through loadTemplateFromData)
+                await loadUserSavedDesign(designData, template);
+                return;
+              } else {
+                console.warn('⚠️ Failed to load design file from designFilename:', template.designFilename);
+              }
+            } else {
+              console.warn('⚠️ Design file does not exist:', template.designFilename);
+            }
+          } catch (error) {
+            console.error('❌ Error loading design file from designFilename:', template.designFilename, error);
+          }
+        }
+        
+        // Priority 2: Check _id-based filename (fallback)
+        const idBasedFilename = `${templateId}.json`;
+        console.log('📁 Checking design file with _id-based filename (fallback):', idBasedFilename);
+        const fileExists = await checkDesignFileExists(idBasedFilename);
+          
+        if (fileExists) {
           console.log('✅ Design file exists, loading user-saved design...');
-          const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(designFilename));
+          const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(idBasedFilename));
           if (designResponse.ok) {
             const designData = await designResponse.json();
-            console.log('🎨 User-saved design data loaded from file:', designData);
+            console.log('🎨 User-saved design data loaded from _id-based file:', designData);
             
             // Load user-saved design directly (not through loadTemplateFromData)
             await loadUserSavedDesign(designData, template);
             return;
           }
         } else {
-          console.warn('⚠️ Design file does not exist:', designFilename);
-          
-          // Fallback: check if template has legacy designFilename in database
-          if (template.designFilename) {
-            console.log('📁 Checking legacy design file:', template.designFilename);
-            const legacyFileExists = await checkDesignFileExists(template.designFilename);
-            
-            if (legacyFileExists) {
-              console.log('✅ Legacy design file exists, loading user-saved design...');
-            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(template.designFilename));
-            if (designResponse.ok) {
-              const designData = await designResponse.json();
-                console.log('🎨 User-saved design data loaded from legacy file:', designData);
-                
-                // Load user-saved design directly (not through loadTemplateFromData)
-                await loadUserSavedDesign(designData, template);
-              return;
-            }
-          } else {
-              console.warn('⚠️ Legacy design file does not exist:', template.designFilename);
-            }
-          }
+          console.warn('⚠️ Design file does not exist:', idBasedFilename);
         }
         
         // Fallback to loading from template data (fresh template)
@@ -2541,9 +2548,44 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         const template = await response.json();
         console.log('✅ Template metadata loaded from database:', template);
         
-        // If template has a design file path in database, load it directly (priority)
+        // Priority 1: Use designFilename field from database (primary method)
+        if (template.designFilename) {
+          console.log('📁 Loading design from designFilename field:', template.designFilename);
+          
+          try {
+            const fileExists = await checkDesignFileExists(template.designFilename);
+            
+            if (fileExists) {
+              console.log('✅ Design file exists, loading from designFilename...');
+              const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(template.designFilename));
+              if (designResponse.ok) {
+                const responseData = await designResponse.json();
+                console.log('🎨 Design response loaded from designFilename:', responseData);
+                
+                // Extract design data from response (it might be wrapped in a response object)
+                const designData = responseData.designData || responseData;
+                console.log('🎨 Extracted design data:', designData);
+                
+                await loadTemplateFromData(templateKey, designData);
+                return;
+              } else {
+                console.warn('⚠️ Failed to load design file from designFilename:', template.designFilename);
+              }
+            } else {
+              console.warn('⚠️ Design file does not exist:', template.designFilename);
+              console.log('🔄 Falling back to template data from database...');
+              
+              // Clean up the orphaned design file reference
+              await cleanupOrphanedDesignFile(templateKey);
+            }
+          } catch (error) {
+            console.error('❌ Error loading design file from designFilename:', template.designFilename, error);
+          }
+        }
+        
+        // Priority 2: Check designfilepath field (fallback)
         if (template.designfilepath) {
-          console.log('📁 Loading design from file path:', template.designfilepath);
+          console.log('📁 Loading design from file path (fallback):', template.designfilepath);
           
           try {
             // Extract filename from the path (e.g., "uploads/designs/filename.json" -> "filename.json")
@@ -2569,33 +2611,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           }
         }
         
-        // Fallback: Check old designFilename field for backward compatibility
-        if (template.designFilename) {
-          console.log('📁 Checking legacy database design file:', template.designFilename);
-          const fileExists = await checkDesignFileExists(template.designFilename);
-          
-          if (fileExists) {
-            console.log('✅ Legacy database design file exists, loading...');
-            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(template.designFilename));
-            if (designResponse.ok) {
-              const responseData = await designResponse.json();
-              console.log('🎨 Design response loaded from legacy file:', responseData);
-              
-              // Extract design data from response (it might be wrapped in a response object)
-              const designData = responseData.designData || responseData;
-              console.log('🎨 Extracted design data:', designData);
-              
-              await loadTemplateFromData(templateKey, designData);
-              return;
-            }
-          } else {
-            console.warn('⚠️ Legacy database design file does not exist:', template.designFilename);
-            console.log('🔄 Falling back to template data from database...');
-            
-            // Clean up the orphaned design file reference
-            await cleanupOrphanedDesignFile(templateKey);
-          }
-        } else {
+        // Priority 3: Check fallback options if no designFilename or designfilepath
+        if (!template.designFilename && !template.designfilepath) {
           console.log('📋 No designFilename in database, checking fallback options...');
           
           // Check for _id-based design file (fallback)
@@ -3075,12 +3092,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     
     // Check if this is a user-saved design or a fresh template
     if (templateData.designFilename) {
-      console.log('📁 Loading user-saved design data from file:', templateData.designFilename);
+      console.log('📁 Loading user-saved design data from designFilename field:', templateData.designFilename);
       try {
         const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(templateData.designFilename));
         if (designResponse.ok) {
           const designData = await designResponse.json();
-          console.log('✅ User-saved design data loaded from file:', designData);
+          console.log('✅ User-saved design data loaded from designFilename:', designData);
           
           // Load user-saved background image (not template defaults)
           if (designData.designData && designData.designData.backgroundImage) {
