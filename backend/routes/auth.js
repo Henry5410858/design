@@ -19,8 +19,20 @@ router.post('/signup', async (req, res) => {
       return res.status(409).json({ message: 'Email already in use' });
     }
     
+    // Generate username from email
+    const baseUsername = email.split('@')[0];
+    let username = baseUsername;
+    let counter = 1;
+    
+    // Ensure username is unique
+    while (await User.findOne({ username })) {
+      username = `${baseUsername}${counter}`;
+      counter++;
+    }
+    
     const hashed = await bcrypt.hash(password, 10);
     const userData = {
+      username,
       email,
       password: hashed,
       plan: plan || 'Free',
@@ -37,6 +49,8 @@ router.post('/signup', async (req, res) => {
     res.status(201).json({ 
       message: 'User created', 
       user: { 
+        id: user._id,
+        username: user.username,
         email: user.email, 
         plan: user.plan,
         firstName: user.firstName,

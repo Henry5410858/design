@@ -2,10 +2,15 @@ const mongoose = require('mongoose');
 const Template = require('../models/Template');
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/designcenter', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/design_center');
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error('Database connection error:', error);
+    process.exit(1);
+  }
+};
 
 const removeSummerSaleFlyer = async () => {
   try {
@@ -39,4 +44,10 @@ const removeSummerSaleFlyer = async () => {
   }
 };
 
-removeSummerSaleFlyer();
+// Execute the script
+const runScript = async () => {
+  await connectDB();
+  await removeSummerSaleFlyer();
+};
+
+runScript();
