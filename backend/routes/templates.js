@@ -672,6 +672,85 @@ router.get('/real-estate', async (req, res) => {
   }
 });
 
+// GET /api/templates/test - Simple test endpoint
+router.get('/test', (req, res) => {
+  res.json({ message: 'Templates API is working', timestamp: new Date().toISOString() });
+});
+
+// GET /api/templates/get - Get template by ID via query parameter
+router.get('/get', async (req, res) => {
+  try {
+    const { id } = req.query;
+    console.log('🔍 GET /api/templates/get called with ID:', id);
+    console.log('🔍 Full query object:', req.query);
+    console.log('🔍 Request URL:', req.url);
+    
+    // Validate ID parameter
+    if (!id || id === 'undefined' || id === 'null') {
+      console.log('Invalid ID parameter received:', id);
+      return res.status(400).json({ error: 'Invalid template ID' });
+    }
+    
+    // Check if ID is a valid MongoDB ObjectId format
+    console.log('ID to validate:', id, 'Length:', id.length);
+    console.log('Regex test result:', /^[0-9a-fA-F]{24}$/.test(id));
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      console.log('Invalid ObjectId format:', id);
+      return res.status(400).json({ error: 'Invalid template ID format' });
+    }
+    
+    console.log('🔍 Searching for template with ID:', id);
+    
+    // Try multiple methods to find the template
+    let template = null;
+    
+    // Method 1: findById
+    template = await Template.findById(id);
+    if (template) {
+      console.log('✅ Template found with findById:', template.name);
+      return res.json(template);
+    }
+    
+    // Method 2: findOne with _id
+    template = await Template.findOne({ _id: id });
+    if (template) {
+      console.log('✅ Template found with findOne _id:', template.name);
+      return res.json(template);
+    }
+    
+    // Method 3: findOne with ObjectId
+    template = await Template.findOne({ _id: new mongoose.Types.ObjectId(id) });
+    if (template) {
+      console.log('✅ Template found with findOne ObjectId:', template.name);
+      return res.json(template);
+    }
+    
+    // Method 4: findOne with string comparison
+    template = await Template.findOne({ _id: { $eq: id } });
+    if (template) {
+      console.log('✅ Template found with findOne $eq:', template.name);
+      return res.json(template);
+    }
+    
+    // Method 5: Get all templates and find by string comparison
+    console.log('🔍 Trying to find template by string comparison...');
+    const allTemplates = await Template.find({});
+    const foundTemplate = allTemplates.find(t => t._id.toString() === id);
+    
+    if (foundTemplate) {
+      console.log('✅ Template found by string comparison:', foundTemplate.name);
+      return res.json(foundTemplate);
+    }
+    
+    console.log('❌ Template not found in database for ID:', id);
+    return res.status(404).json({ error: 'Template not found' });
+    
+  } catch (error) {
+    console.error('Error fetching template:', error);
+    res.status(500).json({ error: 'Failed to fetch template' });
+  }
+});
+
 // GET /api/templates/:id - Get template by ID (must come before /by-key/:templateKey)
 router.get('/:id', async (req, res) => {
   try {
