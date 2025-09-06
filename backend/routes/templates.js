@@ -751,6 +751,48 @@ router.get('/test', (req, res) => {
   res.json({ message: 'Templates API is working', timestamp: new Date().toISOString() });
 });
 
+// GET /api/templates/files - List uploaded files (must come before /:id)
+router.get('/files', async (req, res) => {
+  try {
+    const filesDir = path.resolve(__dirname, '../uploads/files');
+    const imagesDir = path.resolve(__dirname, '../uploads/images');
+    const designsDir = path.resolve(__dirname, '../uploads/designs');
+
+    const getFilesInDir = (dirPath) => {
+      if (!fs.existsSync(dirPath)) return [];
+      
+      return fs.readdirSync(dirPath)
+        .filter(file => !file.startsWith('.'))
+        .map(file => {
+          const filePath = path.join(dirPath, file);
+          const stats = fs.statSync(filePath);
+          return {
+            filename: file,
+            size: stats.size,
+            created: stats.birthtime,
+            modified: stats.mtime,
+            path: `/uploads/files/${file}`
+          };
+        });
+    };
+
+    const files = getFilesInDir(filesDir);
+    const images = getFilesInDir(imagesDir);
+    const designs = getFilesInDir(designsDir);
+
+    res.json({ 
+      success: true, 
+      files: files,
+      images: images,
+      designs: designs,
+      total: files.length + images.length + designs.length
+    });
+  } catch (error) {
+    console.error('Error listing files:', error);
+    res.status(500).json({ error: 'Failed to list files' });
+  }
+});
+
 // GET /api/templates/design - Get design data from file via query parameter (must come before /:id)
 router.get('/design', async (req, res) => {
   try {
@@ -1369,47 +1411,6 @@ router.post('/upload-multiple', generalUpload.array('files', 10), async (req, re
   }
 });
 
-// GET /api/templates/files - List uploaded files
-router.get('/files', async (req, res) => {
-  try {
-    const filesDir = path.resolve(__dirname, '../uploads/files');
-    const imagesDir = path.resolve(__dirname, '../uploads/images');
-    const designsDir = path.resolve(__dirname, '../uploads/designs');
-
-    const getFilesInDir = (dirPath) => {
-      if (!fs.existsSync(dirPath)) return [];
-      
-      return fs.readdirSync(dirPath)
-        .filter(file => !file.startsWith('.'))
-        .map(file => {
-          const filePath = path.join(dirPath, file);
-          const stats = fs.statSync(filePath);
-          return {
-            filename: file,
-            size: stats.size,
-            created: stats.birthtime,
-            modified: stats.mtime,
-            path: `/uploads/files/${file}`
-          };
-        });
-    };
-
-    const files = getFilesInDir(filesDir);
-    const images = getFilesInDir(imagesDir);
-    const designs = getFilesInDir(designsDir);
-
-    res.json({ 
-      success: true, 
-      files: files,
-      images: images,
-      designs: designs,
-      total: files.length + images.length + designs.length
-    });
-  } catch (error) {
-    console.error('Error listing files:', error);
-    res.status(500).json({ error: 'Failed to list files' });
-  }
-});
 
 // POST /api/templates/cleanup-orphaned-files - Clean up orphaned files
 router.post('/cleanup-orphaned-files', async (req, res) => {
