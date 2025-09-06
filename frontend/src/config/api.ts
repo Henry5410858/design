@@ -28,7 +28,7 @@ export const API_ENDPOINTS = {
   
   // Template endpoints
   TEMPLATES: `${API_BASE_URL}/api/templates`,
-  TEMPLATE_BY_ID: (id: string) => `${API_BASE_URL}/api/templates/${id}`,
+  TEMPLATE_BY_ID: (id: string) => `${API_BASE_URL}/api/templates/get?id=${id}`,
   TEMPLATE_BY_KEY: (key: string) => `${API_BASE_URL}/api/templates/by-key/${key}`,
   SAVE_DESIGN: `${API_BASE_URL}/api/templates/save-design`,
   SAVE_DESIGN_LARGE: `${API_BASE_URL}/api/templates/save-design-large`,
