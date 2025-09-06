@@ -672,11 +672,6 @@ router.get('/real-estate', async (req, res) => {
   }
 });
 
-// GET /api/templates/test - Simple test endpoint
-router.get('/test', (req, res) => {
-  res.json({ message: 'Templates API is working', timestamp: new Date().toISOString() });
-});
-
 // GET /api/templates/get - Get template by ID via query parameter
 router.get('/get', async (req, res) => {
   try {
@@ -751,7 +746,12 @@ router.get('/get', async (req, res) => {
   }
 });
 
-// GET /api/templates/:id - Get template by ID (must come before /by-key/:templateKey)
+// GET /api/templates/test - Simple test endpoint (must come before /:id)
+router.get('/test', (req, res) => {
+  res.json({ message: 'Templates API is working', timestamp: new Date().toISOString() });
+});
+
+// GET /api/templates/:id - Get template by ID (must come after specific routes)
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
