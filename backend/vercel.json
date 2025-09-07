@@ -24,6 +24,10 @@
       "dest": "/api/auth.js"
     },
     {
+      "src": "/api/brand-kit/(.*)",
+      "dest": "/api/brand-kit.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/api/index.js"
     }
