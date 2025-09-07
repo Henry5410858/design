@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('❌ Error fetching templates:', error);
-    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
       { error: 'Failed to fetch templates' },
       { status: 500 }
