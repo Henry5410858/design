@@ -59,7 +59,7 @@ const connectDB = async () => {
     }
   }
 };
-
+console.log("index");
 // Connect to database
 connectDB();
 
