@@ -90,12 +90,18 @@ async function connectDB() {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 Frontend templates API called');
+    console.log('📊 Request URL:', request.url);
+    
     await connectDB();
+    console.log('✅ Database connected');
     
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const category = searchParams.get('category');
     const isRealEstate = searchParams.get('isRealEstate');
+    
+    console.log('📊 Query params:', { type, category, isRealEstate });
     
     let query: any = {};
     
@@ -103,12 +109,17 @@ export async function GET(request: NextRequest) {
     if (category) query.category = category;
     if (isRealEstate !== null) query.isRealEstate = isRealEstate === 'true';
     
+    console.log('🔍 Database query:', query);
+    console.log('🔍 Template model:', Template ? 'Loaded' : 'Not loaded');
+    
     const templates = await Template.find(query).sort({ createdAt: -1 });
+    console.log(`✅ Found ${templates.length} templates`);
     
     return NextResponse.json(templates);
     
   } catch (error) {
-    console.error('Error fetching templates:', error);
+    console.error('❌ Error fetching templates:', error);
+    console.error('❌ Error stack:', error.stack);
     return NextResponse.json(
       { error: 'Failed to fetch templates' },
       { status: 500 }
