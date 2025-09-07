@@ -89,7 +89,7 @@ app.get('/api/test', (req, res) => {
 app.get('/', (req, res) => {
   res.json({ 
     message: 'RedDragon Backend API', 
-    version: '1.0.0',
+    version: '1.0.1',
     endpoints: {
       health: '/api/health',
       templates: '/api/templates',
