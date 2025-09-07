@@ -42,6 +42,8 @@ const connectDB = async () => {
     await mongoose.connect(mongoURI);
     
     console.log('✅ MongoDB connected successfully');
+    console.log('🔍 Connected to database:', mongoose.connection.db?.databaseName);
+    console.log('🔍 Connection host:', mongoose.connection.host);
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
     if (process.env.NODE_ENV === 'production') {

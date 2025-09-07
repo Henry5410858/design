@@ -643,6 +643,28 @@ router.get('/', async (req, res) => {
     console.log('🔍 Template model type:', typeof Template);
     console.log('🔍 Template model:', Template);
     
+    // Check database connection
+    console.log('🔍 Database connection state:', mongoose.connection.readyState);
+    console.log('🔍 Database name:', mongoose.connection.db?.databaseName);
+    console.log('🔍 Database host:', mongoose.connection.host);
+    
+    // Test database access
+    console.log('🔍 Testing database access...');
+    const db = mongoose.connection.db;
+    if (db) {
+      const collections = await db.listCollections().toArray();
+      console.log('🔍 Available collections:', collections.map(c => c.name));
+      
+      // Check if templates collection exists
+      const templatesCollection = collections.find(c => c.name === 'templates');
+      console.log('🔍 Templates collection exists:', !!templatesCollection);
+      
+      if (templatesCollection) {
+        const count = await db.collection('templates').countDocuments();
+        console.log('🔍 Templates collection count:', count);
+      }
+    }
+    
     const { type, category, isRealEstate } = req.query;
     let query = {};
     
