@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 // Import the Template model
@@ -44,7 +45,7 @@ const connectDB = async () => {
   }
 };
 
-// GET /api/templates
+// GET /api/templates - Get all templates with filtering
 app.get('/', async (req, res) => {
   try {
     console.log('🔍 GET /api/templates called');
@@ -52,28 +53,6 @@ app.get('/', async (req, res) => {
     
     // Ensure database connection
     await connectDB();
-    
-    // Check database connection
-    console.log('🔍 Database connection state:', mongoose.connection.readyState);
-    console.log('🔍 Database name:', mongoose.connection.db?.databaseName);
-    console.log('🔍 Database host:', mongoose.connection.host);
-    
-    // Test database access
-    console.log('🔍 Testing database access...');
-    const db = mongoose.connection.db;
-    if (db) {
-      const collections = await db.listCollections().toArray();
-      console.log('🔍 Available collections:', collections.map(c => c.name));
-      
-      // Check if templates collection exists
-      const templatesCollection = collections.find(c => c.name === 'templates');
-      console.log('🔍 Templates collection exists:', !!templatesCollection);
-      
-      if (templatesCollection) {
-        const count = await db.collection('templates').countDocuments();
-        console.log('🔍 Templates collection count:', count);
-      }
-    }
     
     const { type, category, isRealEstate } = req.query;
     let query = {};
@@ -91,25 +70,295 @@ app.get('/', async (req, res) => {
     }
     
     console.log('🔍 Database query:', query);
-    console.log('🔍 About to execute Template.find()...');
     
     const templates = await Template.find(query).sort({ createdAt: -1 });
     console.log(`✅ Found ${templates.length} templates`);
-    console.log('🔍 First template:', templates[0] ? 'Exists' : 'No templates');
     
     res.json(templates);
   } catch (error) {
     console.error('❌ Error fetching templates:', error);
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error name:', error.name);
-    console.error('❌ Error stack:', error.stack);
     res.status(500).json({ 
       error: 'Failed to fetch templates',
-      message: error.message,
-      name: error.name
+      message: error.message
     });
   }
 });
+
+// GET /api/templates/real-estate - Get real estate templates
+app.get('/real-estate', async (req, res) => {
+  try {
+    await connectDB();
+    const realEstateTemplates = await Template.find({ isRealEstate: true }).sort({ createdAt: -1 });
+    res.json(realEstateTemplates);
+  } catch (error) {
+    console.error('Error fetching real estate templates:', error);
+    res.status(500).json({ error: 'Failed to fetch real estate templates' });
+  }
+});
+
+// GET /api/templates/get - Get template by ID via query parameter
+app.get('/get', async (req, res) => {
+  try {
+    const { id } = req.query;
+    console.log('🔍 GET /api/templates/get called with ID:', id);
+    
+    if (!id || id === 'undefined' || id === 'null') {
+      return res.status(400).json({ error: 'Invalid template ID' });
+    }
+    
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({ error: 'Invalid template ID format' });
+    }
+    
+    await connectDB();
+    const template = await Template.findById(id);
+    
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    res.json(template);
+  } catch (error) {
+    console.error('Error fetching template:', error);
+    res.status(500).json({ error: 'Failed to fetch template' });
+  }
+});
+
+// GET /api/templates/by-key/:templateKey - Get template by templateKey
+app.get('/by-key/:templateKey', async (req, res) => {
+  try {
+    const { templateKey } = req.params;
+    
+    if (!templateKey) {
+      return res.status(400).json({ error: 'Template key is required' });
+    }
+    
+    await connectDB();
+    const template = await Template.findOne({ templateKey });
+    
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    res.json(template);
+  } catch (error) {
+    console.error('Error fetching template by key:', error);
+    res.status(500).json({ error: 'Failed to fetch template' });
+  }
+});
+
+// POST /api/templates - Create new template
+app.post('/', async (req, res) => {
+  try {
+    const { name, type, dimensions, brandKitLogo } = req.body;
+    
+    if (!name || !type || !dimensions) {
+      return res.status(400).json({ error: 'Name, type, and dimensions are required' });
+    }
+    
+    await connectDB();
+    
+    const template = new Template({
+      name,
+      type,
+      dimensions,
+      category: getCategoryFromType(type),
+      templateKey: uuidv4(),
+      backgroundColor: '#ffffff',
+      canvasSize: `${dimensions.width}x${dimensions.height}`,
+      objects: []
+    });
+    
+    const savedTemplate = await template.save();
+    res.status(201).json(savedTemplate);
+  } catch (error) {
+    console.error('Error creating template:', error);
+    res.status(500).json({ error: 'Failed to create template' });
+  }
+});
+
+// PUT /api/templates/:id - Update template
+app.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    if (!id || id === 'undefined' || id === 'null') {
+      return res.status(400).json({ error: 'Invalid template ID' });
+    }
+    
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({ error: 'Invalid template ID format' });
+    }
+    
+    await connectDB();
+    
+    const template = await Template.findByIdAndUpdate(
+      id, 
+      { ...updateData, updatedAt: new Date() }, 
+      { new: true, runValidators: true }
+    );
+    
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    res.json(template);
+  } catch (error) {
+    console.error('Error updating template:', error);
+    res.status(500).json({ error: 'Failed to update template' });
+  }
+});
+
+// DELETE /api/templates/:id - Delete template
+app.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id || id === 'undefined' || id === 'null') {
+      return res.status(400).json({ error: 'Invalid template ID' });
+    }
+    
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({ error: 'Invalid template ID format' });
+    }
+    
+    await connectDB();
+    
+    const template = await Template.findByIdAndDelete(id);
+    
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    res.json({ message: 'Template deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting template:', error);
+    res.status(500).json({ error: 'Failed to delete template' });
+  }
+});
+
+// POST /api/templates/:id/duplicate - Duplicate template
+app.post('/:id/duplicate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    
+    if (!id || id === 'undefined' || id === 'null') {
+      return res.status(400).json({ error: 'Invalid template ID' });
+    }
+    
+    await connectDB();
+    
+    const originalTemplate = await Template.findById(id);
+    if (!originalTemplate) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    const duplicatedTemplate = new Template({
+      ...originalTemplate.toObject(),
+      _id: undefined,
+      name: name || `${originalTemplate.name} (Copy)`,
+      templateKey: uuidv4(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    const savedTemplate = await duplicatedTemplate.save();
+    res.status(201).json(savedTemplate);
+  } catch (error) {
+    console.error('Error duplicating template:', error);
+    res.status(500).json({ error: 'Failed to duplicate template' });
+  }
+});
+
+// POST /api/templates/save-design - Save design data
+app.post('/save-design', async (req, res) => {
+  try {
+    const { templateId, designData } = req.body;
+    
+    if (!templateId || !designData) {
+      return res.status(400).json({ error: 'Template ID and design data are required' });
+    }
+    
+    await connectDB();
+    
+    const template = await Template.findByIdAndUpdate(
+      templateId,
+      { 
+        objects: designData.objects || [],
+        backgroundColor: designData.backgroundColor || '#ffffff',
+        backgroundImage: designData.backgroundImage,
+        canvasSize: designData.canvasSize,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+    
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    res.json({ message: 'Design saved successfully', template });
+  } catch (error) {
+    console.error('Error saving design:', error);
+    res.status(500).json({ error: 'Failed to save design' });
+  }
+});
+
+// GET /api/templates/design - Get design data by filename
+app.get('/design', async (req, res) => {
+  try {
+    const { filename } = req.query;
+    
+    if (!filename || filename === 'undefined' || filename === 'null') {
+      return res.status(400).json({ error: 'Design filename is required' });
+    }
+    
+    await connectDB();
+    
+    // Find template by designFilename
+    const template = await Template.findOne({ designFilename: filename });
+    
+    if (template) {
+      return res.json({
+        success: true,
+        designData: {
+          id: template._id.toString(),
+          editorType: template.type,
+          canvasSize: template.canvasSize,
+          backgroundColor: template.backgroundColor,
+          backgroundImage: template.backgroundImage,
+          templateKey: template.templateKey,
+          objects: template.objects || [],
+          metadata: {
+            createdAt: template.createdAt,
+            updatedAt: template.updatedAt,
+            version: "1.0.0"
+          }
+        }
+      });
+    }
+    
+    return res.status(404).json({ error: 'Design file not found' });
+  } catch (error) {
+    console.error('Error fetching design data:', error);
+    res.status(500).json({ error: 'Failed to fetch design data' });
+  }
+});
+
+// Helper function to get category from type
+function getCategoryFromType(type) {
+  const categoryMap = {
+    'square-post': 'social-posts',
+    'story': 'stories',
+    'marketplace-flyer': 'marketplace-flyers',
+    'fb-feed-banner': 'fb-banners',
+    'digital-badge': 'badges',
+    'brochure': 'documents'
+  };
+  return categoryMap[type] || 'documents';
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
