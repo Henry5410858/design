@@ -640,6 +640,8 @@ router.get('/', async (req, res) => {
   try {
     console.log('🔍 GET /api/templates called');
     console.log('📊 Query params:', req.query);
+    console.log('🔍 Template model type:', typeof Template);
+    console.log('🔍 Template model:', Template);
     
     const { type, category, isRealEstate } = req.query;
     let query = {};
@@ -657,16 +659,23 @@ router.get('/', async (req, res) => {
     }
     
     console.log('🔍 Database query:', query);
-    console.log('🔍 Template model:', Template ? 'Loaded' : 'Not loaded');
+    console.log('🔍 About to execute Template.find()...');
     
     const templates = await Template.find(query).sort({ createdAt: -1 });
     console.log(`✅ Found ${templates.length} templates`);
+    console.log('🔍 First template:', templates[0] ? 'Exists' : 'No templates');
     
     res.json(templates);
   } catch (error) {
     console.error('❌ Error fetching templates:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error name:', error.name);
     console.error('❌ Error stack:', error.stack);
-    res.status(500).json({ error: 'Failed to fetch templates' });
+    res.status(500).json({ 
+      error: 'Failed to fetch templates',
+      message: error.message,
+      name: error.name
+    });
   }
 });
 
