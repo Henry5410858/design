@@ -71,7 +71,7 @@ app.get('/', async (req, res) => {
     
     console.log('🔍 Database query:', query);
     
-    const templates = await Template.find(query).sort({ createdAt: -1 });
+    const templates = await Template.find(query).sort({ createdAt: -1 }).limit(100);
     console.log(`✅ Found ${templates.length} templates`);
     
     res.json(templates);
@@ -88,7 +88,7 @@ app.get('/', async (req, res) => {
 app.get('/real-estate', async (req, res) => {
   try {
     await connectDB();
-    const realEstateTemplates = await Template.find({ isRealEstate: true }).sort({ createdAt: -1 });
+    const realEstateTemplates = await Template.find({ isRealEstate: true }).sort({ createdAt: -1 }).limit(100);
     res.json(realEstateTemplates);
   } catch (error) {
     console.error('Error fetching real estate templates:', error);
