@@ -31,7 +31,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next|favicon.ico|api|.*\\..*).*)'],
-  // Temporarily disable middleware to test API routes
-  // matcher: [],
+  // Temporarily disable middleware to fix MIDDLEWARE_INVOCATION_FAILED
+  matcher: [],
 };
