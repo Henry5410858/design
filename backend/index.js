@@ -42,6 +42,17 @@ const connectDB = async () => {
 // Connect to database
 connectDB();
 
+// Add error handling for unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  console.error('❌ Unhandled Promise Rejection:', err);
+});
+
+// Add error handling for uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  process.exit(1);
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/templates', templateRoutes);

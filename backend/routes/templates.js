@@ -638,6 +638,9 @@ function getDefaultDimensions(type) {
 // GET /api/templates?type=square-post|story|marketplace-flyer|fb-feed-banner|digital-badge|brochure
 router.get('/', async (req, res) => {
   try {
+    console.log('🔍 GET /api/templates called');
+    console.log('📊 Query params:', req.query);
+    
     const { type, category, isRealEstate } = req.query;
     let query = {};
     
@@ -653,10 +656,16 @@ router.get('/', async (req, res) => {
       query.isRealEstate = isRealEstate === 'true';
     }
     
+    console.log('🔍 Database query:', query);
+    console.log('🔍 Template model:', Template ? 'Loaded' : 'Not loaded');
+    
     const templates = await Template.find(query).sort({ createdAt: -1 });
+    console.log(`✅ Found ${templates.length} templates`);
+    
     res.json(templates);
   } catch (error) {
-    console.error('Error fetching templates:', error);
+    console.error('❌ Error fetching templates:', error);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to fetch templates' });
   }
 });
