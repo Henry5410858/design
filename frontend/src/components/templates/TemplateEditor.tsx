@@ -263,7 +263,7 @@ export default function TemplateEditor({ id }: { id: string }) {
     y: number;
     targetId: string;
   } | null>(null);
-  const token = getTokenFromStorage();
+  const token = localStorage.getItem('token');
 
   // Get canvas dimensions based on selected size
   const getCanvasDimensions = () => {
