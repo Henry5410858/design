@@ -1,7 +1,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
+
+// Import the User model
+const User = require('../../models/User');
 
 const app = express();
 
@@ -21,6 +26,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(express.json({ limit: '50mb' }));
 
 // Database connection
 const connectDB = async () => {
@@ -31,13 +37,8 @@ const connectDB = async () => {
     }
 
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/design_center';
-    console.log('🔌 Connecting to MongoDB:', mongoURI.replace(/\/\/.*@/, '//***:***@'));
-    
     await mongoose.connect(mongoURI);
-    
     console.log('✅ MongoDB connected successfully');
-    console.log('🔍 Connected to database:', mongoose.connection.db?.databaseName);
-    console.log('🔍 Connection host:', mongoose.connection.host);
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
     if (process.env.NODE_ENV === 'production') {
@@ -51,15 +52,50 @@ const connectDB = async () => {
 // Connect to database
 connectDB();
 
-// Health check endpoint
-app.get('/', async (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
-    environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0'
-  });
+// POST /api/auth/signin - User login
+app.post('/', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    
+    await connectDB();
+    
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET || 'fallback-secret',
+      { expiresIn: '7d' }
+    );
+    
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan
+      }
+    });
+  } catch (error) {
+    console.error('Error signing in user:', error);
+    res.status(500).json({ error: 'Failed to sign in' });
+  }
 });
 
 // Error handling middleware
