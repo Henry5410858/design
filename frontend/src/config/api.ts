@@ -12,11 +12,11 @@ if (isDevelopment) {
   // Development: use localhost backend
   API_BASE_URL = 'http://localhost:4000';
 } else if (isProduction) {
-  // Production: use separate backend deployment
-  API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://turbo-enigma-backend-nutq.vercel.app';
+  // Production: use frontend's own API routes for auth validation
+  API_BASE_URL = '';
 } else {
-  // Fallback
-  API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://turbo-enigma-backend-nutq.vercel.app';
+  // Fallback: use frontend's own API routes
+  API_BASE_URL = '';
 }
 
 export const API_ENDPOINTS = {
