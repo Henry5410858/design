@@ -11,7 +11,7 @@ import {
   Square, 
   Palette 
 } from 'phosphor-react';
-import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/context/AuthContext';
 import * as fabric from 'fabric';
 import API_ENDPOINTS from '@/config/api';
 import { jsPDF } from 'jspdf';
@@ -267,7 +267,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // User context
-  const { user } = useUser();
+  const { user } = useAuth();
   const userPlan = (user?.plan as 'Free' | 'Premium' | 'Ultra-Premium') || 'Free';
   
   // Templates will be loaded from database - no hard-coded data

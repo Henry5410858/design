@@ -1,0 +1,7 @@
+backend/models/Template.js
+frontend/src/app/flyers/page.tsx
+frontend/src/components/editors/SocialPostsEditor.tsx
+frontend/src/components/editors/StoriesEditor.tsx
+frontend/src/components/editors/UnifiedEditor.tsx
+frontend/src/components/templates/TemplateEditor.tsx
+frontend/src/context/UserContext.tsx

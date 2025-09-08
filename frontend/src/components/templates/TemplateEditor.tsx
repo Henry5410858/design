@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
-import { getTokenFromStorage } from '../../context/UserContext';
+import { useAuth } from '../../context/AuthContext';
 
 import API_ENDPOINTS from '@/config/api';
 // CSS for smooth animations
@@ -237,6 +237,7 @@ function generateNativeThumbnail(canvas: HTMLElement, width: number, height: num
 }
 
 export default function TemplateEditor({ id }: { id: string }) {
+  const { user } = useAuth();
   const [template, setTemplate] = useState<Template | null>(null);
   const [objects, setObjects] = useState<CanvasObject[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -374,7 +375,7 @@ export default function TemplateEditor({ id }: { id: string }) {
     if (e.target.files && e.target.files[0]) {
       const formData = new FormData();
       formData.append('image', e.target.files[0]);
-      const token = getTokenFromStorage();
+      const token = localStorage.getItem('token');
       const res = await fetch(API_ENDPOINTS.BRAND_KIT + '/uploads', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },

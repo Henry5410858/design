@@ -16,56 +16,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setIsClient(true);
   }, []);
 
-  useEffect(() => {
-    if (!isClient) return;
-    
-    const fetchUser = async () => {
-      try {
-        const token = getTokenFromStorage();
-        console.log('UserContext: token from localStorage =', token); // Debug log
-        
-        if (!token) {
-          if (pathname !== '/login' && pathname !== '/signup') {
-            router.replace('/login');
-          }
-          return;
-        }
-        
-        // Preserve context by capturing current values
-        const currentPathname = pathname;
-        const currentRouter = router;
-        
-        const res = await fetch(API_ENDPOINTS.VALIDATE, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        });
-        
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-        } else {
-          setUser(null);
-          // Use captured context values to avoid stale closure
-          if (currentPathname !== '/login' && currentPathname !== '/signup') {
-            currentRouter.replace('/login');
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
-        setUser(null);
-        // Handle error case with proper context
-        if (pathname !== '/login' && pathname !== '/signup') {
-          router.replace('/login');
-        }
-      }
-    };
-    
-    // Execute with proper error handling
-    fetchUser().catch(error => {
-      console.error('Unhandled error in fetchUser:', error);
-    });
-  }, [isClient, router, pathname]);
+  // Remove authentication logic - this should be handled by AuthContext only
+  // UserContext should only manage user plan data, not authentication
 
   return <UserContext.Provider value={{ user, setUser }}>{children}</UserContext.Provider>;
 }

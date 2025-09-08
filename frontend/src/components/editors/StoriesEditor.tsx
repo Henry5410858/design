@@ -8,7 +8,7 @@ import {
   Image as ImageIcon, 
   Square 
 } from 'phosphor-react';
-import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface StoriesEditorProps {
   id: string;
@@ -32,7 +32,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
     '#230038'  // Very dark purple
   ];
   const [fontSize, setFontSize] = useState(48);
-  const { user } = useUser();
+  const { user } = useAuth();
   const userPlan = (user?.plan as 'Free' | 'Premium' | 'Ultra-Premium') || 'Free';
   const [history, setHistory] = useState<any[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
