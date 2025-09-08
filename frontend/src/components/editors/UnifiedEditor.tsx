@@ -3263,6 +3263,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         // Add background image to canvas FIRST (so it's at the bottom)
         canvas.add(fabricImage);
         
+        // Mark the background image properly
+        (fabricImage as any).isBackground = true;
+        (fabricImage as any).selectable = false;
+        (fabricImage as any).evented = false;
+        (fabricImage as any).zIndex = -1000; // Ensure it's at the very bottom
+        
         // Ensure background is at the very bottom
         const allObjects = canvas.getObjects();
         const nonBackgroundObjects = allObjects.filter(obj => (obj as any).isBackground !== true);
@@ -3273,7 +3279,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         // Add background image first (bottom layer)
         canvas.add(fabricImage);
         
-        // Add all other objects back (top layers)
+        // Sort non-background objects by z-index before adding them back
+        nonBackgroundObjects.sort((a, b) => {
+          const aZ = (a as any).zIndex || 0;
+          const bZ = (b as any).zIndex || 0;
+          return aZ - bZ;
+        });
+        
+        // Add all other objects back (top layers) in proper order
         nonBackgroundObjects.forEach(obj => canvas.add(obj));
         
         // Set canvas background to transparent so image shows
@@ -3318,7 +3331,20 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log('🖼️ Background image URL for duplicate checking:', designData.designData.backgroundImage);
       }
       
-      designData.designData.objects.forEach((obj: any, index: number) => {
+      // Sort objects by z-index before loading them
+      const sortedObjects = [...designData.designData.objects].sort((a, b) => {
+        const aZ = a.zIndex || 0;
+        const bZ = b.zIndex || 0;
+        return aZ - bZ;
+      });
+      
+      console.log('🔢 Objects sorted by z-index:', sortedObjects.map((obj, i) => ({
+        index: i,
+        type: obj.type,
+        zIndex: obj.zIndex || 0
+      })));
+      
+      sortedObjects.forEach((obj: any, index: number) => {
         // Use the same object loading logic as in loadTemplateFromData
         try {
                 console.log(`🎨 Loading object ${index + 1}:`, {
@@ -3879,7 +3905,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       // Add background objects first (bottom layer)
       backgroundObjects.forEach(obj => canvas.add(obj));
       
-      // Add content objects on top
+      // Sort content objects by z-index before adding them
+      contentObjects.sort((a, b) => {
+        const aZ = (a as any).zIndex || 0;
+        const bZ = (b as any).zIndex || 0;
+        return aZ - bZ;
+      });
+      
+      // Add content objects on top in proper order
       contentObjects.forEach(obj => canvas.add(obj));
       
       canvas.renderAll();

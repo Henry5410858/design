@@ -166,8 +166,16 @@ export async function generateCanvasImage(
       console.log(`📊 Design data:`, designData);
     }
 
-    // Sort objects by z-index or render order
+    // Sort objects by z-index or render order (background first, then content)
     objects.sort((a, b) => {
+      // Background objects should always be first
+      const aIsBackground = (a as any).isBackground === true;
+      const bIsBackground = (b as any).isBackground === true;
+      
+      if (aIsBackground && !bIsBackground) return -1;
+      if (!aIsBackground && bIsBackground) return 1;
+      
+      // For non-background objects, sort by z-index
       const aZ = a.zIndex || 0;
       const bZ = b.zIndex || 0;
       return aZ - bZ;
