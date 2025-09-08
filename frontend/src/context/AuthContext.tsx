@@ -31,9 +31,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Memoize checkAuth to prevent recreation on every render
-  const checkAuth = useCallback(async (): Promise<boolean> => {
+  const checkAuth = useCallback(async (retryCount = 0): Promise<boolean> => {
     try {
-      console.log('🔐 checkAuth: Starting...');
+      console.log('🔐 checkAuth: Starting... (attempt', retryCount + 1, ')');
       const token = localStorage.getItem('token');
       console.log('🔐 checkAuth: Token from localStorage:', token ? 'exists' : 'none');
       
@@ -82,19 +82,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(userData);
         setIsLoading(false);
         return true;
-      } else {
-        // Token invalid, clear storage
-        console.log('🔐 checkAuth: Token invalid, clearing...');
+      } else if (response.status === 401) {
+        // Only clear token for authentication errors (401)
+        console.log('🔐 checkAuth: Token invalid (401), clearing...');
         localStorage.removeItem('token');
         localStorage.removeItem('tokenExpiry');
         setUser(null);
         setIsLoading(false);
         return false;
+      } else {
+        // For other errors (500, network issues, etc.), keep the token but don't set user
+        console.log('🔐 checkAuth: Server error during validation, keeping token but not setting user');
+        setUser(null);
+        setIsLoading(false);
+        return false;
       }
     } catch (error) {
-      console.error('🔐 checkAuth: Error:', error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('tokenExpiry');
+      console.error('🔐 checkAuth: Network error during validation:', error);
+      
+      // Retry logic for network failures (max 2 retries)
+      if (retryCount < 2) {
+        console.log('🔐 checkAuth: Retrying validation in 1 second...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return checkAuth(retryCount + 1);
+      }
+      
+      // After max retries, keep the token but don't set user
+      console.log('🔐 checkAuth: Max retries reached, keeping token but not setting user');
       setUser(null);
       setIsLoading(false);
       return false;
