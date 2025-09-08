@@ -58,6 +58,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Validate token with backend
       console.log('🔐 checkAuth: Validating existing token...');
+      console.log('🔐 checkAuth: Token being sent:', token.substring(0, 20) + '...');
+      console.log('🔐 checkAuth: Validation URL:', API_ENDPOINTS.VALIDATE);
+      
       const response = await fetch(API_ENDPOINTS.VALIDATE, {
         method: 'POST',
         headers: {
@@ -67,6 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       console.log('🔐 checkAuth: Token validation response status:', response.status);
+      console.log('🔐 checkAuth: Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (response.ok) {
         const validationData = await response.json();
@@ -84,7 +88,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return true;
       } else if (response.status === 401) {
         // Only clear token for authentication errors (401)
-        console.log('🔐 checkAuth: Token invalid (401), clearing...');
+        const errorData = await response.text();
+        console.log('🔐 checkAuth: Token invalid (401), error response:', errorData);
+        console.log('🔐 checkAuth: Clearing token due to 401 error...');
         localStorage.removeItem('token');
         localStorage.removeItem('tokenExpiry');
         setUser(null);
@@ -92,7 +98,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       } else {
         // For other errors (500, network issues, etc.), keep the token but don't set user
-        console.log('🔐 checkAuth: Server error during validation, keeping token but not setting user');
+        const errorData = await response.text();
+        console.log('🔐 checkAuth: Server error during validation, status:', response.status, 'error:', errorData);
+        console.log('🔐 checkAuth: Keeping token but not setting user due to server error');
         setUser(null);
         setIsLoading(false);
         return false;
