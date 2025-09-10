@@ -3,15 +3,17 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   FloppyDisk, 
   Download, 
-  FilePdf, 
-  ArrowsOutCardinal, 
-  Pencil, 
+  FilePdf,
   TextT, 
   Image as ImageIcon, 
   Square, 
-  Palette 
+  Palette, 
+  ArrowArcLeft,
+  ArrowArcRight,
+  Scissors,
+  Trash
 } from 'phosphor-react';
-import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/context/AuthContext';
 import * as fabric from 'fabric';
 import API_ENDPOINTS from '@/config/api';
 import { jsPDF } from 'jspdf';
@@ -267,7 +269,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // User context
-  const { user } = useUser();
+  const { user } = useAuth();
   const userPlan = (user?.plan as 'Free' | 'Premium' | 'Ultra-Premium') || 'Free';
   
   // Templates will be loaded from database - no hard-coded data
@@ -5266,7 +5268,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Deshacer (Ctrl+Z)"
               >
-              <ArrowsOutCardinal size={5} className="w-5 h-5" />
+              <ArrowArcLeft size={5} className="w-5 h-5" />
               </button>
               
               <button
@@ -5275,7 +5277,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Rehacer (Ctrl+Y)"
               >
-              <ArrowsOutCardinal size={5} className="w-5 h-5" />
+              <ArrowArcRight size={5} className="w-5 h-5" />
               </button>
               
               <div className="w-px h-8 bg-gray-300 mx-2"></div>
@@ -5286,7 +5288,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Duplicar (Ctrl+D)"
               >
-              <Pencil size={4} className="w-4 h-4" />
+              <Scissors size={4} className="w-4 h-4" />
               </button>
               
               <button
@@ -5295,7 +5297,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Eliminar (Delete)"
               >
-              <Pencil size={4} className="w-4 h-4" />
+              <Trash size={4} className="w-4 h-4" />
               </button>
           </div>
         </div>
@@ -5988,8 +5990,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
            {/* Format Tab - Advanced Object Formatting */}
            {activeTab === 'format' && selectedObject && (
              <div className="space-y-3">
-               {/* Single Row with Two Blocks */}
-               <div className="flex space-x-6">
+               {/* Column Layout with Two Blocks */}
+               <div className="flex flex-col space-y-4">
                  
                  {/* Block 1: Basic Formatting Tools */}
                  <div className="flex-1 bg-gray-50 p-4 rounded-lg border">
@@ -6038,7 +6040,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                      title="Color de borde"
                    />
                   </div>
-                  
+                  </div>
+                     <div className="flex items-center space-x-4">
                  {/* Stroke Width */}
                  <div className="flex items-center space-x-2">
                    <span className="text-xs text-gray-600">Ancho:</span>
@@ -6062,7 +6065,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                      {(selectedObject.strokeWidth as number) || 0}
                       </span>
                   </div>
-                  
+                  </div>
+                  <div className="flex items-center space-x-4">
                  {/* Opacity */}
                  <div className="flex items-center space-x-2">
                    <span className="text-xs text-gray-600">Opacidad:</span>

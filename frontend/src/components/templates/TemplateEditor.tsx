@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
-import { getTokenFromStorage } from '../../context/UserContext';
 
 import API_ENDPOINTS from '@/config/api';
 // CSS for smooth animations
@@ -262,7 +261,7 @@ export default function TemplateEditor({ id }: { id: string }) {
     y: number;
     targetId: string;
   } | null>(null);
-  const token = getTokenFromStorage();
+  const token = localStorage.getItem("token");
 
   // Get canvas dimensions based on selected size
   const getCanvasDimensions = () => {
@@ -374,7 +373,7 @@ export default function TemplateEditor({ id }: { id: string }) {
     if (e.target.files && e.target.files[0]) {
       const formData = new FormData();
       formData.append('image', e.target.files[0]);
-      const token = getTokenFromStorage();
+      const token = localStorage.getItem("token");
       const res = await fetch(API_ENDPOINTS.BRAND_KIT + '/uploads', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },

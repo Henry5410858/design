@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { User, AuthToken, LoginResponse } from '@/types';
 import API_ENDPOINTS from '@/config/api';
 
@@ -29,6 +29,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const authAttempted = useRef(false);
 
   // Memoize checkAuth to prevent recreation on every render
   const checkAuth = useCallback(async (): Promise<boolean> => {
@@ -56,45 +57,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
 
-      // Validate token with backend
-      console.log('🔐 checkAuth: Validating existing token...');
-      const response = await fetch(API_ENDPOINTS.VALIDATE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      // Restore user from localStorage without any API validation
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          console.log('🔐 checkAuth: Restored user from localStorage:', userData.name);
+          setUser(userData);
+          setIsLoading(false);
+          return true;
+        } catch (parseError) {
+          console.error('🔐 checkAuth: Error parsing stored user:', parseError);
         }
-      });
-
-      console.log('🔐 checkAuth: Token validation response status:', response.status);
-
-      if (response.ok) {
-        const validationData = await response.json();
-        console.log('🔐 checkAuth: Token valid, validation data:', validationData);
-        
-        // Construct user object with name field
-        const userData: User = {
-          ...validationData.user,
-          name: validationData.user.username || validationData.user.email
-        };
-        
-        console.log('🔐 checkAuth: Token valid, user:', userData.name);
-        setUser(userData);
-        setIsLoading(false);
-        return true;
-      } else {
-        // Token invalid, clear storage
-        console.log('🔐 checkAuth: Token invalid, clearing...');
-        localStorage.removeItem('token');
-        localStorage.removeItem('tokenExpiry');
-        setUser(null);
-        setIsLoading(false);
-        return false;
       }
+
+      // If no stored user, just set loading to false and return false
+      console.log('🔐 checkAuth: No stored user found');
+      setUser(null);
+      setIsLoading(false);
+      return false;
     } catch (error) {
       console.error('🔐 checkAuth: Error:', error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('tokenExpiry');
       setUser(null);
       setIsLoading(false);
       return false;
@@ -106,7 +89,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     let mounted = true;
     
     const initAuth = async () => {
-      if (mounted) {
+      if (mounted && !authAttempted.current) {
+        authAttempted.current = true;
         console.log('🔐 AuthContext: Starting authentication check...');
         
         // Add timeout to prevent infinite loading
@@ -131,7 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       mounted = false;
     };
-  }, [checkAuth, isLoading]);
+  }, []); // Empty dependency array to run only once on mount
 
   // Login with email and password
   const login = useCallback(async (email: string, password: string): Promise<void> => {
@@ -162,9 +146,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Calculate expiry time (7 days from now, matching backend JWT expiry)
         const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
         
-        // Store token and user data
+        // Store token, user data, and expiry
         localStorage.setItem('token', loginData.token);
         localStorage.setItem('tokenExpiry', expiresAt.toString());
+        localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
         
         console.log('🔐 Login: User state set, token stored');
@@ -187,6 +172,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clear localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('tokenExpiry');
+    localStorage.removeItem('user');
     // Clear custom template background data on logout
     localStorage.removeItem('customTemplateBackgrounds');
     localStorage.removeItem('templateBackgrounds');

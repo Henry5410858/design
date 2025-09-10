@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 export const dynamic = 'auto';
 import FlyerEditor from '../../components/flyers/FlyerEditor';
 import Image from 'next/image';
-import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../context/AuthContext';
 import Icon from '@/components/ui/Icon';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { withContextPreservation, safeAsync } from '../../utils/contextManager';
@@ -25,7 +25,7 @@ export default function FlyersPage() {
   // Safely get user context - handle case where it might not be available during SSR
   let user: any = null;
   try {
-    const userContext = useUser();
+    const userContext = useAuth();
     user = userContext.user;
   } catch (error) {
     // User context not available during SSR - this is expected
