@@ -16,8 +16,6 @@ const PORT = process.env.PORT || 5000;
 // CORS configuration
 const corsOptions = {
   origin: [
-    'https://turbo-enigma-jw51.vercel.app',
-    'https://turbo-enigma.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001'
   ],
@@ -125,21 +123,4 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 SIGTERM received, shutting down gracefully');
-  mongoose.connection.close(() => {
-    console.log('🔌 MongoDB connection closed');
-    process.exit(0);
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('🛑 SIGINT received, shutting down gracefully');
-  mongoose.connection.close(() => {
-    console.log('🔌 MongoDB connection closed');
-    process.exit(0);
-  });
 });
