@@ -229,6 +229,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
   const [canvasDisplayScale, setCanvasDisplayScale] = useState(1);
   const [activeTab, setActiveTab] = useState('elements');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Gradient editor state
   const [showGradientEditor, setShowGradientEditor] = useState(false);
@@ -271,6 +272,16 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // User context
   const { user } = useAuth();
   const userPlan = (user?.plan as 'Free' | 'Premium' | 'Ultra-Premium') || 'Free';
+
+  // Check if user can perform premium actions
+  const canPerformPremiumAction = (action: string) => {
+    if (userPlan === 'Free') {
+      setShowUpgradeModal(true);
+      console.log(`🚫 Free plan restriction: ${action} requires upgrade`);
+      return false;
+    }
+    return true;
+  };
   
   // Templates will be loaded from database - no hard-coded data
   const [templates, setTemplates] = useState<any[]>([]);
@@ -2182,6 +2193,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   
   // Delete selected object
   const deleteSelectedObject = () => {
+    // Check if user can delete objects (premium feature for free users)
+    if (!canPerformPremiumAction('Delete objects')) {
+      return;
+    }
+    
     if (canvas && selectedObject) {
       canvas.remove(selectedObject);
       setSelectedObject(null);
@@ -4771,6 +4787,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     console.log('🆔 Design ID:', id);
     console.log('📝 Editor Type:', editorTypeState);
     
+    // Check if user can save (premium feature for free users)
+    if (!canPerformPremiumAction('Save template changes')) {
+      return;
+    }
+    
     if (!canvas) {
       console.error('❌ Canvas is not ready');
       alert('El canvas no está listo. Espera un momento e intenta nuevamente.');
@@ -5301,13 +5322,24 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           {/* Left Section - File Operations */}
             <div className="flex items-center space-x-2">
               {/* Keep/Save Button */}
-              <button
-                onClick={async () => await saveDesign()}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-                title="Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo"
-              >
-                              <FloppyDisk size={20} />
-              </button>
+                <button
+                  onClick={async () => await saveDesign()}
+                  className={`p-2 rounded-lg transition-colors relative ${
+                    userPlan === 'Free' 
+                      ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
+                      : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                  title={userPlan === 'Free' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
+                >
+                  <FloppyDisk size={20} />
+                  {userPlan === 'Free' && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
               
 
                           {/* Download Dropdown */}
@@ -5382,10 +5414,21 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               <button
                 onClick={deleteSelectedObject}
                 disabled={!selectedObject}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Eliminar (Delete)"
+                className={`p-2 rounded-lg transition-colors relative ${
+                  userPlan === 'Free' 
+                    ? 'bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200' 
+                    : 'bg-gray-100 hover:bg-gray-200'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                title={userPlan === 'Free' ? 'Eliminar (Premium) - Upgrade para eliminar' : 'Eliminar (Delete)'}
               >
-              <Trash size={4} className="w-4 h-4" />
+                <Trash size={4} className="w-4 h-4" />
+                {userPlan === 'Free' && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
               </button>
           </div>
         </div>
@@ -6420,6 +6463,85 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         onChange={handleImageUpload}
         className="hidden"
       />
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Exclusive Feature - Upgrade Your Plan</h3>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-4">
+                <div className="flex items-center mb-2">
+                  <svg className="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <h4 className="text-lg font-semibold text-gray-900">Premium Feature</h4>
+                </div>
+                <p className="text-sm text-gray-600">
+                  This feature is available in our Premium and Ultra-Premium plans. Upgrade now to unlock all features!
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center text-sm text-gray-600">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Save and edit templates
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Delete objects and templates
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Unlimited downloads
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Priority support
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Maybe Later
+              </button>
+              <button
+                onClick={() => {
+                  setShowUpgradeModal(false);
+                  // Navigate to upgrade page or open upgrade modal
+                  window.open('/upgrade', '_blank');
+                }}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors"
+              >
+                Upgrade Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
