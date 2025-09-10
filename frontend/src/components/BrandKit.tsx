@@ -7,6 +7,7 @@ import API_ENDPOINTS from '@/config/api';
 const BrandKit: React.FC = React.memo(() => {
   // Predefined color palette based on the image
   const predefinedColors = [
+    '#000000', // Black (represents no color/transparent)
     '#00525b', // Dark teal/blue-green
     '#01aac7', // Bright turquoise/aqua blue
     '#32e0c5', // Light turquoise/mint green
@@ -16,8 +17,9 @@ const BrandKit: React.FC = React.memo(() => {
   ];
 
   const [brandKit, setBrandKit] = useState<BrandKitType>({
-    primaryColor: '#00525b',
-    secondaryColor: '#01aac7'
+    primaryColor: '#000000',
+    secondaryColor: '#000000',
+    accentColor: '#000000'
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,11 +50,11 @@ const BrandKit: React.FC = React.memo(() => {
           console.log('🔍 BrandKit: Response data:', data);
           if (data.success && data.brandKit) {
             const brandKitData = data.brandKit;
-            setBrandKit({
-              primaryColor: brandKitData.primaryColor,
-              secondaryColor: brandKitData.secondaryColor,
-              accentColor: brandKitData.accentColor || '#32e0c5'
-            });
+              setBrandKit({
+                primaryColor: brandKitData.primaryColor || '#000000',
+                secondaryColor: brandKitData.secondaryColor || '#000000',
+                accentColor: brandKitData.accentColor || '#000000'
+              });
             
             if (brandKitData.logo && brandKitData.logo.data) {
               setLogoPreview(brandKitData.logo.data);
@@ -83,7 +85,7 @@ const BrandKit: React.FC = React.memo(() => {
         const saveData = {
           primaryColor: brandKit.primaryColor,
           secondaryColor: brandKit.secondaryColor,
-          accentColor: brandKit.accentColor || '#32e0c5'
+          accentColor: brandKit.accentColor || '#000000'
         };
         
         console.log('🔍 BrandKit: Saving brand kit data:', saveData);
@@ -113,10 +115,15 @@ const BrandKit: React.FC = React.memo(() => {
   }, [brandKit]);
 
   const hasLogo = useMemo(() => !!logoPreview, [logoPreview]);
-  const accentColorValue = useMemo(() => brandKit.accentColor || '#32e0c5', [brandKit.accentColor]);
-  const gradientStyle = useMemo(() => ({
-    background: `linear-gradient(135deg, ${brandKit.primaryColor}, ${brandKit.secondaryColor})`
-  }), [brandKit.primaryColor, brandKit.secondaryColor]);
+  const accentColorValue = useMemo(() => brandKit.accentColor || '#000000', [brandKit.accentColor]);
+  const gradientStyle = useMemo(() => {
+    if (brandKit.primaryColor === '#000000' || brandKit.secondaryColor === '#000000') {
+      return { background: 'transparent' }; // Transparent background when no colors
+    }
+    return {
+      background: `linear-gradient(135deg, ${brandKit.primaryColor}, ${brandKit.secondaryColor})`
+    };
+  }, [brandKit.primaryColor, brandKit.secondaryColor]);
 
   const handleLogoUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -323,8 +330,13 @@ const BrandKit: React.FC = React.memo(() => {
                             ? 'border-gray-800 shadow-lg'
                             : 'border-gray-200 hover:border-gray-400'
                         }`}
-                        style={{ backgroundColor: color }}
-                        title={color}
+                        style={{ 
+                          backgroundColor: color,
+                          backgroundImage: color === '#000000' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)' : 'none',
+                          backgroundSize: color === '#000000' ? '8px 8px' : 'auto',
+                          backgroundPosition: color === '#000000' ? '0 0, 0 4px, 4px -4px, -4px 0px' : 'auto'
+                        }}
+                        title={color === '#000000' ? 'Transparent (No Color)' : color}
                       />
                     ))}
                   </div>
@@ -346,8 +358,13 @@ const BrandKit: React.FC = React.memo(() => {
                             ? 'border-gray-800 shadow-lg'
                             : 'border-gray-200 hover:border-gray-400'
                         }`}
-                        style={{ backgroundColor: color }}
-                        title={color}
+                        style={{ 
+                          backgroundColor: color,
+                          backgroundImage: color === '#000000' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)' : 'none',
+                          backgroundSize: color === '#000000' ? '8px 8px' : 'auto',
+                          backgroundPosition: color === '#000000' ? '0 0, 0 4px, 4px -4px, -4px 0px' : 'auto'
+                        }}
+                        title={color === '#000000' ? 'Transparent (No Color)' : color}
                       />
                     ))}
                   </div>
@@ -369,8 +386,13 @@ const BrandKit: React.FC = React.memo(() => {
                             ? 'border-gray-800 shadow-lg'
                             : 'border-gray-200 hover:border-gray-400'
                         }`}
-                        style={{ backgroundColor: color }}
-                        title={color}
+                        style={{ 
+                          backgroundColor: color,
+                          backgroundImage: color === '#000000' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)' : 'none',
+                          backgroundSize: color === '#000000' ? '8px 8px' : 'auto',
+                          backgroundPosition: color === '#000000' ? '0 0, 0 4px, 4px -4px, -4px 0px' : 'auto'
+                        }}
+                        title={color === '#000000' ? 'Transparent (No Color)' : color}
                       />
                     ))}
                   </div>
@@ -415,21 +437,36 @@ const BrandKit: React.FC = React.memo(() => {
                     <div className="text-center">
                       <div 
                         className="w-16 h-16 rounded-xl shadow-md mx-auto mb-2"
-                        style={{ backgroundColor: brandKit.primaryColor }}
+                    style={{ 
+                      backgroundColor: brandKit.primaryColor,
+                      backgroundImage: brandKit.primaryColor === '#000000' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)' : 'none',
+                      backgroundSize: brandKit.primaryColor === '#000000' ? '8px 8px' : 'auto',
+                      backgroundPosition: brandKit.primaryColor === '#000000' ? '0 0, 0 4px, 4px -4px, -4px 0px' : 'auto'
+                    }}
                       ></div>
                       <p className="text-xs text-gray-600">Primario</p>
                     </div>
                     <div className="text-center">
                       <div 
                         className="w-16 h-16 rounded-xl shadow-md mx-auto mb-2"
-                        style={{ backgroundColor: brandKit.secondaryColor }}
+                    style={{ 
+                      backgroundColor: brandKit.secondaryColor,
+                      backgroundImage: brandKit.secondaryColor === '#000000' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)' : 'none',
+                      backgroundSize: brandKit.secondaryColor === '#000000' ? '8px 8px' : 'auto',
+                      backgroundPosition: brandKit.secondaryColor === '#000000' ? '0 0, 0 4px, 4px -4px, -4px 0px' : 'auto'
+                    }}
                       ></div>
                       <p className="text-xs text-gray-600">Secundario</p>
                     </div>
                     <div className="text-center">
                       <div 
                         className="w-16 h-16 rounded-xl shadow-md mx-auto mb-2"
-                        style={{ backgroundColor: accentColorValue }}
+                    style={{ 
+                      backgroundColor: accentColorValue,
+                      backgroundImage: accentColorValue === '#000000' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)' : 'none',
+                      backgroundSize: accentColorValue === '#000000' ? '8px 8px' : 'auto',
+                      backgroundPosition: accentColorValue === '#000000' ? '0 0, 0 4px, 4px -4px, -4px 0px' : 'auto'
+                    }}
                       ></div>
                       <p className="text-xs text-gray-600">Acento</p>
                     </div>

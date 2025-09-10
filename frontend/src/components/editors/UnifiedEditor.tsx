@@ -2319,6 +2319,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 
                 // Load user-saved design directly (not through loadTemplateFromData)
                 await loadUserSavedDesign(designData, template);
+                
+                // Add brand kit logo after user-saved design is loaded
+                setTimeout(async () => {
+                  await addBrandKitLogoIfNeeded();
+                }, 300);
                 return;
               } else {
                 console.warn('⚠️ Failed to load design file from designFilename:', template.designFilename);
@@ -2345,6 +2350,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             
             // Load user-saved design directly (not through loadTemplateFromData)
             await loadUserSavedDesign(designData, template);
+            
+            // Add brand kit logo after user-saved design is loaded
+            setTimeout(async () => {
+              await addBrandKitLogoIfNeeded();
+            }, 300);
             return;
           }
         } else {
@@ -2354,6 +2364,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         // Fallback to loading from template data (fresh template)
         console.log('📋 Loading fresh template from template data...');
         await loadTemplateFromData(templateId, template);
+        
+        // Add brand kit logo after template is loaded
+        setTimeout(async () => {
+          await addBrandKitLogoIfNeeded();
+        }, 500);
         return;
       } else {
         console.error('❌ Failed to fetch template by ID:', response.status);
@@ -2361,6 +2376,17 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     } catch (error) {
       console.error('❌ Error loading template by ID:', error);
     }
+  };
+
+  // Utility function to normalize color formats for Fabric.js
+  const normalizeColor = (color: string): string => {
+    if (!color || color === '#000000') {
+      return 'rgba(0,0,0,0)'; // Convert black to transparent for canvas
+    }
+    
+    // If it's already a valid color format, return as is
+    // Fabric.js supports hex, rgb, rgba, hsl, hsla, and named colors
+    return color;
   };
 
   // Add brand kit logo to existing templates if needed
@@ -2377,7 +2403,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       }
       console.log('✅ Canvas is available');
 
-      // Get brand kit logo from database
+      // Get brand kit data (logo and colors) from database
       try {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -2385,7 +2411,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           return;
         }
 
-        const response = await fetch(API_ENDPOINTS.BRAND_KIT_LOGO, {
+        // Fetch brand kit data (logo and colors)
+        const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -2393,19 +2420,25 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         });
 
         if (!response.ok) {
-          console.log('ℹ️ Failed to fetch brand kit logo:', response.statusText);
+          console.log('ℹ️ Failed to fetch brand kit data:', response.statusText);
           return;
         }
 
         const data = await response.json();
         console.log('🔍 Brand kit API response:', data);
-        if (!data.success || !data.logo || !data.logo.data) {
-          console.log('ℹ️ No logo found in brand kit - skipping logo addition');
+        if (!data.success || !data.brandKit) {
+          console.log('ℹ️ No brand kit found - skipping logo addition');
           console.log('🔍 Response data:', data);
           return;
         }
 
-        const brandKitLogo = data.logo.data;
+        const brandKit = data.brandKit;
+        const brandKitLogo = brandKit.logo?.data;
+        
+        if (!brandKitLogo) {
+          console.log('ℹ️ No logo found in brand kit - skipping logo addition');
+          return;
+        }
         console.log('🔍 Brand kit logo from database:', brandKitLogo.substring(0, 50) + '...');
         
         // Check if the logo data looks corrupted (too short or doesn't start with data:image)
@@ -2427,7 +2460,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       });
       
       const logoExists = existingObjects.some(obj => 
-        obj.type === 'image' && (obj as any).src === brandKitLogo
+        obj.type === 'image' && 
+        (obj as any).src === brandKitLogo &&
+        !obj.selectable // Brand kit logos are non-selectable
       );
 
       if (logoExists) {
@@ -2445,35 +2480,68 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log('🔍 Logo image src:', imgElement.src);
         console.log('🔍 Logo image natural dimensions:', imgElement.naturalWidth, 'x', imgElement.naturalHeight);
         
-        // Get canvas dimensions to position logo in center
+        // Get canvas dimensions to position logo in top-left corner
         const canvasWidth = canvas.width || 1200;
         const canvasHeight = canvas.height || 1800;
-        const logoWidth = 200; // Much larger so you can see it
-        const logoHeight = 200; // Much larger so you can see it
+        const maxLogoSize = 120; // Maximum size for top-left corner
+        const padding = 20; // Padding around logo
         
+        // Use Fabric.js built-in scaling like regular images
+        // Don't set fixed dimensions - let Fabric.js scale naturally
+        console.log('🔍 Logo using Fabric.js natural scaling:', {
+          originalSize: { width: imgElement.naturalWidth, height: imgElement.naturalHeight }
+        });
+        
+        // First, create gradient rectangle background
+        const gradientRect = new fabric.Rect({
+          left: 20,
+          top: 20,
+          width: maxLogoSize + padding, // Add padding around logo
+          height: maxLogoSize + padding, // Add padding around logo
+          fill: new fabric.Gradient({
+            type: 'linear',
+            coords: { x1: 0, y1: 0, x2: maxLogoSize + padding, y2: maxLogoSize + padding },
+            colorStops: [
+              { offset: 0, color: normalizeColor(brandKit.primaryColor) }, // Primary color (black becomes transparent)
+              { offset: 0.5, color: normalizeColor(brandKit.secondaryColor) }, // Secondary color (black becomes transparent)
+              { offset: 1, color: normalizeColor(brandKit.accentColor) } // Accent color (black becomes transparent)
+            ]
+          }),
+          selectable: false,
+          evented: false,
+          lockMovementX: true,
+          lockMovementY: true,
+          lockRotation: true,
+          lockScalingX: true,
+          lockScalingY: true,
+          opacity: 0.9,
+          rx: 8, // Rounded corners
+          ry: 8
+        });
+        
+        // Create the logo image
         const fabricImage = new fabric.Image(imgElement, {
-          left: 50, // More centered
-          top: 50, // More centered
-          width: logoWidth,
-          height: logoHeight,
-          selectable: true,
-          evented: true,
-          lockMovementX: false,
-          lockMovementY: false,
-          lockRotation: false,
-          lockScalingX: false,
-          lockScalingY: false,
-          cornerStyle: 'circle',
-          cornerColor: '#00525b', // Brand color
-          cornerSize: 8,
-          transparentCorners: false,
-          borderColor: '#00525b', // Brand color border
-          borderScaleFactor: 1,
+          left: 20 + (padding / 2), // Centered within gradient rectangle
+          top: 20 + (padding / 2), // Centered within gradient rectangle
+          // Use scale to limit size while maintaining aspect ratio
+          scaleX: Math.min(maxLogoSize / imgElement.naturalWidth, maxLogoSize / imgElement.naturalHeight),
+          scaleY: Math.min(maxLogoSize / imgElement.naturalWidth, maxLogoSize / imgElement.naturalHeight),
+          selectable: false, // Make non-editable
+          evented: false, // Make non-interactive
+          lockMovementX: true,
+          lockMovementY: true,
+          lockRotation: true,
+          lockScalingX: true,
+          lockScalingY: true,
           opacity: 1,
           shadow: null
         });
         
+        // Add gradient rectangle first (background)
+        canvas.add(gradientRect);
+        // Add logo on top of gradient rectangle
         canvas.add(fabricImage);
+        // Ensure logo is on top
         canvas.bringObjectToFront(fabricImage);
         
         // Force canvas to render multiple times to ensure visibility
@@ -2569,6 +2637,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 console.log('🎨 Extracted design data:', designData);
                 
                 await loadTemplateFromData(templateKey, designData);
+                
+                // Add brand kit logo after template is loaded
+                setTimeout(async () => {
+                  await addBrandKitLogoIfNeeded();
+                }, 500);
                 return;
               } else {
                 console.warn('⚠️ Failed to load design file from designFilename:', template.designFilename);
@@ -2604,6 +2677,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               console.log('🎨 Extracted design data:', designData);
               
               await loadTemplateFromData(templateKey, designData);
+              
+              // Add brand kit logo after template is loaded
+              setTimeout(async () => {
+                await addBrandKitLogoIfNeeded();
+              }, 500);
               return;
             } else {
               console.warn('⚠️ Failed to load design file from path:', template.designfilepath);
@@ -2629,6 +2707,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               const designData = await designResponse.json();
               console.log('🎨 Design data loaded from _id-based file:', designData);
               await loadTemplateFromData(templateKey, designData);
+              
+              // Add brand kit logo after template is loaded
+              setTimeout(async () => {
+                await addBrandKitLogoIfNeeded();
+              }, 500);
               return;
             }
           }
@@ -2645,6 +2728,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               const designData = await designResponse.json();
               console.log('🎨 Design data loaded from template file:', designData);
               await loadTemplateFromData(templateKey, designData);
+              
+              // Add brand kit logo after template is loaded
+              setTimeout(async () => {
+                await addBrandKitLogoIfNeeded();
+              }, 500);
               return;
             }
           }
