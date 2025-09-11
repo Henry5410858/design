@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
+import { useAuth } from '@/context/AuthContext';
 
 import API_ENDPOINTS from '@/config/api';
 // CSS for smooth animations
@@ -236,6 +237,7 @@ function generateNativeThumbnail(canvas: HTMLElement, width: number, height: num
 }
 
 export default function TemplateEditor({ id }: { id: string }) {
+  const { user } = useAuth();
   const [template, setTemplate] = useState<Template | null>(null);
   const [objects, setObjects] = useState<CanvasObject[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);

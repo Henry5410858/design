@@ -76,8 +76,7 @@ const TemplateSchema = new mongoose.Schema({
     default: '/uploads/default-thumbnail.png'
   },
   fileUrl: { type: String },
-  designFilename: { type: String }, // Filename of the design data file in uploads/designs
-  objects: [CanvasObjectSchema], // Keep for backward compatibility, but prefer designFilename
+  objects: [CanvasObjectSchema], // Canvas objects for the template
   backgroundColor: { type: String, default: '#ffffff' },
   backgroundImage: { type: String },
   canvasSize: { type: String, default: '1200x1800' },

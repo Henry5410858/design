@@ -5,22 +5,24 @@ const path = require('path');
 require('dotenv').config();
 
 // Import routes
-const authRoutes = require('./routes/auth');
-const templateRoutes = require('./routes/templates');
-const brandKitRoutes = require('./routes/brandKit');
-const canvaRoutes = require('./routes/canva');
+const authRoutes = require('../routes/auth');
+const templateRoutes = require('../routes/templates');
+const brandKitRoutes = require('../routes/brandKit');
+const canvaRoutes = require('../routes/canva');
 
 const app = express();
-const PORT = process.env.PORT || 4000;
 
 // CORS configuration
 const corsOptions = {
   origin: [
+    'https://turbo-enigma-frontend.vercel.app',
+    'https://turbo-enigma-frontend-bydm.vercel.app',
+    'https://turbo-enigma-jw51.vercel.app',
+    'https://turbo-enigma.vercel.app',
+    'https://turbo-enigma-frontend-sq3h.vercel.app',
     'http://localhost:3000',
-    'http://localhost:3001',
-    '*'
+    'http://localhost:3001'
   ],
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -30,28 +32,18 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 // Database connection
 const connectDB = async () => {
   try {
+    if (mongoose.connection.readyState === 1) {
+      console.log('✅ MongoDB already connected');
+      return;
+    }
+
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/design_center';
-    console.log('🔌 Connecting to MongoDB:', mongoURI.replace(/\/\/.*@/, '//***:***@')); // Hide credentials in logs
+    console.log('🔌 Connecting to MongoDB:', mongoURI.replace(/\/\/.*@/, '//***:***@'));
     
-    await mongoose.connect(mongoURI, {
-      // Core connection options
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-
-      // Timeouts (tweak based on your app/network)
-      connectTimeoutMS: 100000,  // 100s max to initially connect
-      socketTimeoutMS: 450000,   // 450s max inactivity before close
-
-      // Retry logic
-      serverSelectionTimeoutMS: 500000, // Stop trying after 500s if no server
-      heartbeatFrequencyMS: 1000000,    // Keep connection alive with pings
-    });
+    await mongoose.connect(mongoURI);
     
     console.log('✅ MongoDB connected successfully');
     console.log('🔍 Connected to database:', mongoose.connection.db?.databaseName);
@@ -65,20 +57,9 @@ const connectDB = async () => {
     }
   }
 };
-
+console.log("index");
 // Connect to database
 connectDB();
-
-// Add error handling for unhandled promise rejections
-process.on('unhandledRejection', (err, promise) => {
-  console.error('❌ Unhandled Promise Rejection:', err);
-});
-
-// Add error handling for uncaught exceptions
-process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
-  process.exit(1);
-});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -109,7 +90,7 @@ app.get('/api/test', (req, res) => {
 app.get('/', (req, res) => {
   res.json({ 
     message: 'RedDragon Backend API', 
-    version: '1.0.0',
+    version: '1.0.1',
     endpoints: {
       health: '/api/health',
       templates: '/api/templates',
@@ -134,9 +115,5 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: http://0.0.0.0:${PORT}/api/health`);
-});
+// Export for Vercel
+module.exports = app;

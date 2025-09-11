@@ -32,9 +32,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const authAttempted = useRef(false);
 
   // Memoize checkAuth to prevent recreation on every render
-  const checkAuth = useCallback(async (): Promise<boolean> => {
+  const checkAuth = useCallback(async (retryCount = 0): Promise<boolean> => {
     try {
-      console.log('🔐 checkAuth: Starting...');
+      console.log('🔐 checkAuth: Starting... (attempt', retryCount + 1, ')');
       const token = localStorage.getItem('token');
       console.log('🔐 checkAuth: Token from localStorage:', token ? 'exists' : 'none');
       
