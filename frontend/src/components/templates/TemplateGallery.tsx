@@ -47,6 +47,73 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [templateThumbnails, setTemplateThumbnails] = useState<Record<string, { thumbnail: string; updatedAt: string }>>({});
+  const [thumbnailLoadingStates, setThumbnailLoadingStates] = useState<Record<string, boolean>>({});
+
+  // Load custom thumbnails from localStorage
+  useEffect(() => {
+    const loadThumbnails = () => {
+      try {
+        const thumbnails = JSON.parse(localStorage.getItem('templateThumbnails') || '{}');
+        setTemplateThumbnails(thumbnails);
+        
+        // Reset loading states for all templates
+        const loadingStates: Record<string, boolean> = {};
+        Object.keys(thumbnails).forEach(templateId => {
+          loadingStates[templateId] = false; // Thumbnails are loaded, not loading
+        });
+        setThumbnailLoadingStates(loadingStates);
+        
+        console.log('📸 Loaded custom thumbnails:', Object.keys(thumbnails).length);
+      } catch (error) {
+        console.warn('⚠️ Error loading custom thumbnails:', error);
+      }
+    };
+
+    // Load initial thumbnails
+    loadThumbnails();
+
+    // Listen for localStorage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'templateThumbnails') {
+        loadThumbnails();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom events (for same-tab updates)
+    const handleCustomStorageChange = () => {
+      loadThumbnails();
+    };
+
+    // Listen for thumbnail generation start
+    const handleThumbnailGenerationStart = (event: CustomEvent) => {
+      const templateId = event.detail?.templateId;
+      if (templateId) {
+        setThumbnailLoadingStates(prev => ({
+          ...prev,
+          [templateId]: true
+        }));
+      }
+    };
+
+    // Listen for thumbnail reset
+    const handleThumbnailsReset = () => {
+      setThumbnailLoadingStates({});
+    };
+
+    window.addEventListener('templateThumbnailUpdated', handleCustomStorageChange);
+    window.addEventListener('templateThumbnailGenerating', handleThumbnailGenerationStart as EventListener);
+    window.addEventListener('templateThumbnailsReset', handleThumbnailsReset);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('templateThumbnailUpdated', handleCustomStorageChange);
+      window.removeEventListener('templateThumbnailGenerating', handleThumbnailGenerationStart as EventListener);
+      window.removeEventListener('templateThumbnailsReset', handleThumbnailsReset);
+    };
+  }, []);
 
   // Fetch templates from API
   useEffect(() => {
@@ -347,7 +414,19 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
 
       {/* Thumbnail */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-        {templatesWithCustomBackground.has(template.id) && customBackgroundImage ? (
+        {templateThumbnails[template.id] && !thumbnailLoadingStates[template.id] ? (
+          // Show custom thumbnail from editor (only when not loading)
+          <img 
+            src={templateThumbnails[template.id].thumbnail} 
+            alt={`Current design for ${template.name}`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // If custom thumbnail fails to load, fall back to default
+              console.warn('Custom thumbnail failed to load, falling back to default');
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : templatesWithCustomBackground.has(template.id) && customBackgroundImage ? (
           // Show custom background image
           <div className="relative w-full h-full">
             <img 

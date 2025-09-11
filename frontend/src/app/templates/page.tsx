@@ -204,6 +204,7 @@ export default function TemplateGalleryPage() {
     // Clear localStorage data
     localStorage.removeItem('customTemplateBackgrounds');
     localStorage.removeItem('templateBackgrounds');
+    localStorage.removeItem('templateThumbnails'); // Also clear custom thumbnails
     
     // Reset all custom backgrounds
     setTemplatesWithCustomBackground(new Set());
@@ -214,6 +215,10 @@ export default function TemplateGalleryPage() {
     setHasAppliedBackgrounds(false);
     setIsSelectionMode(false);
     setSelectedTemplates(new Set());
+    
+    // Dispatch event to notify components of the reset
+    window.dispatchEvent(new CustomEvent('templateThumbnailUpdated'));
+    window.dispatchEvent(new CustomEvent('templateThumbnailsReset'));
     
     showSuccess('All template backgrounds have been reset to their original state!');
   };
@@ -222,6 +227,7 @@ export default function TemplateGalleryPage() {
     // Clear localStorage data
     localStorage.removeItem('customTemplateBackgrounds');
     localStorage.removeItem('templateBackgrounds');
+    localStorage.removeItem('templateThumbnails'); // Also clear custom thumbnails
     
     // Reset all custom backgrounds
     setTemplatesWithCustomBackground(new Set());
@@ -232,6 +238,11 @@ export default function TemplateGalleryPage() {
     setHasAppliedBackgrounds(false);
     setIsSelectionMode(false);
     setSelectedTemplates(new Set());
+    
+    // Dispatch event to notify components of the reset
+    window.dispatchEvent(new CustomEvent('templateThumbnailUpdated'));
+    window.dispatchEvent(new CustomEvent('templateThumbnailsReset'));
+    
     showInfo('Background changes cancelled. All templates restored to original backgrounds.');
   };
 

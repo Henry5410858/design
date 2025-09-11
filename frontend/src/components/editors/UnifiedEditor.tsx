@@ -230,6 +230,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const [canvasDisplayScale, setCanvasDisplayScale] = useState(1);
   const [activeTab, setActiveTab] = useState('elements');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [tempBackgroundColor, setTempBackgroundColor] = useState<string | null>(null);
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImageData, setPreviewImageData] = useState<string | null>(null);
 
   // Gradient editor state
   const [showGradientEditor, setShowGradientEditor] = useState(false);
@@ -1522,6 +1525,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     });
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
+    
+    // Update thumbnail after saving to history
+    setTimeout(() => {
+      updateTemplateThumbnail();
+    }, 100);
   }, [history, historyIndex]);
   
   // Undo function
@@ -2820,9 +2828,21 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       }
     }
     
-    // Set background with fallbacks
+    // Check for custom background from localStorage first
+    let customBackgroundImage = null;
+    try {
+      const templateBackgrounds = JSON.parse(localStorage.getItem('templateBackgrounds') || '{}');
+      if (templateBackgrounds[id]) {
+        customBackgroundImage = templateBackgrounds[id].imageData;
+        console.log('🖼️ Found custom background for template:', id);
+      }
+    } catch (error) {
+      console.warn('⚠️ Error reading custom backgrounds from localStorage:', error);
+    }
+
+    // Set background with fallbacks - prioritize custom background
     const backgroundColor = templateData.backgroundColor || '#ffffff';
-    const backgroundImage = templateData.backgroundImage || null; // Allow background images from JSON
+    const backgroundImage = customBackgroundImage || templateData.backgroundImage || null;
     
     setBackgroundColor(backgroundColor);
     setBackgroundImage(backgroundImage);
@@ -3306,14 +3326,27 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     // Clear current canvas
     canvas.clear();
     
-    // Set background from saved design
+    // Check for custom background from localStorage first
+    let customBackgroundImage = null;
+    try {
+      const templateBackgrounds = JSON.parse(localStorage.getItem('templateBackgrounds') || '{}');
+      if (templateBackgrounds[id]) {
+        customBackgroundImage = templateBackgrounds[id].imageData;
+        console.log('🖼️ Found custom background for template:', id);
+      }
+    } catch (error) {
+      console.warn('⚠️ Error reading custom backgrounds from localStorage:', error);
+    }
+
+    // Set background from saved design - prioritize custom background
     const backgroundColor = designData.designData?.backgroundColor || templateData.backgroundColor || '#ffffff';
     setBackgroundColor(backgroundColor);
     
-    // Load user-saved background image
-    if (designData.designData && designData.designData.backgroundImage) {
-      console.log('🖼️ Loading user-saved background image...');
-      setBackgroundImage(designData.designData.backgroundImage);
+    // Load background image - prioritize custom background over saved design
+    const backgroundImageToLoad = customBackgroundImage || (designData.designData && designData.designData.backgroundImage);
+    if (backgroundImageToLoad) {
+      console.log('🖼️ Loading background image...', customBackgroundImage ? 'custom' : 'saved');
+      setBackgroundImage(backgroundImageToLoad);
       
       // Create and add background image to canvas
       const imgElement = new Image();
@@ -3399,12 +3432,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       imgElement.onerror = (error) => {
         console.error('❌ Error loading background image:', error);
-        console.error('❌ Background image URL:', designData.designData.backgroundImage);
+        console.error('❌ Background image URL:', backgroundImageToLoad);
         setBackgroundImage(null);
       };
       
       // Start loading the image
-      imgElement.src = designData.designData.backgroundImage;
+      imgElement.src = backgroundImageToLoad;
       
     } else {
       console.log('ℹ️ No user-saved background image found');
@@ -3500,7 +3533,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             });
           } else if (obj.type === 'image') {
             // Skip image objects that are the same as the background image to avoid duplication
-            if (obj.src && obj.src !== designData.designData?.backgroundImage) {
+            if (obj.src && obj.src !== backgroundImageToLoad) {
               const imgElement = new Image();
               imgElement.crossOrigin = 'anonymous';
               imgElement.onload = () => {
@@ -3518,7 +3551,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 canvas.renderAll();
               };
               imgElement.src = obj.src;
-            } else if (obj.src === designData.designData?.backgroundImage) {
+            } else if (obj.src === backgroundImageToLoad) {
               console.log('🚫 Skipping duplicate image object (same as background):', obj.src);
             }
           } else if (obj.type === 'rect' || obj.type === 'rectangle') {
@@ -4309,6 +4342,86 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const handleBackgroundColorChange = (color: string) => {
     setBackgroundColor(color);
     saveToHistory(objects, color, backgroundImage);
+  };
+
+  // Handle temporary background color change (for preview only)
+  const handleTempBackgroundColorChange = (color: string) => {
+    setTempBackgroundColor(color);
+    if (canvas) {
+      canvas.backgroundColor = color;
+      canvas.renderAll();
+    }
+  };
+
+  // Update template thumbnail with current canvas state
+  const updateTemplateThumbnail = useCallback(async () => {
+    if (!canvas || !id) return;
+    
+    try {
+      // Dispatch event to indicate thumbnail generation is starting
+      window.dispatchEvent(new CustomEvent('templateThumbnailGenerating', {
+        detail: { templateId: id }
+      }));
+      
+      // Generate thumbnail from current canvas state
+      const thumbnailDataURL = canvas.toDataURL({
+        format: 'png',
+        multiplier: 0.3, // Smaller size for thumbnail
+        quality: 0.8
+      });
+      
+      // Store thumbnail in localStorage for the gallery to access
+      const templateThumbnails = JSON.parse(localStorage.getItem('templateThumbnails') || '{}');
+      templateThumbnails[id] = {
+        thumbnail: thumbnailDataURL,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem('templateThumbnails', JSON.stringify(templateThumbnails));
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('templateThumbnailUpdated'));
+      
+      console.log('📸 Template thumbnail updated for:', id);
+    } catch (error) {
+      console.error('❌ Error updating template thumbnail:', error);
+    }
+  }, [canvas, id]);
+
+  // Reset temporary background to original
+  const resetTempBackground = () => {
+    setTempBackgroundColor(null);
+    if (canvas) {
+      canvas.backgroundColor = backgroundColor;
+      canvas.renderAll();
+    }
+  };
+
+  // Generate and show image preview
+  const generateImagePreview = () => {
+    if (canvas) {
+      // Temporarily set background if temp color is selected
+      const originalBackground = canvas.backgroundColor;
+      if (tempBackgroundColor) {
+        canvas.backgroundColor = tempBackgroundColor;
+      } else {
+        canvas.backgroundColor = backgroundColor;
+      }
+      canvas.renderAll();
+      
+      // Generate data URL
+      const dataURL = canvas.toDataURL({
+        format: 'png',
+        multiplier: 1,
+        quality: 1
+      });
+      
+      // Restore original background
+      canvas.backgroundColor = originalBackground;
+      canvas.renderAll();
+      
+      setPreviewImageData(dataURL);
+      setShowImagePreview(true);
+    }
   }; 
 
   // Handle background image change
@@ -5781,6 +5894,49 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   >
                     Limpiar
                   </button>
+
+                 {/* Temporary Background Color Preview */}
+                 <div className="space-y-2">
+                   <h5 className="text-xs font-medium text-gray-600">Vista Previa Temporal</h5>
+                   
+                   {/* Temp Background Color Picker */}
+                   <div className={`flex items-center space-x-2 p-2 rounded-lg transition-colors ${
+                     tempBackgroundColor ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'
+                   }`}>
+                     <input
+                       type="color"
+                       value={tempBackgroundColor || backgroundColor}
+                       onChange={(e) => handleTempBackgroundColorChange(e.target.value)}
+                       className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                       title="Color temporal de fondo"
+                     />
+                     <div className="flex flex-col">
+                       <span className="text-xs text-gray-600">Temporal</span>
+                       {tempBackgroundColor && (
+                         <span className="text-xs text-yellow-600 font-medium">Activo</span>
+                       )}
+                     </div>
+                     {tempBackgroundColor && (
+                       <button
+                         onClick={resetTempBackground}
+                         className="px-2 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
+                         title="Restaurar color original"
+                       >
+                         Restaurar
+                       </button>
+                     )}
+                   </div>
+                   
+                   {/* Image Preview Button */}
+                   <button
+                     onClick={generateImagePreview}
+                     className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                     title="Generar vista previa de imagen"
+                   >
+                     <ImageIcon size={16} className="text-blue-600" />
+                     <span className="text-sm font-medium text-blue-800">Vista Previa</span>
+                   </button>
+                 </div>
                 </div>
             
                {/* Real Estate Elements */}
@@ -6539,6 +6695,74 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 Upgrade Now
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {showImagePreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Vista Previa del Diseño</h3>
+                {tempBackgroundColor && (
+                  <p className="text-sm text-yellow-600 mt-1">
+                    🟡 Mostrando con fondo temporal: {tempBackgroundColor}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowImagePreview(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {previewImageData && (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <img
+                    src={previewImageData}
+                    alt="Vista previa del diseño"
+                    className="max-w-full max-h-[60vh] object-contain border border-gray-200 rounded-lg shadow-lg"
+                  />
+                </div>
+                
+                <div className="flex justify-center space-x-3">
+                  <button
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.download = `design-preview-${Date.now()}.png`;
+                      link.href = previewImageData;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  >
+                    <Download size={16} />
+                    <span>Descargar PNG</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewImageData);
+                      // You could add a toast notification here
+                    }}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>Copiar Imagen</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
