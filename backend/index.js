@@ -11,7 +11,7 @@ const brandKitRoutes = require('./routes/brandKit');
 const canvaRoutes = require('./routes/canva');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 
 // CORS configuration
 const corsOptions = {
@@ -38,7 +38,19 @@ const connectDB = async () => {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/design_center';
     console.log('🔌 Connecting to MongoDB:', mongoURI.replace(/\/\/.*@/, '//***:***@')); // Hide credentials in logs
     
-    await mongoose.connect(mongoURI);
+    await mongoose.connect(mongoURI, {
+      // Core connection options
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+
+      // Timeouts (tweak based on your app/network)
+      connectTimeoutMS: 100000,  // 100s max to initially connect
+      socketTimeoutMS: 450000,   // 450s max inactivity before close
+
+      // Retry logic
+      serverSelectionTimeoutMS: 500000, // Stop trying after 500s if no server
+      heartbeatFrequencyMS: 1000000,    // Keep connection alive with pings
+    });
     
     console.log('✅ MongoDB connected successfully');
   } catch (error) {

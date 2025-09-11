@@ -175,7 +175,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user');
     // Clear custom template background data on logout
     localStorage.removeItem('customTemplateBackgrounds');
-    localStorage.removeItem('templateBackgrounds');
+    // Note: templateBackgrounds are now stored in backend, no localStorage cleanup needed
     
     // Clear any potential cookies (in case they exist)
     document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';

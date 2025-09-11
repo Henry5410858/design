@@ -6,6 +6,9 @@ const path = require('path');
 const fs = require('fs');
 const mongoose = require('mongoose');
 const Template = require('../models/Template');
+const TemplateBackground = require('../models/TemplateBackground');
+const User = require("../models/User");
+const { ObjectId } = require('mongoose').Types;
 
 // Helper function to safely delete files
 const deleteFileSafely = (filePath) => {
@@ -1511,6 +1514,176 @@ router.delete('/file/:filename', async (req, res) => {
   } catch (error) {
     console.error('Error deleting file:', error);
     res.status(500).json({ error: 'Failed to delete file' });
+  }
+});
+
+// POST /api/templates/backgrounds - Save template background
+router.post('/backgrounds', async (req, res) => {
+  try {
+    const { templateId, userId, imageData, imageType, fileName } = req.body;
+    
+    if (!templateId || !userId || !imageData || !imageType) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: templateId, userId, imageData, imageType' 
+      });
+    }
+    
+    // Validate templateId format
+    // if (!/^[0-9a-fA-F]{24}$/.test(templateId)) {
+    //   return res.status(400).json({ error: 'Invalid template ID format' });
+    // }
+    
+    // Validate userId format
+    // if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+    //   return res.status(400).json({ error: 'Invalid user ID format' });
+    // }
+    
+    // For sample templates (non-MongoDB ObjectIds), skip template validation
+    let template = null;
+    if (/^[0-9a-fA-F]{24}$/.test(templateId)) {
+      // Check if template exists only for valid MongoDB ObjectIds
+      template = await Template.findById(templateId);
+      if (!template) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+    } else {
+      // For sample templates, just log and continue
+      console.log('📝 Saving background for sample template:', templateId);
+    }
+    
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    // Delete any existing background for this template and user
+    await TemplateBackground.deleteMany({ templateId, userId });
+    
+    // Create new background
+    const templateBackground = new TemplateBackground({
+      templateId,
+      userId,
+      imageData,
+      imageType,
+      fileName: fileName || `background_${templateId}_${Date.now()}`
+    });
+    
+    console.log("before saving")
+    console.log(templateBackground);
+    await templateBackground.save();
+    console.log("after saving")
+
+    
+    console.log('✅ Template background saved successfully for template:', templateId, 'user:', userId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Template background saved successfully',
+      backgroundId: templateBackground._id
+    });
+  } catch (error) {
+    console.error('❌ Error saving template background:', error);
+    res.status(500).json({ error: 'Failed to save template background' });
+  }
+});
+
+// GET /api/templates/backgrounds/:templateId/:userId - Get template background
+router.get('/backgrounds/:templateId/:userId', async (req, res) => {
+  try {
+    const { templateId, userId } = req.params;
+    
+    if (!templateId || !userId) {
+      return res.status(400).json({ error: 'Template ID and User ID are required' });
+    }
+    
+    // Validate userId format only
+    if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID format' });
+    }
+    
+    const background = await TemplateBackground.findOne({ 
+      templateId, 
+      userId 
+    }).sort({ createdAt: -1 }); // Get the most recent one
+    
+    if (!background) {
+      return res.status(404).json({ error: 'Template background not found' });
+    }
+    
+    res.json({
+      success: true,
+      background: {
+        id: background._id,
+        imageData: background.imageData,
+        imageType: background.imageType,
+        fileName: background.fileName,
+        createdAt: background.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error fetching template background:', error);
+    res.status(500).json({ error: 'Failed to fetch template background' });
+  }
+});
+
+// DELETE /api/templates/backgrounds/:templateId/:userId - Delete template background
+router.delete('/backgrounds/:templateId/:userId', async (req, res) => {
+  try {
+    const { templateId, userId } = req.params;
+    
+    if (!templateId || !userId) {
+      return res.status(400).json({ error: 'Template ID and User ID are required' });
+    }
+    
+    // Validate userId format only
+    if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID format' });
+    }
+    
+    const result = await TemplateBackground.deleteMany({ templateId, userId });
+    
+    console.log('✅ Template background deleted successfully for template:', templateId, 'user:', userId, 'count:', result.deletedCount);
+    
+    res.json({ 
+      success: true, 
+      message: 'Template background deleted successfully',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('❌ Error deleting template background:', error);
+    res.status(500).json({ error: 'Failed to delete template background' });
+  }
+});
+
+// DELETE /api/templates/backgrounds/:backgroundId - Delete specific background by ID
+router.delete('/backgrounds/:backgroundId', async (req, res) => {
+  try {
+    const { backgroundId } = req.params;
+    
+    if (!backgroundId) {
+      return res.status(400).json({ error: 'Background ID is required' });
+    }
+    
+    // Validate ID format
+    if (!/^[0-9a-fA-F]{24}$/.test(backgroundId)) {
+      return res.status(400).json({ error: 'Invalid background ID format' });
+    }
+    
+    const result = await TemplateBackground.findByIdAndDelete(backgroundId);
+    
+    if (!result) {
+      return res.status(404).json({ error: 'Template background not found' });
+    }
+    
+    console.log('✅ Template background deleted successfully:', backgroundId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Template background deleted successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error deleting template background:', error);
+    res.status(500).json({ error: 'Failed to delete template background' });
   }
 });
 

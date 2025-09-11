@@ -18,6 +18,7 @@ import * as fabric from 'fabric';
 import API_ENDPOINTS from '@/config/api';
 import { jsPDF } from 'jspdf';
 import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
+import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, canvasToBase64, getImageTypeFromDataUrl } from '@/utils/templateBackgrounds';
 
 interface UnifiedEditorProps {
   id: string;
@@ -233,6 +234,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const [tempBackgroundColor, setTempBackgroundColor] = useState<string | null>(null);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [previewImageData, setPreviewImageData] = useState<string | null>(null);
+  const [currentBackgroundId, setCurrentBackgroundId] = useState<string | null>(null);
 
   // Gradient editor state
   const [showGradientEditor, setShowGradientEditor] = useState(false);
@@ -2828,16 +2830,20 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       }
     }
     
-    // Check for custom background from localStorage first
+    // Check for custom background from backend first
     let customBackgroundImage = null;
-    try {
-      const templateBackgrounds = JSON.parse(localStorage.getItem('templateBackgrounds') || '{}');
-      if (templateBackgrounds[id]) {
-        customBackgroundImage = templateBackgrounds[id].imageData;
-        console.log('🖼️ Found custom background for template:', id);
+    let backgroundId = null;
+    if (user?.id) {
+      try {
+        const result = await getTemplateBackground(id, user.id);
+        if (result.success && result.background) {
+          customBackgroundImage = result.background.imageData;
+          backgroundId = result.background.id;
+          console.log('🖼️ Found custom background for template:', id, 'from backend');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error reading custom backgrounds from backend:', error);
       }
-    } catch (error) {
-      console.warn('⚠️ Error reading custom backgrounds from localStorage:', error);
     }
 
     // Set background with fallbacks - prioritize custom background
@@ -2846,6 +2852,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     
     setBackgroundColor(backgroundColor);
     setBackgroundImage(backgroundImage);
+    setCurrentBackgroundId(backgroundId);
     
     // Set canvas background color
     canvas.backgroundColor = backgroundColor;
@@ -3326,21 +3333,26 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     // Clear current canvas
     canvas.clear();
     
-    // Check for custom background from localStorage first
+    // Check for custom background from backend first
     let customBackgroundImage = null;
-    try {
-      const templateBackgrounds = JSON.parse(localStorage.getItem('templateBackgrounds') || '{}');
-      if (templateBackgrounds[id]) {
-        customBackgroundImage = templateBackgrounds[id].imageData;
-        console.log('🖼️ Found custom background for template:', id);
+    let backgroundId = null;
+    if (user?.id) {
+      try {
+        const result = await getTemplateBackground(id, user.id);
+        if (result.success && result.background) {
+          customBackgroundImage = result.background.imageData;
+          backgroundId = result.background.id;
+          console.log('🖼️ Found custom background for template:', id, 'from backend');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error reading custom backgrounds from backend:', error);
       }
-    } catch (error) {
-      console.warn('⚠️ Error reading custom backgrounds from localStorage:', error);
     }
 
     // Set background from saved design - prioritize custom background
     const backgroundColor = designData.designData?.backgroundColor || templateData.backgroundColor || '#ffffff';
     setBackgroundColor(backgroundColor);
+    setCurrentBackgroundId(backgroundId);
     
     // Load background image - prioritize custom background over saved design
     const backgroundImageToLoad = customBackgroundImage || (designData.designData && designData.designData.backgroundImage);
@@ -4425,7 +4437,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   }; 
 
   // Handle background image change
-  const handleBackgroundImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBackgroundImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('Background image change triggered!');
     console.log('Event:', e);
     console.log('Files:', e.target.files);
@@ -4463,7 +4475,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     console.log('Current canvas objects:', canvas.getObjects().length);
     
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const imageUrl = event.target?.result as string;
       console.log('Background image loaded successfully');
       
@@ -4560,6 +4572,29 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       // Update state
       setBackgroundImage(imageUrl);
+      
+      // Save background to backend
+      if (user?.id) {
+        try {
+          const imageType = getImageTypeFromDataUrl(imageUrl);
+          const result = await saveTemplateBackground({
+            templateId: id,
+            userId: user.id,
+            imageData: imageUrl,
+            imageType: imageType,
+            fileName: file.name
+          });
+          
+          if (result.success && result.backgroundId) {
+            setCurrentBackgroundId(result.backgroundId);
+            console.log('✅ Background saved to backend with ID:', result.backgroundId);
+          } else {
+            console.warn('⚠️ Failed to save background to backend:', result.message);
+          }
+        } catch (error) {
+          console.error('❌ Error saving background to backend:', error);
+        }
+      }
       
       // Save to history
       if (typeof saveCanvasToHistory === 'function') {
@@ -4852,6 +4887,32 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         return null;
     }
   };
+
+  // Cleanup function to delete background when component unmounts (cancel scenario)
+  const cleanupBackground = useCallback(async () => {
+    if (user?.id && currentBackgroundId) {
+      try {
+        const result = await deleteTemplateBackground(id, user.id);
+        if (result.success) {
+          console.log('✅ Background cleaned up on component unmount');
+        } else {
+          console.warn('⚠️ Failed to cleanup background on unmount:', result.message);
+        }
+      } catch (error) {
+        console.error('❌ Error cleaning up background on unmount:', error);
+      }
+    }
+  }, [user?.id, currentBackgroundId, id]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      // Only cleanup if we have a background that was saved but not applied
+      if (currentBackgroundId) {
+        cleanupBackground();
+      }
+    };
+  }, [cleanupBackground]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -5329,6 +5390,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         if (templateKey) {
             console.log('💾 Design data saved as file:', designFilename);
             console.log('💾 Template updated in database successfully');
+            
+            // Clear background ID since it's now part of the saved design
+            setCurrentBackgroundId(null);
             
             // Show success message to user
               const optimizationMessage = isOptimized ? '\n🗜️ Datos optimizados para reducir tamaño' : '';
@@ -5887,7 +5951,37 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                  {/* Clear Background Image */}
                   <button
-                    onClick={() => setBackgroundImage(null)}
+                    onClick={async () => {
+                      // Delete background from backend
+                      if (user?.id && currentBackgroundId) {
+                        try {
+                          const result = await deleteTemplateBackground(id, user.id);
+                          if (result.success) {
+                            console.log('✅ Background deleted from backend');
+                          } else {
+                            console.warn('⚠️ Failed to delete background from backend:', result.message);
+                          }
+                        } catch (error) {
+                          console.error('❌ Error deleting background from backend:', error);
+                        }
+                      }
+                      
+                      // Clear local state
+                      setBackgroundImage(null);
+                      setCurrentBackgroundId(null);
+                      
+                      // Remove background from canvas
+                      if (canvas) {
+                        const existingObjects = canvas.getObjects();
+                        const backgroundObjects = existingObjects.filter(obj => 
+                          (obj as any).isBackground === true
+                        );
+                        backgroundObjects.forEach(obj => {
+                          canvas.remove(obj);
+                        });
+                        canvas.renderAll();
+                      }
+                    }}
                     disabled={!backgroundImage}
                    className="px-3 py-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
                     title="Limpiar Imagen de Fondo"

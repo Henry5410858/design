@@ -43,6 +43,12 @@ export const API_ENDPOINTS = {
   LIST_FILES: `${API_BASE_URL}/api/templates/files`,
   CLEANUP_ORPHANED: `${API_BASE_URL}/api/templates/cleanup-orphaned-files`,
   
+  // Template background endpoints
+  SAVE_TEMPLATE_BACKGROUND: `${API_BASE_URL}/api/templates/backgrounds`,
+  GET_TEMPLATE_BACKGROUND: (templateId: string, userId: string) => `${API_BASE_URL}/api/templates/backgrounds/${templateId}/${userId}`,
+  DELETE_TEMPLATE_BACKGROUND: (templateId: string, userId: string) => `${API_BASE_URL}/api/templates/backgrounds/${templateId}/${userId}`,
+  DELETE_TEMPLATE_BACKGROUND_BY_ID: (backgroundId: string) => `${API_BASE_URL}/api/templates/backgrounds/${backgroundId}`,
+  
   // Brand Kit endpoints
   BRAND_KIT: `${API_BASE_URL}/api/brand-kit`,
   BRAND_KIT_LOGO: `${API_BASE_URL}/api/brand-kit/logo`,

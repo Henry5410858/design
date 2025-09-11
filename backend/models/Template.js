@@ -65,6 +65,7 @@ const CanvasObjectSchema = new mongoose.Schema({
 }, { _id: false });
 
 const TemplateSchema = new mongoose.Schema({
+  _id: {type: String, required: true},
   name: { type: String, required: true },
   description: { type: String },
   type: { type: String, enum: ['square-post', 'story', 'marketplace-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'], required: true },
@@ -84,7 +85,7 @@ const TemplateSchema = new mongoose.Schema({
     width: { type: Number, required: true },
     height: { type: Number, required: true }
   },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdBy: { type: String, ref: 'User' },
   // isDefault field removed - no more default templates
   isRealEstate: { type: Boolean, default: false } // Flag for real estate templates
 }, { timestamps: true });

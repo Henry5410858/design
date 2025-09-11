@@ -6,10 +6,13 @@ import CreateTemplateModal from '../../components/modals/CreateTemplateModal';
 import { useNotification } from '../../context/NotificationContext';
 import { Upload, X, Check, Download } from 'phosphor-react';
 import { exportTemplateAsImage, getTemplateData, getDesignData } from '../../utils/canvasExport';
+import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, getImageTypeFromDataUrl } from '../../utils/templateBackgrounds';
+import { useAuth } from '../../context/AuthContext';
 
 import API_ENDPOINTS from '@/config/api';
 export default function TemplateGalleryPage() {
   const { showSuccess, showError, showInfo, showWarning } = useNotification();
+  const { user } = useAuth();
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -26,22 +29,12 @@ export default function TemplateGalleryPage() {
   const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check for existing applied backgrounds on component mount
+  // Note: Background checking is now handled by individual template editors
+  // when they load templates from the backend
   useEffect(() => {
-    try {
-      const templateBackgrounds = JSON.parse(localStorage.getItem('templateBackgrounds') || '{}');
-      const hasBackgrounds = Object.keys(templateBackgrounds).length > 0;
-      setHasAppliedBackgrounds(hasBackgrounds);
-      
-      if (hasBackgrounds) {
-        // Update the templates with custom background set
-        const templateIds = Object.keys(templateBackgrounds);
-        setTemplatesWithCustomBackground(new Set(templateIds));
-        console.log('Found existing applied backgrounds for templates:', templateIds);
-      }
-    } catch (error) {
-      console.warn('Error checking for existing backgrounds:', error);
-    }
+    // This effect is no longer needed since backgrounds are loaded
+    // individually by each template editor from the backend
+    console.log('Template gallery mounted - backgrounds will be loaded individually by editors');
   }, []);
 
   const handleDownloadTemplate = (templateId: string) => {
@@ -153,25 +146,44 @@ export default function TemplateGalleryPage() {
     }
 
     try {
-      // Store the custom background image data for each selected template
-      const customBackgroundData = {
-        imageData: uploadedImage,
-        appliedAt: new Date().toISOString(),
-        templateIds: Array.from(selectedTemplates)
-      };
+      if (!user?.id) {
+        showError('You must be logged in to apply backgrounds');
+        return;
+      }
 
-      // Store in localStorage for the editor to access
-      localStorage.setItem('customTemplateBackgrounds', JSON.stringify(customBackgroundData));
-
-      // Also store individual template mappings
-      const templateBackgrounds = JSON.parse(localStorage.getItem('templateBackgrounds') || '{}');
-      selectedTemplates.forEach(templateId => {
-        templateBackgrounds[templateId] = {
-          imageData: uploadedImage,
-          appliedAt: new Date().toISOString()
-        };
+      // Save background to backend for each selected template
+      const savePromises = Array.from(selectedTemplates).map(async (templateId) => {
+        try {
+          const result = await saveTemplateBackground({
+            templateId: templateId,
+            userId: user.id,
+            imageData: uploadedImage,
+            imageType: getImageTypeFromDataUrl(uploadedImage),
+            fileName: `bulk_background_${Date.now()}.png`
+          });
+          
+          if (result.success) {
+            console.log(`✅ Background saved to backend for template ${templateId}`);
+            return { templateId, success: true, backgroundId: result.backgroundId };
+          } else {
+            console.warn(`⚠️ Failed to save background for template ${templateId}:`, result.message);
+            return { templateId, success: false, error: result.message };
+          }
+        } catch (error) {
+          console.error(`❌ Error saving background for template ${templateId}:`, error);
+          return { templateId, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        }
       });
-      localStorage.setItem('templateBackgrounds', JSON.stringify(templateBackgrounds));
+
+      // Wait for all background saves to complete
+      const results = await Promise.all(savePromises);
+      const successfulSaves = results.filter(r => r.success);
+      const failedSaves = results.filter(r => !r.success);
+
+      if (failedSaves.length > 0) {
+        console.warn('Some backgrounds failed to save:', failedSaves);
+        showWarning(`Background applied to ${successfulSaves.length} template(s), but ${failedSaves.length} failed. Please try again for the failed templates.`);
+      }
 
       // Store original backgrounds for selected templates
       const newOriginalBackgrounds = new Map(originalBackgrounds);
@@ -190,43 +202,80 @@ export default function TemplateGalleryPage() {
         return newSet;
       });
 
-      showSuccess(`Background applied to ${selectedTemplates.size} template(s)! The background will be visible when you open these templates in the editor.`);
-      setHasAppliedBackgrounds(true);
-      setIsSelectionMode(false);
-      setSelectedTemplates(new Set());
+      if (successfulSaves.length > 0) {
+        showSuccess(`Background applied to ${successfulSaves.length} template(s)! The background will be visible when you open these templates in the editor.`);
+        setHasAppliedBackgrounds(true);
+        setIsSelectionMode(false);
+        setSelectedTemplates(new Set());
+      }
     } catch (error) {
       console.error('Error applying background:', error);
       showError('Failed to apply background. Please try again.');
     }
   };
 
-  const handleApplyCancel = () => {
-    // Clear localStorage data
-    localStorage.removeItem('customTemplateBackgrounds');
-    localStorage.removeItem('templateBackgrounds');
-    localStorage.removeItem('templateThumbnails'); // Also clear custom thumbnails
-    
-    // Reset all custom backgrounds
-    setTemplatesWithCustomBackground(new Set());
-    setOriginalBackgrounds(new Map());
-    setUploadedImage(null);
-    setUploadedImageFile(null);
-    setShowImagePreview(false);
-    setHasAppliedBackgrounds(false);
-    setIsSelectionMode(false);
-    setSelectedTemplates(new Set());
-    
-    // Dispatch event to notify components of the reset
-    window.dispatchEvent(new CustomEvent('templateThumbnailUpdated'));
-    window.dispatchEvent(new CustomEvent('templateThumbnailsReset'));
-    
-    showSuccess('All template backgrounds have been reset to their original state!');
+  const handleApplyCancel = async () => {
+    if (!user?.id) {
+      showError('You must be logged in to cancel backgrounds');
+      return;
+    }
+
+    try {
+      // Delete backgrounds from backend for all templates with custom backgrounds
+      const deletePromises = Array.from(templatesWithCustomBackground).map(async (templateId) => {
+        try {
+          const result = await deleteTemplateBackground(templateId, user.id);
+          if (result.success) {
+            console.log(`✅ Background deleted from backend for template ${templateId}`);
+            return { templateId, success: true };
+          } else {
+            console.warn(`⚠️ Failed to delete background for template ${templateId}:`, result.message);
+            return { templateId, success: false, error: result.message };
+          }
+        } catch (error) {
+          console.error(`❌ Error deleting background for template ${templateId}:`, error);
+          return { templateId, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        }
+      });
+
+      // Wait for all deletions to complete
+      const results = await Promise.all(deletePromises);
+      const successfulDeletes = results.filter(r => r.success);
+      const failedDeletes = results.filter(r => !r.success);
+
+      if (failedDeletes.length > 0) {
+        console.warn('Some backgrounds failed to delete:', failedDeletes);
+        showWarning(`Backgrounds deleted for ${successfulDeletes.length} template(s), but ${failedDeletes.length} failed.`);
+      }
+
+      // Clear localStorage data (for thumbnails and other data)
+      localStorage.removeItem('customTemplateBackgrounds');
+      localStorage.removeItem('templateThumbnails'); // Also clear custom thumbnails
+      
+      // Reset all custom backgrounds
+      setTemplatesWithCustomBackground(new Set());
+      setOriginalBackgrounds(new Map());
+      setUploadedImage(null);
+      setUploadedImageFile(null);
+      setShowImagePreview(false);
+      setHasAppliedBackgrounds(false);
+      setIsSelectionMode(false);
+      setSelectedTemplates(new Set());
+      
+      // Dispatch event to notify components of the reset
+      window.dispatchEvent(new CustomEvent('templateThumbnailUpdated'));
+      window.dispatchEvent(new CustomEvent('templateThumbnailsReset'));
+      
+      showSuccess('All template backgrounds have been reset to their original state!');
+    } catch (error) {
+      console.error('Error canceling backgrounds:', error);
+      showError('Failed to cancel backgrounds. Please try again.');
+    }
   };
 
   const handleCancelBackground = () => {
-    // Clear localStorage data
+    // Clear localStorage data (for thumbnails and other data)
     localStorage.removeItem('customTemplateBackgrounds');
-    localStorage.removeItem('templateBackgrounds');
     localStorage.removeItem('templateThumbnails'); // Also clear custom thumbnails
     
     // Reset all custom backgrounds
