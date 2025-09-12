@@ -2714,6 +2714,69 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     handleZoomChange(100);
   };
 
+  // Thumbnail generation function
+  const generateAndSaveThumbnail = async () => {
+    if (!canvas) {
+      console.error('❌ Canvas not available for thumbnail generation');
+      return;
+    }
+
+    try {
+      console.log('📸 Generating thumbnail for template:', id);
+      
+      // Generate thumbnail as PNG data URL
+      const thumbnailDataURL = canvas.toDataURL({
+        format: 'png',
+        quality: 0.8,
+        multiplier: 0.3 // Smaller size for thumbnail
+      });
+
+      // Save thumbnail to backend
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('⚠️ No auth token for thumbnail save');
+        return;
+      }
+
+      const response = await fetch(API_ENDPOINTS.SAVE_THUMBNAIL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          templateId: id,
+          templateKey: templateKey,
+          thumbnailData: thumbnailDataURL
+        })
+      });
+
+      if (response.ok) {
+        console.log('✅ Thumbnail saved successfully');
+        // Dispatch event to notify template gallery
+        window.dispatchEvent(new CustomEvent('thumbnailUpdated', { 
+          detail: { templateId: id, templateKey: templateKey } 
+        }));
+      } else {
+        console.warn('⚠️ Failed to save thumbnail:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error generating/saving thumbnail:', error);
+    }
+  };
+
+  // Auto-save thumbnail every minute during editing
+  useEffect(() => {
+    if (!canvas || !id) return;
+
+    const interval = setInterval(() => {
+      console.log('⏰ Auto-saving thumbnail (every minute)');
+      generateAndSaveThumbnail();
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [canvas, id]);
+
   // Gradient editor functions
   const addGradientStop = () => {
     const newId = `stop_${Date.now()}`;
@@ -5519,6 +5582,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             const optimizationMessage = isOptimized ? '\n🗜️ Datos optimizados para reducir tamaño' : '';
           alert(`✅ Diseño guardado exitosamente!\n📁 Datos guardados en: ${filename}${optimizationMessage}`);
           }
+          
+          // Generate and save thumbnail after successful save
+          await generateAndSaveThumbnail();
         } catch (backendError) {
           console.error('❌ Error saving to backend:', backendError);
           console.error('❌ Backend error details:', backendError);

@@ -13,6 +13,7 @@ export interface Template {
   category: string;
   name: string;
   thumbnail: string;
+  thumbnailFilename?: string; // PNG filename for actual template preview
   link: string;
   dimensions: string;
   description: string;

@@ -34,6 +34,8 @@ export const API_ENDPOINTS = {
   SAVE_DESIGN_LARGE: `${API_BASE_URL}/api/templates/save-design-large`,
   GET_DESIGN: (filename: string) => `${API_BASE_URL}/api/templates/design?filename=${filename}`,
   UPLOAD_THUMBNAIL: (id: string) => `${API_BASE_URL}/api/templates/${id}/thumbnail`,
+  SAVE_THUMBNAIL: `${API_BASE_URL}/api/templates/save-thumbnail`,
+  GET_THUMBNAIL: (filename: string) => `${API_BASE_URL}/api/templates/thumbnail/${filename}`,
   UPLOAD_FILE: `${API_BASE_URL}/api/templates/upload-file`,
   UPLOAD_IMAGE: `${API_BASE_URL}/api/templates/upload-image`,
   UPLOAD_MULTIPLE: `${API_BASE_URL}/api/templates/upload-multiple`,

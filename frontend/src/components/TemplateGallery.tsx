@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Template } from '@/types';
+import API_ENDPOINTS from '@/config/api';
 
 interface TemplateGalleryProps {
   templates: Template[];
@@ -532,7 +533,7 @@ const TemplateCard = React.memo<{
       {/* Template Image */}
       <div className="relative overflow-hidden rounded-t-xl bg-gray-700">
         <img
-          src={template.thumbnail}
+          src={template.thumbnailFilename ? API_ENDPOINTS.GET_THUMBNAIL(template.thumbnailFilename) : template.thumbnail}
           alt={template.name}
           className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
           loading="lazy"
