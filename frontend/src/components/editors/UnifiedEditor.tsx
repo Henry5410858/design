@@ -2765,17 +2765,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   };
 
-  // Auto-save thumbnail every minute during editing
-  useEffect(() => {
-    if (!canvas || !id) return;
-
-    const interval = setInterval(() => {
-      console.log('⏰ Auto-saving thumbnail (every minute)');
-      generateAndSaveThumbnail();
-    }, 60000); // 60 seconds
-
-    return () => clearInterval(interval);
-  }, [canvas, id]);
 
   // Gradient editor functions
   const addGradientStop = () => {
