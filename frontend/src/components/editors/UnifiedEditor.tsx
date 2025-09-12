@@ -224,6 +224,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const [isCanvasTextEditing, setIsCanvasTextEditing] = useState<boolean>(false);
   
+  // Zoom state
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
+  
   // UI state
   const [showShapeSelector, setShowShapeSelector] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -850,26 +853,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       // Priority: If we have an ID (not 'new'), load by ID first
       if (id && id !== 'new') {
         console.log('🎯 Loading template by ID (priority):', id);
-      loadTemplateById(id).catch(error => {
-        console.error('❌ Error loading template by ID:', error);
-          // Fallback to templateKey if ID loading fails
-          if (templateKey) {
-            console.log('🔄 Falling back to templateKey loading:', templateKey);
-            loadTemplate(templateKey).catch(fallbackError => {
-              console.error('❌ TemplateKey loading also failed:', fallbackError);
-              // No more fallbacks - user must provide valid template
-              console.log('❌ No fallback templates available - user must provide valid template');
-            });
-          }
+      loadTemplateById(id).catch((fallbackError: any) => {
+        console.error('❌ Error loading template by ID:', fallbackError);
+          // No fallback - user must provide valid template ID
+          console.log('❌ No fallback templates available - user must provide valid template ID');
         });
       } else if (templateKey) {
-        // If no ID, load by templateKey
-        console.log('🎯 Loading template by key:', templateKey);
-        loadTemplate(templateKey).catch(error => {
-          console.error('❌ Error loading template from database:', error);
-                  // No more fallbacks - user must provide valid template
-        console.log('❌ No fallback templates available - user must provide valid template');
-        });
+        // Template key provided but no loadTemplate function - require template ID
+        console.log('❌ Template key provided but loading by key is not supported - please provide template ID');
       }
     }
   }, [templateKey, id, canvas]); // Added canvas to dependencies
@@ -1163,6 +1154,1332 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   }, [templateKey, id, canvas]);
   
+
+  // Load user-saved design (for designs with saved content)
+  async function loadUserSavedDesign(designData: any, templateData: any) {
+    console.log('🚀 loadUserSavedDesign called with design data and template data');
+    console.log('📊 Full designData structure:', JSON.stringify(designData, null, 2));
+    console.log('📊 Full templateData structure:', JSON.stringify(templateData, null, 2));
+    
+    if (!canvas) {
+      console.error('❌ Canvas is not ready');
+      return;
+    }
+    
+    // Clear current canvas
+    canvas.clear();
+    
+    // Check for custom background from backend first
+    let customBackgroundImage = null;
+    let backgroundId = null;
+    if (user?.id) {
+      try {
+        const result = await getTemplateBackground(id, user.id);
+        if (result.success && result.background) {
+          customBackgroundImage = result.background.imageData;
+          backgroundId = result.background.id;
+          console.log('🖼️ Found custom background for template:', id, 'from backend');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error reading custom backgrounds from backend:', error);
+      }
+    }
+
+    // Set background from saved design - prioritize custom background
+    const backgroundColor = designData.designData?.backgroundColor || templateData.backgroundColor || '#ffffff';
+    setBackgroundColor(backgroundColor);
+    setCurrentBackgroundId(backgroundId);
+    
+    // Load background image - prioritize custom background over saved design
+    const backgroundImageToLoad = customBackgroundImage || (designData.designData && designData.designData.backgroundImage);
+    if (backgroundImageToLoad) {
+      console.log('🖼️ Loading background image...', customBackgroundImage ? 'custom' : 'saved');
+      setBackgroundImage(backgroundImageToLoad);
+      
+      // Create and add background image to canvas
+      const imgElement = new Image();
+      imgElement.crossOrigin = 'anonymous';
+      
+      imgElement.onload = () => {
+        console.log('✅ Background image loaded successfully');
+        console.log('📏 Image dimensions:', imgElement.width, 'x', imgElement.height);
+        
+        // Create Fabric.js image from the loaded image
+        const fabricImage = new fabric.Image(imgElement);
+        console.log('✅ Fabric background image created');
+        
+        // Set properties for background image
+        fabricImage.set({
+          left: 0,
+          top: 0,
+          originX: 'left',
+          originY: 'top',
+          selectable: false,
+          evented: false,
+          lockMovementX: true,
+          lockMovementY: true,
+          lockRotation: true,
+          lockScalingX: true,
+          lockScalingY: true
+        });
+        
+        // Scale image to cover entire canvas
+        const canvasWidth = canvas.getWidth();
+        const canvasHeight = canvas.getHeight();
+        
+        if (fabricImage.width && fabricImage.height) {
+          const imageWidth = fabricImage.width;
+          const imageHeight = fabricImage.height;
+          
+          // Scale to cover entire canvas (cover mode)
+          const scaleX = canvasWidth / imageWidth;
+          const scaleY = canvasHeight / imageHeight;
+          const scale = Math.max(scaleX, scaleY);
+          
+          fabricImage.set({
+            scaleX: scale,
+            scaleY: scale
+          });
+          
+          console.log(`🎯 Background image scaled to cover canvas: scale ${scale}`);
+        }
+        
+        // Mark this as a background image
+        (fabricImage as any).isBackground = true;
+        
+        // Add background image to canvas FIRST (so it's at the bottom)
+        canvas.add(fabricImage);
+        
+        // Mark the background image properly
+        (fabricImage as any).isBackground = true;
+        (fabricImage as any).selectable = false;
+        (fabricImage as any).evented = false;
+        (fabricImage as any).zIndex = -1000; // Ensure it's at the very bottom
+        
+        // Ensure background is at the very bottom
+        const allObjects = canvas.getObjects();
+        const nonBackgroundObjects = allObjects.filter(obj => (obj as any).isBackground !== true);
+        
+        // Remove all objects temporarily
+        allObjects.forEach(obj => canvas.remove(obj));
+        
+        // Add background image first (bottom layer)
+        canvas.add(fabricImage);
+        
+        // Sort non-background objects by z-index before adding them back
+        nonBackgroundObjects.sort((a, b) => {
+          const aZ = (a as any).zIndex || 0;
+          const bZ = (b as any).zIndex || 0;
+          return aZ - bZ;
+        });
+        
+        // Add all other objects back (top layers) in proper order
+        nonBackgroundObjects.forEach(obj => canvas.add(obj));
+        
+        // Set canvas background to transparent so image shows
+        canvas.backgroundColor = 'transparent';
+        
+        // Render the canvas
+        canvas.renderAll();
+        
+        console.log('✅ Background image loaded and positioned successfully');
+        console.log('🎨 Canvas objects after background:', canvas.getObjects().length);
+        console.log('📋 Objects after background processing:', canvas.getObjects().map((obj, i) => ({
+          index: i + 1,
+          type: obj.type,
+          isBackground: (obj as any).isBackground
+        })));
+      };
+      
+      imgElement.onerror = (error) => {
+        console.error('❌ Error loading background image:', error);
+        console.error('❌ Background image URL:', backgroundImageToLoad);
+        setBackgroundImage(null);
+      };
+      
+      // Start loading the image
+      imgElement.src = backgroundImageToLoad;
+      
+    } else {
+      console.log('ℹ️ No user-saved background image found');
+      setBackgroundImage(null);
+    }
+    
+    // Set canvas background color (will be overridden if background image loads)
+    canvas.backgroundColor = backgroundColor;
+    
+    // Load user-saved objects from design file
+    if (designData.designData && designData.designData.objects && Array.isArray(designData.designData.objects)) {
+      console.log(`🎨 Loading ${designData.designData.objects.length} user-saved objects from design file...`);
+      console.log(`🔍 All objects from design file:`, JSON.stringify(designData.designData.objects, null, 2));
+      
+      // Log background image info for debugging
+      if (designData.designData.backgroundImage) {
+        console.log('🖼️ Background image URL for duplicate checking:', designData.designData.backgroundImage);
+      }
+      
+      // Sort objects by z-index before loading them
+      const sortedObjects = [...designData.designData.objects].sort((a, b) => {
+        const aZ = a.zIndex || 0;
+        const bZ = b.zIndex || 0;
+        return aZ - bZ;
+      });
+      
+      console.log('🔢 Objects sorted by z-index:', sortedObjects.map((obj, i) => ({
+        index: i,
+        type: obj.type,
+        zIndex: obj.zIndex || 0
+      })));
+      
+      sortedObjects.forEach((obj: any, index: number) => {
+        // Use the same object loading logic as in loadTemplateFromData
+        try {
+          console.log(`🎨 Loading object ${index + 1}:`, {
+            type: obj.type,
+            left: obj.left,
+            top: obj.top,
+        path: obj.path,
+        pathData: (obj as any).pathData,
+        isPath: (obj as any).isPath,
+        gradientType: obj.gradientType,
+        gradientColors: obj.gradientColors,
+        gradientStops: obj.gradientStops,
+        gradientCoords: obj.gradientCoords
+      });
+      console.log(`📋 Full object ${index + 1} data:`, JSON.stringify(obj, null, 2));
+          
+          if (obj.type === 'text' || obj.type === 'i-text') {
+            const text = new fabric.IText(obj.text || obj.content || 'Texto', {
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              fontSize: obj.fontSize !== undefined && obj.fontSize !== null ? obj.fontSize : 48,
+              fontFamily: obj.fontFamily || obj.font || 'Arial',
+              fontWeight: obj.fontWeight || 'normal',
+              fontStyle: obj.fontStyle || 'normal',
+              textAlign: obj.textAlign || 'left',
+              fill: obj.fill || obj.color || '#000000',
+              selectable: true,
+              editable: true,
+              hasControls: true,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              width: obj.width !== undefined && obj.width !== null ? obj.width : undefined,
+              height: obj.height !== undefined && obj.height !== null ? obj.height : undefined,
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
+              shadow: obj.shadow || null,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
+              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
+            });
+            
+            // Restore gradient using helper function
+            restoreGradient(obj, text);
+            
+            canvas.add(text);
+            console.log(`✅ Text object loaded with enhanced properties:`, {
+              text: obj.text || obj.content,
+              fontSize: text.fontSize,
+              fontFamily: text.fontFamily,
+              fontWeight: text.fontWeight,
+              fontStyle: text.fontStyle,
+              fill: text.fill,
+              stroke: text.stroke,
+              strokeWidth: text.strokeWidth,
+              scaleX: text.scaleX,
+              scaleY: text.scaleY,
+              angle: text.angle,
+              opacity: text.opacity,
+              gradientType: (text as any).gradientType,
+              gradientColors: (text as any).gradientColors
+            });
+          } else if (obj.type === 'image') {
+            // Skip image objects that are the same as the background image to avoid duplication
+            if (obj.src && obj.src !== backgroundImageToLoad) {
+              const imgElement = new Image();
+              imgElement.crossOrigin = 'anonymous';
+              imgElement.onload = () => {
+                const fabricImage = new fabric.Image(imgElement, {
+                  left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+                  top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+                  scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+                  scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+                  angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+                  opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+                  selectable: true,
+                  evented: true
+                });
+                canvas.add(fabricImage);
+                canvas.renderAll();
+              };
+              imgElement.src = obj.src;
+            } else if (obj.src === backgroundImageToLoad) {
+              console.log('🚫 Skipping duplicate image object (same as background):', obj.src);
+            }
+          } else if (obj.type === 'rect' || obj.type === 'rectangle') {
+            // Determine initial fill - use solid color if it's a gradient object, let restoreGradient handle it
+            let initialFill = '#cccccc'; // default
+            if (typeof obj.fill === 'string') {
+              initialFill = obj.fill;
+            } else if (obj.color) {
+              initialFill = obj.color;
+            }
+            
+            const rect = new fabric.Rect({
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              width: obj.width !== undefined && obj.width !== null ? obj.width : 100,
+              height: obj.height !== undefined && obj.height !== null ? obj.height : 100,
+              fill: initialFill, // Set initial fill to a solid color
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              rx: obj.rx !== undefined && obj.rx !== null ? obj.rx : 0,  // Rounded corner radius X
+              ry: obj.ry !== undefined && obj.ry !== null ? obj.ry : 0,  // Rounded corner radius Y
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              selectable: true,
+              hasControls: true
+            });
+            
+            // Restore gradient using helper function
+            console.log(`🔍 About to call restoreGradient for rect (loadUserSavedDesign):`, {
+              gradientType: obj.gradientType,
+              gradientColors: obj.gradientColors,
+              hasGradientType: !!obj.gradientType,
+              hasGradientColors: !!obj.gradientColors,
+              gradientColorsLength: obj.gradientColors ? obj.gradientColors.length : 0,
+              currentFill: rect.fill
+            });
+            
+            // Always call restoreGradient if gradient metadata exists
+            if (obj.gradientType && obj.gradientColors && obj.gradientColors.length >= 2) {
+              console.log(`🔍 Calling restoreGradient for rect with gradient metadata (loadUserSavedDesign)`);
+              restoreGradient(obj, rect);
+            } else {
+              console.log(`🔍 Skipping restoreGradient for rect - no gradient metadata (loadUserSavedDesign)`);
+            }
+            
+            canvas.add(rect);
+            console.log(`✅ Rectangle loaded with all properties:`, {
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
+              fill: rect.fill,
+              stroke: rect.stroke,
+              strokeWidth: rect.strokeWidth,
+              rx: rect.rx,
+              ry: rect.ry,
+              scaleX: rect.scaleX,
+              scaleY: rect.scaleY,
+              angle: rect.angle,
+              opacity: rect.opacity
+            });
+          } else if (obj.type === 'circle') {
+            const circle = new fabric.Circle({
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              radius: obj.radius !== undefined && obj.radius !== null ? obj.radius : ((obj.width !== undefined && obj.width !== null ? obj.width : 100) / 2),
+              fill: obj.fill || obj.color || '#cccccc',
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              selectable: true,
+              hasControls: true
+            });
+            canvas.add(circle);
+            console.log(`✅ Circle loaded with all properties:`, {
+              left: circle.left,
+              top: circle.top,
+              radius: circle.radius,
+              fill: circle.fill,
+              stroke: circle.stroke,
+              strokeWidth: circle.strokeWidth,
+              scaleX: circle.scaleX,
+              scaleY: circle.scaleY,
+              angle: circle.angle,
+              opacity: circle.opacity
+            });
+          } else if (obj.type === 'triangle') {
+            const triangle = new fabric.Triangle({
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              width: obj.width !== undefined && obj.width !== null ? obj.width : 100,
+              height: obj.height !== undefined && obj.height !== null ? obj.height : 100,
+              fill: obj.fill || obj.color || '#cccccc',
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              selectable: true,
+              hasControls: true,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
+              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
+            });
+            
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (triangle as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (triangle as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: triangle.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                triangle.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for triangle');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: triangle.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                triangle.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for triangle');
+              }
+            }
+            
+            canvas.add(triangle);
+            console.log(`✅ Triangle object loaded with enhanced properties:`, {
+              left: triangle.left,
+              top: triangle.top,
+              width: triangle.width,
+              height: triangle.height,
+              fill: triangle.fill,
+              stroke: triangle.stroke,
+              strokeWidth: triangle.strokeWidth,
+              scaleX: triangle.scaleX,
+              scaleY: triangle.scaleY,
+              angle: triangle.angle,
+              opacity: triangle.opacity,
+              gradientType: (triangle as any).gradientType,
+              gradientColors: (triangle as any).gradientColors
+            });
+          } else if (obj.type === 'path' && (obj.path || (obj as any).pathData)) {
+            // Handle path objects (like waves) with path or pathData property
+            const pathData = obj.path || (obj as any).pathData;
+            console.log(`🎯 Creating fabric.Path for wave with pathData:`, pathData);
+            console.log(`🔍 Full path object data:`, JSON.stringify(obj, null, 2));
+            const path = new fabric.Path(pathData, {
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              fill: obj.fill || obj.color || '#cccccc',
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset || 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit || 4,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              selectable: true,
+              hasControls: true,
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX || 0,
+              skewY: obj.skewY || 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
+            });
+            
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (path as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (path as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for wave shape');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for wave shape');
+              }
+            }
+            
+            canvas.add(path);
+            console.log(`✅ Path object (wave) loaded with path data from design file:`, {
+              left: path.left,
+              top: path.top,
+              fill: path.fill,
+              stroke: path.stroke,
+              pathData: pathData,
+              gradientType: (path as any).gradientType,
+              gradientColors: (path as any).gradientColors
+            });
+          } else if (obj.type === 'shape' && (obj as any).pathData) {
+            // Handle shape objects that have path data (like waves)
+            console.log(`🎯 Creating fabric.Path for shape with pathData:`, (obj as any).pathData);
+            const path = new fabric.Path((obj as any).pathData, {
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              fill: obj.fill || obj.color || '#cccccc',
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset || 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit || 4,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              selectable: true,
+              hasControls: true,
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX || 0,
+              skewY: obj.skewY || 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
+            });
+            
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (path as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (path as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for shape with pathData');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for shape with pathData');
+              }
+            }
+            
+            canvas.add(path);
+            console.log(`✅ Shape object with path data (wave) loaded:`, {
+              left: path.left,
+              top: path.top,
+              fill: path.fill,
+              stroke: path.stroke,
+              pathData: (obj as any).pathData,
+              gradientType: (path as any).gradientType,
+              gradientColors: (path as any).gradientColors
+            });
+          } else if ((obj as any).pathData || (obj as any).isPath) {
+            // Catch-all for any object that has pathData or isPath flag (wave shapes)
+            const pathData = (obj as any).pathData || obj.path;
+            console.log(`🎯 Catch-all: Creating fabric.Path for object with pathData/isPath:`, {
+              type: obj.type,
+              pathData: pathData,
+              isPath: (obj as any).isPath
+            });
+            const path = new fabric.Path(pathData, {
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              fill: obj.fill || obj.color || '#cccccc',
+              stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset || 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit || 4,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              selectable: true,
+              hasControls: true,
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX || 0,
+              skewY: obj.skewY || 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
+            });
+            
+            // Restore gradient properties if they exist
+            if (obj.gradientType) {
+              (path as any).gradientType = obj.gradientType;
+            }
+            if (obj.gradientColors) {
+              (path as any).gradientColors = obj.gradientColors;
+              
+              // Recreate the actual gradient fill
+              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Teal → Blue gradient restored for catch-all path object');
+              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
+                const gradient = new fabric.Gradient({
+                  type: 'linear',
+                  coords: {
+                    x1: 0,
+                    y1: 0,
+                    x2: path.width || 200,
+                    y2: 0
+                  },
+                  colorStops: [
+                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
+                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
+                  ]
+                });
+                path.set('fill', gradient);
+                console.log('🎨 Blue → Teal gradient restored for catch-all path object');
+              }
+            }
+            
+            canvas.add(path);
+            console.log(`✅ Catch-all path object (wave) loaded:`, {
+              left: path.left,
+              top: path.top,
+              fill: path.fill,
+              stroke: path.stroke,
+              pathData: pathData,
+              gradientType: (path as any).gradientType,
+              gradientColors: (path as any).gradientColors
+            });
+          }
+        } catch (error) {
+          console.error(`❌ Error loading object ${index + 1}:`, error, obj);
+        }
+      });
+    } else {
+      console.log('ℹ️ No user-saved objects found in design file');
+    }
+    
+    // Wait a bit for objects to load, then render
+    setTimeout(() => {
+      // Ensure proper layering: background image at bottom, objects on top
+      const allObjects = canvas.getObjects();
+      const backgroundObjects = allObjects.filter(obj => (obj as any).isBackground === true);
+      const contentObjects = allObjects.filter(obj => (obj as any).isBackground !== true);
+      
+      console.log('🔍 Before final layering - Total objects:', allObjects.length);
+      console.log('🔍 Background objects found:', backgroundObjects.length);
+      console.log('🔍 Content objects found:', contentObjects.length);
+      
+      // Remove all objects temporarily
+      allObjects.forEach(obj => canvas.remove(obj));
+      
+      // Add background objects first (bottom layer)
+      backgroundObjects.forEach(obj => canvas.add(obj));
+      
+      // Sort content objects by z-index before adding them
+      contentObjects.sort((a, b) => {
+        const aZ = (a as any).zIndex || 0;
+        const bZ = (b as any).zIndex || 0;
+        return aZ - bZ;
+      });
+      
+      // Add content objects on top in proper order
+      contentObjects.forEach(obj => canvas.add(obj));
+      
+      canvas.renderAll();
+      saveCanvasToHistory();
+      
+      const finalObjectCount = canvas.getObjects().length;
+      console.log('✅ User-saved design loaded successfully');
+      console.log('🎨 Final canvas objects:', finalObjectCount);
+      console.log('🖼️ Background objects:', backgroundObjects.length);
+      console.log('🎨 Content objects:', contentObjects.length);
+      
+      // Log detailed object information for debugging
+      console.log('📋 Detailed object breakdown:');
+      const finalObjects = canvas.getObjects();
+      finalObjects.forEach((obj, index) => {
+        const objInfo: any = {
+          index: index + 1,
+          type: obj.type,
+          left: obj.left,
+          top: obj.top,
+          width: obj.width,
+          height: obj.height,
+          isBackground: (obj as any).isBackground
+        };
+        
+        if (obj.type === 'i-text') {
+          objInfo.text = (obj as fabric.IText).text;
+        } else if (obj.type === 'image') {
+          objInfo.src = (obj as any).src || 'unknown';
+        } else if (obj.type === 'path') {
+          objInfo.pathData = (obj as any).pathData ? 'present' : 'missing';
+        }
+        
+        console.log(`🎨 Object ${index + 1}:`, objInfo);
+        console.log(`📋 Full object ${index + 1} details:`, JSON.stringify(obj, null, 2));
+      });
+      
+      // Add brand kit logo after user-saved design is loaded
+      setTimeout(async () => {
+        await addBrandKitLogoIfNeeded();
+      }, 300);
+    }, 100);
+  };
+  
+
+  // Load template from data (for updated templates)
+  async function loadTemplateFromData(templateKey: string, templateData: any) {
+    console.log('🚀 loadTemplateFromData called with key:', templateKey);
+    console.log('📋 Template data:', templateData);
+    
+    if (!canvas) {
+      console.error('❌ Canvas is not ready');
+      return;
+    }
+    
+    if (!templateData) {
+      console.error('❌ Template data is undefined or null');
+      return;
+    }
+    
+    // Clear current canvas completely
+    canvas.clear();
+    canvas.renderAll();
+    
+    // Clear any existing objects from state
+    setObjects([]);
+    setSelectedObject(null);
+    
+    // Clear history to prevent conflicts
+    setHistory([]);
+    setHistoryIndex(-1);
+    
+    // Reset background
+    setBackgroundColor('#ffffff');
+    setBackgroundImage(null);
+    
+    console.log('🧹 Canvas and state completely cleared');
+    
+    // Set canvas size from template data
+    if (templateData.canvasSize) {
+      console.log('📐 Setting canvas size from template data:', templateData.canvasSize);
+      setCanvasSize(templateData.canvasSize);
+      
+      // Parse canvas size and set canvas dimensions
+      const [width, height] = templateData.canvasSize.split('x').map(Number);
+      if (width && height) {
+        canvas.setDimensions({ width, height });
+        console.log('📐 Canvas dimensions set to:', width, 'x', height);
+      }
+    }
+    
+    // Check for custom background from backend first
+    let customBackgroundImage = null;
+    let backgroundId = null;
+    if (user?.id) {
+      try {
+        const result = await getTemplateBackground(id, user.id);
+        if (result.success && result.background) {
+          customBackgroundImage = result.background.imageData;
+          backgroundId = result.background.id;
+          console.log('🖼️ Found custom background for template:', id, 'from backend');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error reading custom backgrounds from backend:', error);
+      }
+    }
+
+    // Set background with fallbacks - prioritize custom background
+    const backgroundColor = templateData.backgroundColor || '#ffffff';
+    const backgroundImage = customBackgroundImage || templateData.backgroundImage || null;
+    
+    setBackgroundColor(backgroundColor);
+    setBackgroundImage(backgroundImage);
+    setCurrentBackgroundId(backgroundId);
+    
+    // Set canvas background color
+    canvas.backgroundColor = backgroundColor;
+    
+    // Set background image if present
+    if (backgroundImage) {
+      console.log('🖼️ Setting background image from template data');
+      // Note: Fabric.js background image handling would go here if needed
+    } else {
+      console.log('🎨 Using background color only:', backgroundColor);
+    }
+    
+    // Enhanced object loading function
+    const loadObjectToCanvas = (obj: any, index: number) => {
+      try {
+        console.log(`🎨 Loading object ${index + 1}:`, obj);
+        
+        // Handle different object types
+        switch (obj.type) {
+          case 'text':
+          case 'i-text':
+                         const text = new fabric.IText(obj.text || obj.content || 'Texto', {
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              fontSize: obj.fontSize !== undefined && obj.fontSize !== null ? obj.fontSize : 48,
+               fill: obj.fill || obj.color || '#000000',
+               fontFamily: obj.fontFamily || obj.font || 'Arial',
+               fontWeight: obj.fontWeight || 'normal',
+              fontStyle: obj.fontStyle || 'normal',
+               textAlign: obj.textAlign || 'left',
+               selectable: true,
+              hasControls: true,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              width: obj.width !== undefined && obj.width !== null ? obj.width : undefined,
+              height: obj.height !== undefined && obj.height !== null ? obj.height : undefined,
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+               stroke: obj.stroke || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+               strokeLineCap: obj.strokeLineCap || 'butt',
+               strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
+              shadow: obj.shadow || null,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
+              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false
+            });
+            
+            // Restore gradient using helper function
+            restoreGradient(obj, text);
+            
+            canvas.add(text);
+            console.log(`✅ Text object loaded with enhanced properties:`, {
+              text: obj.text || obj.content,
+              fontSize: text.fontSize,
+              fontFamily: text.fontFamily,
+              fontWeight: text.fontWeight,
+              fontStyle: text.fontStyle,
+              fill: text.fill,
+              stroke: text.stroke,
+              strokeWidth: text.strokeWidth,
+              scaleX: text.scaleX,
+              scaleY: text.scaleY,
+              angle: text.angle,
+              opacity: text.opacity,
+              gradientType: (text as any).gradientType,
+              gradientColors: (text as any).gradientColors
+            });
+            break;
+            
+          case 'image':
+            if (obj.src || obj.url) {
+              const imgElement = new Image();
+              imgElement.crossOrigin = 'anonymous';
+              imgElement.onload = () => {
+                const fabricImage = new fabric.Image(imgElement, {
+                  left: obj.left || obj.x || 0,
+                  top: obj.top || obj.y || 0,
+                  scaleX: obj.scaleX || 1,
+                  scaleY: obj.scaleY || 1,
+                  angle: obj.angle || obj.rotation || 0,
+                  selectable: true,
+                  opacity: obj.opacity || 1,
+                  stroke: obj.stroke || 'transparent',
+                  strokeWidth: obj.strokeWidth || 0,
+                  strokeLineCap: obj.strokeLineCap || 'butt',
+                  strokeLineJoin: obj.strokeLineJoin || 'miter',
+                  shadow: obj.shadow || null
+                });
+                canvas.add(fabricImage);
+                canvas.renderAll();
+                console.log(`✅ Image object loaded: ${obj.src || obj.url}`);
+              };
+              imgElement.src = obj.src || obj.url;
+            }
+            break;
+            
+                    case 'rect':
+          case 'rectangle':
+            // Determine initial fill - use solid color if it's a gradient object, let restoreGradient handle it
+            let initialFill = '#3b82f6'; // default
+            if (typeof obj.fill === 'string') {
+              initialFill = obj.fill;
+            } else if (obj.color) {
+              initialFill = obj.color;
+            }
+            
+            const rect = new fabric.Rect({
+              left: obj.left || obj.x || 0,
+              top: obj.top || obj.y || 0,
+              width: obj.width || 200,
+              height: obj.height || 200,
+              fill: initialFill,
+              stroke: obj.stroke || obj.borderColor || 'transparent',
+              strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
+              rx: obj.rx || 0,  // Rounded corner radius X
+              ry: obj.ry || 0,  // Rounded corner radius Y
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              scaleX: obj.scaleX || 1,
+              scaleY: obj.scaleY || 1,
+              angle: obj.angle || obj.rotation || 0,
+              selectable: true,
+              opacity: obj.opacity || 1,
+              shadow: obj.shadow || null
+            });
+            
+            // Restore gradient using helper function
+            console.log(`🔍 About to call restoreGradient for rect:`, {
+              gradientType: obj.gradientType,
+              gradientColors: obj.gradientColors,
+              hasGradientType: !!obj.gradientType,
+              hasGradientColors: !!obj.gradientColors,
+              gradientColorsLength: obj.gradientColors ? obj.gradientColors.length : 0,
+              currentFill: rect.fill
+            });
+            
+            // Always call restoreGradient if gradient metadata exists
+            if (obj.gradientType && obj.gradientColors && obj.gradientColors.length >= 2) {
+              console.log(`🔍 Calling restoreGradient for rect with gradient metadata`);
+              restoreGradient(obj, rect);
+            } else {
+              console.log(`🔍 Skipping restoreGradient for rect - no gradient metadata`);
+            }
+            
+            canvas.add(rect);
+            console.log(`✅ Rectangle object loaded with rx: ${obj.rx}, ry: ${obj.ry}`);
+            break;
+            
+          case 'circle':
+            const circle = new fabric.Circle({
+              left: obj.left || obj.x || 0,
+              top: obj.top || obj.y || 0,
+              radius: obj.radius || (obj.width || obj.height || 100) / 2,
+              fill: obj.fill || obj.color || '#3b82f6',
+              stroke: obj.stroke || obj.borderColor || 'transparent',
+              strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              scaleX: obj.scaleX || 1,
+              scaleY: obj.scaleY || 1,
+              angle: obj.angle || obj.rotation || 0,
+              selectable: true,
+              opacity: obj.opacity || 1,
+              shadow: obj.shadow || null
+            });
+            
+            // Restore gradient using helper function
+            restoreGradient(obj, circle);
+            
+            canvas.add(circle);
+            console.log(`✅ Circle object loaded with radius: ${obj.radius}`);
+            break;
+            
+          case 'triangle':
+            const triangle = new fabric.Triangle({
+              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
+              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
+              width: obj.width !== undefined && obj.width !== null ? obj.width : 200,
+              height: obj.height !== undefined && obj.height !== null ? obj.height : 200,
+              fill: obj.fill || obj.color || '#3b82f6',
+              stroke: obj.stroke || obj.borderColor || 'transparent',
+              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
+              strokeLineCap: obj.strokeLineCap || 'butt',
+              strokeLineJoin: obj.strokeLineJoin || 'miter',
+              strokeDashArray: obj.strokeDashArray || null,
+              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
+              strokeUniform: obj.strokeUniform || false,
+              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
+              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
+              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
+              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
+              selectable: true,
+              hasControls: true,
+              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
+              fillRule: obj.fillRule || 'nonzero',
+              paintFirst: obj.paintFirst || 'fill',
+              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
+              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
+              flipX: obj.flipX || false,
+              flipY: obj.flipY || false,
+              shadow: obj.shadow || null
+            });
+            
+            // Restore gradient using helper function
+            restoreGradient(obj, triangle);
+            
+            canvas.add(triangle);
+            console.log(`✅ Triangle object loaded with enhanced properties:`, {
+              left: triangle.left,
+              top: triangle.top,
+              width: triangle.width,
+              height: triangle.height,
+              fill: triangle.fill,
+              stroke: triangle.stroke,
+              strokeWidth: triangle.strokeWidth,
+              scaleX: triangle.scaleX,
+              scaleY: triangle.scaleY,
+              angle: triangle.angle,
+              opacity: triangle.opacity,
+              gradientType: (triangle as any).gradientType,
+              gradientColors: (triangle as any).gradientColors
+            });
+            break;
+            
+          case 'polygon':
+            if (obj.points && Array.isArray(obj.points)) {
+              const polygon = new fabric.Polygon(obj.points, {
+                left: obj.left || obj.x || 0,
+                top: obj.top || obj.y || 0,
+                fill: obj.fill || obj.color || '#3b82f6',
+                stroke: obj.stroke || obj.borderColor || 'transparent',
+                strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
+                strokeLineCap: obj.strokeLineCap || 'butt',
+                strokeLineJoin: obj.strokeLineJoin || 'miter',
+                scaleX: obj.scaleX || 1,
+                scaleY: obj.scaleY || 1,
+                angle: obj.angle || obj.rotation || 0,
+                selectable: true,
+                hasControls: true,
+                opacity: obj.opacity || 1,
+                shadow: obj.shadow || null
+              });
+              canvas.add(polygon);
+              console.log(`✅ Polygon object loaded`);
+            }
+            break;
+            
+          case 'path':
+            if (obj.path || (obj as any).pathData) {
+              const pathData = obj.path || (obj as any).pathData;
+              const path = new fabric.Path(pathData, {
+                left: obj.left || obj.x || 0,
+                top: obj.top || obj.y || 0,
+                fill: obj.fill || obj.color || '#3b82f6',
+                stroke: obj.stroke || obj.borderColor || 'transparent',
+                strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
+                strokeLineCap: obj.strokeLineCap || 'butt',
+                strokeLineJoin: obj.strokeLineJoin || 'miter',
+                strokeDashArray: obj.strokeDashArray || null,
+                strokeDashOffset: obj.strokeDashOffset || 0,
+                strokeUniform: obj.strokeUniform || false,
+                strokeMiterLimit: obj.strokeMiterLimit || 4,
+                scaleX: obj.scaleX || 1,
+                scaleY: obj.scaleY || 1,
+                angle: obj.angle || obj.rotation || 0,
+                selectable: true,
+                hasControls: true,
+                opacity: obj.opacity || 1,
+                shadow: obj.shadow || null,
+                fillRule: obj.fillRule || 'nonzero',
+                paintFirst: obj.paintFirst || 'fill',
+                globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+                skewX: obj.skewX || 0,
+                skewY: obj.skewY || 0,
+                flipX: obj.flipX || false,
+                flipY: obj.flipY || false
+              });
+              
+              // Restore gradient using helper function
+              restoreGradient(obj, path);
+              canvas.add(path);
+              console.log(`✅ Path object loaded with path data:`, pathData ? 'yes' : 'no');
+            } else {
+              console.warn(`⚠️ Path object missing both 'path' and 'pathData' properties:`, obj);
+            }
+            break;
+            
+          case 'shape':
+            // Handle shape objects that have path data (like waves)
+            if ((obj as any).pathData) {
+              const path = new fabric.Path((obj as any).pathData, {
+                left: obj.left || obj.x || 0,
+                top: obj.top || obj.y || 0,
+                fill: obj.fill || obj.color || '#3b82f6',
+                stroke: obj.stroke || obj.borderColor || 'transparent',
+                strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
+                strokeLineCap: obj.strokeLineCap || 'butt',
+                strokeLineJoin: obj.strokeLineJoin || 'miter',
+                strokeDashArray: obj.strokeDashArray || null,
+                strokeDashOffset: obj.strokeDashOffset || 0,
+                strokeUniform: obj.strokeUniform || false,
+                strokeMiterLimit: obj.strokeMiterLimit || 4,
+                scaleX: obj.scaleX || 1,
+                scaleY: obj.scaleY || 1,
+                angle: obj.angle || obj.rotation || 0,
+                selectable: true,
+                hasControls: true,
+                opacity: obj.opacity || 1,
+                shadow: obj.shadow || null,
+                fillRule: obj.fillRule || 'nonzero',
+                paintFirst: obj.paintFirst || 'fill',
+                globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
+                skewX: obj.skewX || 0,
+                skewY: obj.skewY || 0,
+                flipX: obj.flipX || false,
+                flipY: obj.flipY || false
+              });
+              
+              // Restore gradient using helper function
+              restoreGradient(obj, path);
+              canvas.add(path);
+              console.log(`✅ Shape object with path data (wave) loaded`);
+            } else {
+              // Fallback to rectangle for regular shapes
+              const rect = new fabric.Rect({
+                left: obj.left || obj.x || 0,
+                top: obj.top || obj.y || 0,
+                width: obj.width || 200,
+                height: obj.height || 200,
+                fill: obj.fill || obj.color || '#3b82f6',
+                stroke: obj.stroke || obj.borderColor || 'transparent',
+                strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
+                strokeLineCap: obj.strokeLineCap || 'butt',
+                strokeLineJoin: obj.strokeLineJoin || 'miter',
+                scaleX: obj.scaleX || 1,
+                scaleY: obj.scaleY || 1,
+                angle: obj.angle || obj.rotation || 0,
+                selectable: true,
+                hasControls: true,
+                opacity: obj.opacity || 1,
+                shadow: obj.shadow || null
+              });
+              
+              // Restore gradient using helper function
+              restoreGradient(obj, rect);
+              
+              canvas.add(rect);
+              console.log(`✅ Regular shape object loaded as rectangle`);
+            }
+            break;
+            
+          default:
+            console.warn(`⚠️ Unknown object type: ${obj.type}`, obj);
+            break;
+        }
+      } catch (error) {
+        console.error(`❌ Error loading object ${index + 1}:`, error, obj);
+      }
+    };
+    
+    // Check if this is a user-saved design or a fresh template
+    if (templateData.designFilename) {
+      console.log('📁 Loading user-saved design data from designFilename field:', templateData.designFilename);
+      try {
+        const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(templateData.designFilename));
+        if (designResponse.ok) {
+          const designData = await designResponse.json();
+          console.log('✅ User-saved design data loaded from designFilename:', designData);
+          
+          // Load user-saved background image (not template defaults)
+          if (designData.designData && designData.designData.backgroundImage) {
+            console.log('🖼️ Loading user-saved background image...');
+            setBackgroundImage(designData.designData.backgroundImage);
+          } else {
+            console.log('ℹ️ No user-saved background image found');
+            setBackgroundImage(null);
+          }
+          
+          // Load user-saved objects from design file
+          if (designData.designData && designData.designData.objects && Array.isArray(designData.designData.objects)) {
+            console.log(`🎨 Loading ${designData.designData.objects.length} user-saved objects from design file...`);
+            designData.designData.objects.forEach((obj: any, index: number) => {
+              loadObjectToCanvas(obj, index);
+            });
+          } else {
+            console.log('ℹ️ No user-saved objects found in design file');
+          }
+        } else {
+          console.warn('⚠️ Failed to load user-saved design file, falling back to database objects');
+          throw new Error('User-saved design file not found');
+        }
+      } catch (fileError) {
+        console.warn('⚠️ Error loading user-saved design file, falling back to database objects:', fileError);
+        // Load user-saved objects from database
+        if (templateData.objects && Array.isArray(templateData.objects)) {
+          console.log(`🎨 Loading ${templateData.objects.length} user-saved objects from database...`);
+          templateData.objects.forEach((obj: any, index: number) => {
+            loadObjectToCanvas(obj, index);
+          });
+        } else {
+          console.log('ℹ️ No user-saved objects found in database');
+        }
+      }
+    } else {
+      // This is a fresh template or template with default objects
+      console.log('🆕 Fresh template detected - checking for default objects...');
+      setBackgroundImage(null);
+      
+      // Load default objects from database if they exist
+      if (templateData.objects && Array.isArray(templateData.objects) && templateData.objects.length > 0) {
+        console.log(`🎨 Loading ${templateData.objects.length} default objects from database...`);
+        templateData.objects.forEach((obj: any, index: number) => {
+          loadObjectToCanvas(obj, index);
+        });
+      } else {
+        console.log('🆕 No default objects found - starting with clean canvas');
+      }
+    }
+    
+    // Wait a bit for objects to load, then render
+    setTimeout(() => {
+      canvas.renderAll();
+      saveCanvasToHistory();
+      
+      // Check if brand kit logo should be added to existing templates (after canvas is fully rendered)
+              setTimeout(async () => {
+          await addBrandKitLogoIfNeeded();
+        }, 200);
+      
+      const finalObjectCount = canvas.getObjects().length;
+      if (templateData.designFilename) {
+        console.log('✅ User-saved design loaded successfully:', templateKey);
+        console.log('🎨 Final canvas objects:', finalObjectCount);
+      } else {
+        console.log('✅ Fresh template loaded successfully:', templateKey);
+        console.log('🎨 Final canvas objects:', finalObjectCount, '(clean canvas)');
+      }
+      
+      // Final render to ensure everything is displayed
+      canvas.renderAll();
+      
+      // Log all loaded objects for debugging
+      const allObjects = canvas.getObjects();
+      allObjects.forEach((obj, index) => {
+        console.log(`🎨 Object ${index + 1}:`, {
+          type: obj.type,
+          left: obj.left,
+          top: obj.top,
+          width: obj.width,
+          height: obj.height,
+          text: obj.type === 'i-text' ? (obj as fabric.IText).text : 'N/A'
+        });
+      });
+    }, 100);
+  };
+  
   // Save canvas state to history
   const saveCanvasToHistory = useCallback(() => {
     if (canvas) {
@@ -1377,6 +2694,26 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     return size || config.sizes[0];
   };
 
+  // Zoom functions
+  const handleZoomChange = (newZoom: number) => {
+    setZoomLevel(newZoom);
+    // Don't use canvas.setZoom() - we'll scale the container instead
+  };
+
+  const zoomIn = () => {
+    const newZoom = Math.min(zoomLevel + 25, 300);
+    handleZoomChange(newZoom);
+  };
+
+  const zoomOut = () => {
+    const newZoom = Math.max(zoomLevel - 25, 25);
+    handleZoomChange(newZoom);
+  };
+
+  const resetZoom = () => {
+    handleZoomChange(100);
+  };
+
   // Gradient editor functions
   const addGradientStop = () => {
     const newId = `stop_${Date.now()}`;
@@ -1531,7 +2868,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     
     // Update thumbnail after saving to history
     setTimeout(() => {
-      updateTemplateThumbnail();
+      // UpdateTemplateThumbnail will be defined later in the component
+      // For now, we'll skip this call to avoid the error
     }, 100);
   }, [history, historyIndex]);
   
@@ -2271,14 +3609,23 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           left: 50,
           top: 50,
           selectable: true,
-          resizable: true,
+          evented: true,
+          lockMovementX: false,
+          lockMovementY: false,
+          lockRotation: false,
+          lockScalingX: false,
+          lockScalingY: false,
           hasControls: true,
-          hasBorders: true
+          hasBorders: true,
+          isBrandKitLogo: true,
+          stroke: '#007bff',
+          strokeWidth: 2
         });
         img.scaleToWidth(100);
         canvas.add(img);
         canvas.renderAll();
         saveCanvasToHistory();
+        console.log('✅ Brand logo applied and is now movable and resizable');
       });
     }
   };
@@ -2446,8 +3793,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         height: obj.height || 0,
         scaleX: obj.scaleX || 1,
         scaleY: obj.scaleY || 1,
-        color: obj.fill || obj.color || '#000000',
-        fill: obj.fill || obj.color || '#000000'
+        color: obj.fill || (obj as any).color || '#000000',
+        fill: obj.fill || (obj as any).color || '#000000'
       }));
 
       // Find overlapping objects
@@ -2466,16 +3813,17 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           // Find the corresponding fabric object on the canvas
           const fabricObject = canvas.getObjects().find(obj => 
             (obj.get('id') === object.id) || 
-            (obj.left === object.left && obj.top === object.top && obj.type === object.type)
+            (obj.left === object.left && obj.top === object.top && obj.type === object.type) ||
+            (obj as any).isBrandKitLogo === true // Also check for brand kit logo identifier
           );
 
           if (fabricObject && (fabricObject.type === 'text' || fabricObject.type === 'i-text' || fabricObject.type === 'rect' || fabricObject.type === 'circle' || fabricObject.type === 'triangle')) {
             // Get the current color
-            const currentColor = fabricObject.fill || fabricObject.color || '#000000';
+            const currentColor = fabricObject.fill || (fabricObject as any).color || '#000000';
             
             // Generate a contrasting color based on the logo's background
             // For simplicity, we'll use the gradient background color as reference
-            const logoBackgroundColor = brandKit.primaryColor || '#000000';
+            const logoBackgroundColor = brandKit.colors?.primary || '#000000';
             const contrastingColor = getHighContrastColor(logoBackgroundColor);
             
             console.log(`🎨 Changing color from ${currentColor} to ${contrastingColor} for better contrast`);
@@ -2507,11 +3855,19 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
 
   // Add brand kit logo to existing templates if needed
   const addBrandKitLogoIfNeeded = async () => {
+    // Prevent multiple simultaneous calls
+    if ((addBrandKitLogoIfNeeded as any).isRunning) {
+      console.log('ℹ️ addBrandKitLogoIfNeeded is already running, skipping...');
+      return;
+    }
+    
+    (addBrandKitLogoIfNeeded as any).isRunning = true;
+    
+    try {
     console.log('🔍 addBrandKitLogoIfNeeded called');
     console.log('🔍 Current URL:', window.location.href);
     console.log('🔍 Canvas exists:', !!canvas);
     console.log('🔍 Canvas objects count:', canvas ? canvas.getObjects().length : 'N/A');
-    try {
       // Check if canvas is available
       if (!canvas) {
         console.log('ℹ️ Canvas not available - skipping logo addition');
@@ -2577,12 +3933,87 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       const logoExists = existingObjects.some(obj => 
         obj.type === 'image' && 
-        (obj as any).src === brandKitLogo &&
-        !obj.selectable // Brand kit logos are non-selectable
+        (obj as any).src === brandKitLogo // Check if any image object already has the brand kit logo
       );
 
+      // First, check if we should replace any template logo placeholders
+      const logoPlaceholders = existingObjects.filter(obj => 
+        obj.type === 'image' && 
+        (obj as any).src && 
+        ((obj as any).src.toLowerCase().includes('logo') || (obj as any).src.toLowerCase().includes('placeholder'))
+      );
+      
+      if (logoPlaceholders.length > 0) {
+        console.log('🎨 Found template logo placeholders, replacing with brand kit logo...');
+        
+        // Replace the first logo placeholder with the brand kit logo
+        const logoPlaceholder = logoPlaceholders[0];
+        
+        // Load the brand kit logo image and replace the placeholder
+        const imgElement = new Image();
+        imgElement.crossOrigin = 'anonymous';
+        imgElement.onload = () => {
+          logoPlaceholder.set({
+            src: brandKitLogo,
+            selectable: true,
+            evented: true,
+            lockMovementX: false,
+            lockMovementY: false,
+            lockRotation: false,
+            lockScalingX: false,
+            lockScalingY: false,
+            stroke: '#007bff',
+            strokeWidth: 2,
+            isBrandKitLogo: true
+          });
+          
+          canvas.renderAll();
+          
+          // Trigger overlap detection for the replaced logo
+          setTimeout(() => {
+            adjustOverlappingObjectColors(logoPlaceholder);
+          }, 100);
+        };
+        imgElement.src = brandKitLogo;
+        
+        // Remove other logo placeholders to avoid duplicates
+        logoPlaceholders.slice(1).forEach(placeholder => {
+          canvas.remove(placeholder);
+        });
+        
+        saveCanvasToHistory();
+        console.log('✅ Template logo placeholders replaced with brand kit logo');
+        return;
+      }
+
       if (logoExists) {
-        console.log('ℹ️ Brand kit logo already exists on canvas - skipping addition');
+        console.log('ℹ️ Brand kit logo already exists on canvas - making existing logo interactive...');
+        
+        // Find and update existing logo to make it movable and resizable
+        const existingLogo = existingObjects.find(obj => 
+          obj.type === 'image' && 
+          (obj as any).src === brandKitLogo
+        );
+        
+        if (existingLogo) {
+          // Make the existing logo movable and resizable
+          existingLogo.set({
+            selectable: true,
+            evented: true,
+            lockMovementX: false,
+            lockMovementY: false,
+            lockRotation: false,
+            lockScalingX: false,
+            lockScalingY: false,
+            stroke: '#007bff',
+            strokeWidth: 2,
+            isBrandKitLogo: true
+          });
+          
+          canvas.renderAll();
+          saveCanvasToHistory();
+          console.log('✅ Existing logo is now movable and resizable');
+        }
         return;
       }
 
@@ -2590,6 +4021,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       console.log('🎨 Adding brand kit logo to existing template...');
       const imgElement = new Image();
       imgElement.crossOrigin = 'anonymous';
+      
       imgElement.onload = () => {
         console.log('✅ Brand kit logo image loaded successfully');
         console.log('🔍 Logo image dimensions:', imgElement.width, 'x', imgElement.height);
@@ -2608,54 +4040,80 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           originalSize: { width: imgElement.naturalWidth, height: imgElement.naturalHeight }
         });
         
-        // First, create gradient rectangle background
-        const gradientRect = new fabric.Rect({
-          left: 20,
-          top: 20,
-          width: maxLogoSize + padding, // Add padding around logo
-          height: maxLogoSize + padding, // Add padding around logo
-          fill: new fabric.Gradient({
-            type: 'linear',
-            coords: { x1: 0, y1: 0, x2: maxLogoSize + padding, y2: maxLogoSize + padding },
-            colorStops: [
-              { offset: 0, color: normalizeColor(brandKit.primaryColor) }, // Primary color (black becomes transparent)
-              { offset: 0.5, color: normalizeColor(brandKit.secondaryColor) }, // Secondary color (black becomes transparent)
-              { offset: 1, color: normalizeColor(brandKit.accentColor) } // Accent color (black becomes transparent)
-            ]
-          }),
-          selectable: false,
-          evented: false,
-          lockMovementX: true,
-          lockMovementY: true,
-          lockRotation: true,
-          lockScalingX: true,
-          lockScalingY: true,
-          opacity: 0.9,
-          rx: 8, // Rounded corners
-          ry: 8
-        });
-        
-        // Create the logo image
+        // Create the logo image with transparent background
         const fabricImage = new fabric.Image(imgElement, {
-          left: 20 + (padding / 2), // Centered within gradient rectangle
-          top: 20 + (padding / 2), // Centered within gradient rectangle
+          left: 20, // Position in top-left corner
+          top: 20, // Position in top-left corner
           // Use scale to limit size while maintaining aspect ratio
           scaleX: Math.min(maxLogoSize / imgElement.naturalWidth, maxLogoSize / imgElement.naturalHeight),
           scaleY: Math.min(maxLogoSize / imgElement.naturalWidth, maxLogoSize / imgElement.naturalHeight),
-          selectable: false, // Make non-editable
-          evented: false, // Make non-interactive
-          lockMovementX: true,
-          lockMovementY: true,
-          lockRotation: true,
-          lockScalingX: true,
-          lockScalingY: true,
+          selectable: true, // Make editable and movable
+          evented: true, // Make interactive
+          lockMovementX: false, // Allow horizontal movement
+          lockMovementY: false, // Allow vertical movement
+          lockRotation: false, // Allow rotation
+          lockScalingX: false, // Allow horizontal scaling
+          lockScalingY: false, // Allow vertical scaling
           opacity: 1,
-          shadow: null
+          shadow: null,
+          // Add custom properties to identify this as a brand kit logo
+          isBrandKitLogo: true,
+          // Set minimum and maximum scale limits
+          minScaleLimit: 0.1,
+          maxScaleLimit: 3.0,
+          // Add border for visual feedback
+          stroke: '#007bff',
+          strokeWidth: 2
         });
         
-        // Add gradient rectangle first (background)
-        canvas.add(gradientRect);
-        // Add logo on top of gradient rectangle
+        // Link the logo and background so they move together
+        const linkObjects = (primaryObj: fabric.Object, secondaryObj: fabric.Object) => {
+          primaryObj.on('moving', () => {
+            const deltaX = primaryObj.left! - (primaryObj as any).lastLeft;
+            const deltaY = primaryObj.top! - (primaryObj as any).lastTop;
+            secondaryObj.set({
+              left: secondaryObj.left! + deltaX,
+              top: secondaryObj.top! + deltaY
+            });
+            (primaryObj as any).lastLeft = primaryObj.left;
+            (primaryObj as any).lastTop = primaryObj.top;
+            canvas.renderAll();
+          });
+
+          primaryObj.on('scaling', () => {
+            const scaleX = primaryObj.scaleX! / (primaryObj as any).lastScaleX;
+            const scaleY = primaryObj.scaleY! / (primaryObj as any).lastScaleY;
+            secondaryObj.set({
+              scaleX: secondaryObj.scaleX! * scaleX,
+              scaleY: secondaryObj.scaleY! * scaleY
+            });
+            (primaryObj as any).lastScaleX = primaryObj.scaleX;
+            (primaryObj as any).lastScaleY = primaryObj.scaleY;
+            canvas.renderAll();
+          });
+
+          primaryObj.on('rotating', () => {
+            secondaryObj.set({
+              angle: primaryObj.angle!
+            });
+            canvas.renderAll();
+          });
+
+          // Trigger overlap detection when logo movement/rotation/scaling is finished
+          primaryObj.on('modified', () => {
+            setTimeout(() => {
+              adjustOverlappingObjectColors(primaryObj);
+            }, 100);
+          });
+
+          // Initialize tracking properties
+          (primaryObj as any).lastLeft = primaryObj.left;
+          (primaryObj as any).lastTop = primaryObj.top;
+          (primaryObj as any).lastScaleX = primaryObj.scaleX;
+          (primaryObj as any).lastScaleY = primaryObj.scaleY;
+        };
+
+        // Add logo with transparent background
         canvas.add(fabricImage);
         // Ensure logo is on top
         canvas.bringObjectToFront(fabricImage);
@@ -2676,6 +4134,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         
         saveCanvasToHistory();
         console.log('✅ Brand kit logo added to existing template');
+        console.log('🎨 Logo is now movable, resizable, and rotatable');
         console.log('🔍 Canvas objects after adding logo:', canvas.getObjects().length);
         console.log('🔍 Logo object details:', {
           left: fabricImage.left,
@@ -2718,1489 +4177,18 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.error('❌ Error loading brand kit logo:', error);
         console.error('❌ Failed logo URL:', brandKitLogo);
       };
+    
       imgElement.src = brandKitLogo;
       
-      } catch (error) {
-        console.error('❌ Error fetching brand kit logo:', error);
-      }
     } catch (error) {
       console.error('❌ Error adding brand kit logo:', error);
-    }
-  };
-
-  // Load template preset
-  const loadTemplate = async (templateKey: string) => {
-    console.log('🚀 loadTemplate called with key:', templateKey);
-    
-    try {
-      // First try to load from database
-      const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_KEY(templateKey));
-      if (response.ok) {
-        const template = await response.json();
-        console.log('✅ Template metadata loaded from database:', template);
-        
-        // Priority 1: Use designFilename field from database (primary method)
-        if (template.designFilename) {
-          console.log('📁 Loading design from designFilename field:', template.designFilename);
-          
-          try {
-            const fileExists = await checkDesignFileExists(template.designFilename);
-            
-            if (fileExists) {
-              console.log('✅ Design file exists, loading from designFilename...');
-              const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(template.designFilename));
-              if (designResponse.ok) {
-                const responseData = await designResponse.json();
-                console.log('🎨 Design response loaded from designFilename:', responseData);
-                
-                // Extract design data from response (it might be wrapped in a response object)
-                const designData = responseData.designData || responseData;
-                console.log('🎨 Extracted design data:', designData);
-                
-                await loadTemplateFromData(templateKey, designData);
-                
-                // Add brand kit logo after template is loaded
-                setTimeout(async () => {
-                  await addBrandKitLogoIfNeeded();
-                }, 500);
-                return;
-              } else {
-                console.warn('⚠️ Failed to load design file from designFilename:', template.designFilename);
-              }
-            } else {
-              console.warn('⚠️ Design file does not exist:', template.designFilename);
-              console.log('🔄 Falling back to template data from database...');
-              
-              // Clean up the orphaned design file reference
-              await cleanupOrphanedDesignFile(templateKey);
-            }
-          } catch (error) {
-            console.error('❌ Error loading design file from designFilename:', template.designFilename, error);
-          }
-        }
-        
-        // Priority 2: Check designfilepath field (fallback)
-        if (template.designfilepath) {
-          console.log('📁 Loading design from file path (fallback):', template.designfilepath);
-          
-          try {
-            // Extract filename from the path (e.g., "uploads/designs/filename.json" -> "filename.json")
-            const filename = template.designfilepath.split('/').pop();
-            console.log('📁 Extracted filename:', filename);
-            
-            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(filename));
-            if (designResponse.ok) {
-              const responseData = await designResponse.json();
-              console.log('🎨 Design response loaded from file path:', responseData);
-              
-              // Extract design data from response (it might be wrapped in a response object)
-              const designData = responseData.designData || responseData;
-              console.log('🎨 Extracted design data:', designData);
-              
-              await loadTemplateFromData(templateKey, designData);
-              
-              // Add brand kit logo after template is loaded
-              setTimeout(async () => {
-                await addBrandKitLogoIfNeeded();
-              }, 500);
-              return;
-            } else {
-              console.warn('⚠️ Failed to load design file from path:', template.designfilepath);
-            }
-          } catch (error) {
-            console.error('❌ Error loading design file from path:', template.designfilepath, error);
-          }
-        }
-        
-        // Priority 3: Check fallback options if no designFilename or designfilepath
-        if (!template.designFilename && !template.designfilepath) {
-          console.log('📋 No designFilename in database, checking fallback options...');
-          
-          // Check for _id-based design file (fallback)
-          const idBasedFilename = `${template._id}.json`;
-          console.log('📁 Checking _id-based design file:', idBasedFilename);
-          const idBasedFileExists = await checkDesignFileExists(idBasedFilename);
-          
-          if (idBasedFileExists) {
-            console.log('✅ _id-based design file exists, loading...');
-            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(idBasedFilename));
-            if (designResponse.ok) {
-              const designData = await designResponse.json();
-              console.log('🎨 Design data loaded from _id-based file:', designData);
-              await loadTemplateFromData(templateKey, designData);
-              
-              // Add brand kit logo after template is loaded
-              setTimeout(async () => {
-                await addBrandKitLogoIfNeeded();
-              }, 500);
-              return;
-            }
-          }
-          
-          // Check for template-specific design file (fallback)
-          const templateFilename = `${templateKey}-design.json`;
-          console.log('📁 Checking template-specific design file:', templateFilename);
-          const fileExists = await checkDesignFileExists(templateFilename);
-          
-          if (fileExists) {
-            console.log('✅ Template-specific design file exists, loading...');
-            const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(templateFilename));
-            if (designResponse.ok) {
-              const designData = await designResponse.json();
-              console.log('🎨 Design data loaded from template file:', designData);
-              await loadTemplateFromData(templateKey, designData);
-              
-              // Add brand kit logo after template is loaded
-              setTimeout(async () => {
-                await addBrandKitLogoIfNeeded();
-              }, 500);
-              return;
-            }
-          }
-        }
-        
-        // Fallback to loading from template data
-        console.log('📋 Loading from template data...');
-        await loadTemplateFromData(templateKey, template);
-        
-        // Add brand kit logo after template is loaded
-        setTimeout(async () => {
-          await addBrandKitLogoIfNeeded();
-        }, 500);
-        return;
-      }
-    } catch (error) {
-      console.warn('⚠️ Failed to load template from database, falling back to constant:', error);
-    }
-    
-    // No more fallbacks to hard-coded templates - user must provide valid template
-    console.log('❌ No fallback templates available - user must provide valid template');
-  };
-
-
-
-  // Load template from data (for updated templates)
-  const loadTemplateFromData = async (templateKey: string, templateData: any) => {
-    console.log('🚀 loadTemplateFromData called with key:', templateKey);
-    console.log('📋 Template data:', templateData);
-    
-    if (!canvas) {
-      console.error('❌ Canvas is not ready');
-      return;
-    }
-    
-    if (!templateData) {
-      console.error('❌ Template data is undefined or null');
-      return;
-    }
-    
-    // Clear current canvas completely
-    canvas.clear();
-    canvas.renderAll();
-    
-    // Clear any existing objects from state
-    setObjects([]);
-    setSelectedObject(null);
-    
-    // Clear history to prevent conflicts
-    setHistory([]);
-    setHistoryIndex(-1);
-    
-    // Reset background
-    setBackgroundColor('#ffffff');
-    setBackgroundImage(null);
-    
-    console.log('🧹 Canvas and state completely cleared');
-    
-    // Set canvas size from template data
-    if (templateData.canvasSize) {
-      console.log('📐 Setting canvas size from template data:', templateData.canvasSize);
-      setCanvasSize(templateData.canvasSize);
-      
-      // Parse canvas size and set canvas dimensions
-      const [width, height] = templateData.canvasSize.split('x').map(Number);
-      if (width && height) {
-        canvas.setDimensions({ width, height });
-        console.log('📐 Canvas dimensions set to:', width, 'x', height);
-      }
-    }
-    
-    // Check for custom background from backend first
-    let customBackgroundImage = null;
-    let backgroundId = null;
-    if (user?.id) {
-      try {
-        const result = await getTemplateBackground(id, user.id);
-        if (result.success && result.background) {
-          customBackgroundImage = result.background.imageData;
-          backgroundId = result.background.id;
-          console.log('🖼️ Found custom background for template:', id, 'from backend');
-        }
-      } catch (error) {
-        console.warn('⚠️ Error reading custom backgrounds from backend:', error);
-      }
-    }
-
-    // Set background with fallbacks - prioritize custom background
-    const backgroundColor = templateData.backgroundColor || '#ffffff';
-    const backgroundImage = customBackgroundImage || templateData.backgroundImage || null;
-    
-    setBackgroundColor(backgroundColor);
-    setBackgroundImage(backgroundImage);
-    setCurrentBackgroundId(backgroundId);
-    
-    // Set canvas background color
-    canvas.backgroundColor = backgroundColor;
-    
-    // Set background image if present
-    if (backgroundImage) {
-      console.log('🖼️ Setting background image from template data');
-      // Note: Fabric.js background image handling would go here if needed
-    } else {
-      console.log('🎨 Using background color only:', backgroundColor);
-    }
-    
-    // Enhanced object loading function
-    const loadObjectToCanvas = (obj: any, index: number) => {
-      try {
-        console.log(`🎨 Loading object ${index + 1}:`, obj);
-        
-        // Handle different object types
-        switch (obj.type) {
-          case 'text':
-          case 'i-text':
-                         const text = new fabric.IText(obj.text || obj.content || 'Texto', {
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              fontSize: obj.fontSize !== undefined && obj.fontSize !== null ? obj.fontSize : 48,
-               fill: obj.fill || obj.color || '#000000',
-               fontFamily: obj.fontFamily || obj.font || 'Arial',
-               fontWeight: obj.fontWeight || 'normal',
-              fontStyle: obj.fontStyle || 'normal',
-               textAlign: obj.textAlign || 'left',
-               selectable: true,
-              hasControls: true,
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              width: obj.width !== undefined && obj.width !== null ? obj.width : undefined,
-              height: obj.height !== undefined && obj.height !== null ? obj.height : undefined,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-               stroke: obj.stroke || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-               strokeLineCap: obj.strokeLineCap || 'butt',
-               strokeLineJoin: obj.strokeLineJoin || 'miter',
-              strokeDashArray: obj.strokeDashArray || null,
-              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
-              strokeUniform: obj.strokeUniform || false,
-              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
-              shadow: obj.shadow || null,
-              fillRule: obj.fillRule || 'nonzero',
-              paintFirst: obj.paintFirst || 'fill',
-              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
-              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
-              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
-              flipX: obj.flipX || false,
-              flipY: obj.flipY || false
-            });
-            
-            // Restore gradient using helper function
-            restoreGradient(obj, text);
-            
-            canvas.add(text);
-            console.log(`✅ Text object loaded with enhanced properties:`, {
-              text: obj.text || obj.content,
-              fontSize: text.fontSize,
-              fontFamily: text.fontFamily,
-              fontWeight: text.fontWeight,
-              fontStyle: text.fontStyle,
-              fill: text.fill,
-              stroke: text.stroke,
-              strokeWidth: text.strokeWidth,
-              scaleX: text.scaleX,
-              scaleY: text.scaleY,
-              angle: text.angle,
-              opacity: text.opacity,
-              gradientType: (text as any).gradientType,
-              gradientColors: (text as any).gradientColors
-            });
-            break;
-            
-          case 'image':
-            if (obj.src || obj.url) {
-              const imgElement = new Image();
-              imgElement.crossOrigin = 'anonymous';
-              imgElement.onload = () => {
-                const fabricImage = new fabric.Image(imgElement, {
-                  left: obj.left || obj.x || 0,
-                  top: obj.top || obj.y || 0,
-                  scaleX: obj.scaleX || 1,
-                  scaleY: obj.scaleY || 1,
-                  angle: obj.angle || obj.rotation || 0,
-                  selectable: true,
-                  opacity: obj.opacity || 1,
-                  stroke: obj.stroke || 'transparent',
-                  strokeWidth: obj.strokeWidth || 0,
-                  strokeLineCap: obj.strokeLineCap || 'butt',
-                  strokeLineJoin: obj.strokeLineJoin || 'miter',
-                  shadow: obj.shadow || null
-                });
-                canvas.add(fabricImage);
-                canvas.renderAll();
-                console.log(`✅ Image object loaded: ${obj.src || obj.url}`);
-              };
-              imgElement.src = obj.src || obj.url;
-            }
-            break;
-            
-                    case 'rect':
-          case 'rectangle':
-            // Determine initial fill - use solid color if it's a gradient object, let restoreGradient handle it
-            let initialFill = '#3b82f6'; // default
-            if (typeof obj.fill === 'string') {
-              initialFill = obj.fill;
-            } else if (obj.color) {
-              initialFill = obj.color;
-            }
-            
-            const rect = new fabric.Rect({
-              left: obj.left || obj.x || 0,
-              top: obj.top || obj.y || 0,
-              width: obj.width || 200,
-              height: obj.height || 200,
-              fill: initialFill,
-              stroke: obj.stroke || obj.borderColor || 'transparent',
-              strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
-              rx: obj.rx || 0,  // Rounded corner radius X
-              ry: obj.ry || 0,  // Rounded corner radius Y
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              scaleX: obj.scaleX || 1,
-              scaleY: obj.scaleY || 1,
-              angle: obj.angle || obj.rotation || 0,
-              selectable: true,
-              opacity: obj.opacity || 1,
-              shadow: obj.shadow || null
-            });
-            
-            // Restore gradient using helper function
-            console.log(`🔍 About to call restoreGradient for rect:`, {
-              gradientType: obj.gradientType,
-              gradientColors: obj.gradientColors,
-              hasGradientType: !!obj.gradientType,
-              hasGradientColors: !!obj.gradientColors,
-              gradientColorsLength: obj.gradientColors ? obj.gradientColors.length : 0,
-              currentFill: rect.fill
-            });
-            
-            // Always call restoreGradient if gradient metadata exists
-            if (obj.gradientType && obj.gradientColors && obj.gradientColors.length >= 2) {
-              console.log(`🔍 Calling restoreGradient for rect with gradient metadata`);
-              restoreGradient(obj, rect);
-            } else {
-              console.log(`🔍 Skipping restoreGradient for rect - no gradient metadata`);
-            }
-            
-            canvas.add(rect);
-            console.log(`✅ Rectangle object loaded with rx: ${obj.rx}, ry: ${obj.ry}`);
-            break;
-            
-          case 'circle':
-            const circle = new fabric.Circle({
-              left: obj.left || obj.x || 0,
-              top: obj.top || obj.y || 0,
-              radius: obj.radius || (obj.width || obj.height || 100) / 2,
-              fill: obj.fill || obj.color || '#3b82f6',
-              stroke: obj.stroke || obj.borderColor || 'transparent',
-              strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              scaleX: obj.scaleX || 1,
-              scaleY: obj.scaleY || 1,
-              angle: obj.angle || obj.rotation || 0,
-              selectable: true,
-              opacity: obj.opacity || 1,
-              shadow: obj.shadow || null
-            });
-            
-            // Restore gradient using helper function
-            restoreGradient(obj, circle);
-            
-            canvas.add(circle);
-            console.log(`✅ Circle object loaded with radius: ${obj.radius}`);
-            break;
-            
-          case 'triangle':
-            const triangle = new fabric.Triangle({
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              width: obj.width !== undefined && obj.width !== null ? obj.width : 200,
-              height: obj.height !== undefined && obj.height !== null ? obj.height : 200,
-              fill: obj.fill || obj.color || '#3b82f6',
-              stroke: obj.stroke || obj.borderColor || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              strokeDashArray: obj.strokeDashArray || null,
-              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
-              strokeUniform: obj.strokeUniform || false,
-              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              selectable: true,
-              hasControls: true,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-              fillRule: obj.fillRule || 'nonzero',
-              paintFirst: obj.paintFirst || 'fill',
-              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
-              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
-              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
-              flipX: obj.flipX || false,
-              flipY: obj.flipY || false,
-              shadow: obj.shadow || null
-            });
-            
-            // Restore gradient using helper function
-            restoreGradient(obj, triangle);
-            
-            canvas.add(triangle);
-            console.log(`✅ Triangle object loaded with enhanced properties:`, {
-              left: triangle.left,
-              top: triangle.top,
-              width: triangle.width,
-              height: triangle.height,
-              fill: triangle.fill,
-              stroke: triangle.stroke,
-              strokeWidth: triangle.strokeWidth,
-              scaleX: triangle.scaleX,
-              scaleY: triangle.scaleY,
-              angle: triangle.angle,
-              opacity: triangle.opacity,
-              gradientType: (triangle as any).gradientType,
-              gradientColors: (triangle as any).gradientColors
-            });
-            break;
-            
-          case 'polygon':
-            if (obj.points && Array.isArray(obj.points)) {
-              const polygon = new fabric.Polygon(obj.points, {
-                left: obj.left || obj.x || 0,
-                top: obj.top || obj.y || 0,
-                fill: obj.fill || obj.color || '#3b82f6',
-                stroke: obj.stroke || obj.borderColor || 'transparent',
-                strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
-                strokeLineCap: obj.strokeLineCap || 'butt',
-                strokeLineJoin: obj.strokeLineJoin || 'miter',
-                scaleX: obj.scaleX || 1,
-                scaleY: obj.scaleY || 1,
-                angle: obj.angle || obj.rotation || 0,
-                selectable: true,
-                hasControls: true,
-                opacity: obj.opacity || 1,
-                shadow: obj.shadow || null
-              });
-              canvas.add(polygon);
-              console.log(`✅ Polygon object loaded`);
-            }
-            break;
-            
-          case 'path':
-            if (obj.path || (obj as any).pathData) {
-              const pathData = obj.path || (obj as any).pathData;
-              const path = new fabric.Path(pathData, {
-                left: obj.left || obj.x || 0,
-                top: obj.top || obj.y || 0,
-                fill: obj.fill || obj.color || '#3b82f6',
-                stroke: obj.stroke || obj.borderColor || 'transparent',
-                strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
-                strokeLineCap: obj.strokeLineCap || 'butt',
-                strokeLineJoin: obj.strokeLineJoin || 'miter',
-                strokeDashArray: obj.strokeDashArray || null,
-                strokeDashOffset: obj.strokeDashOffset || 0,
-                strokeUniform: obj.strokeUniform || false,
-                strokeMiterLimit: obj.strokeMiterLimit || 4,
-                scaleX: obj.scaleX || 1,
-                scaleY: obj.scaleY || 1,
-                angle: obj.angle || obj.rotation || 0,
-                selectable: true,
-                hasControls: true,
-                opacity: obj.opacity || 1,
-                shadow: obj.shadow || null,
-                fillRule: obj.fillRule || 'nonzero',
-                paintFirst: obj.paintFirst || 'fill',
-                globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
-                skewX: obj.skewX || 0,
-                skewY: obj.skewY || 0,
-                flipX: obj.flipX || false,
-                flipY: obj.flipY || false
-              });
-              
-              // Restore gradient using helper function
-              restoreGradient(obj, path);
-              canvas.add(path);
-              console.log(`✅ Path object loaded with path data:`, pathData ? 'yes' : 'no');
-            } else {
-              console.warn(`⚠️ Path object missing both 'path' and 'pathData' properties:`, obj);
-            }
-            break;
-            
-          case 'shape':
-            // Handle shape objects that have path data (like waves)
-            if ((obj as any).pathData) {
-              const path = new fabric.Path((obj as any).pathData, {
-                left: obj.left || obj.x || 0,
-                top: obj.top || obj.y || 0,
-                fill: obj.fill || obj.color || '#3b82f6',
-                stroke: obj.stroke || obj.borderColor || 'transparent',
-                strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
-                strokeLineCap: obj.strokeLineCap || 'butt',
-                strokeLineJoin: obj.strokeLineJoin || 'miter',
-                strokeDashArray: obj.strokeDashArray || null,
-                strokeDashOffset: obj.strokeDashOffset || 0,
-                strokeUniform: obj.strokeUniform || false,
-                strokeMiterLimit: obj.strokeMiterLimit || 4,
-                scaleX: obj.scaleX || 1,
-                scaleY: obj.scaleY || 1,
-                angle: obj.angle || obj.rotation || 0,
-                selectable: true,
-                hasControls: true,
-                opacity: obj.opacity || 1,
-                shadow: obj.shadow || null,
-                fillRule: obj.fillRule || 'nonzero',
-                paintFirst: obj.paintFirst || 'fill',
-                globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
-                skewX: obj.skewX || 0,
-                skewY: obj.skewY || 0,
-                flipX: obj.flipX || false,
-                flipY: obj.flipY || false
-              });
-              
-              // Restore gradient using helper function
-              restoreGradient(obj, path);
-              canvas.add(path);
-              console.log(`✅ Shape object with path data (wave) loaded`);
-            } else {
-              // Fallback to rectangle for regular shapes
-              const rect = new fabric.Rect({
-                left: obj.left || obj.x || 0,
-                top: obj.top || obj.y || 0,
-                width: obj.width || 200,
-                height: obj.height || 200,
-                fill: obj.fill || obj.color || '#3b82f6',
-                stroke: obj.stroke || obj.borderColor || 'transparent',
-                strokeWidth: obj.strokeWidth || obj.borderWidth || 0,
-                strokeLineCap: obj.strokeLineCap || 'butt',
-                strokeLineJoin: obj.strokeLineJoin || 'miter',
-                scaleX: obj.scaleX || 1,
-                scaleY: obj.scaleY || 1,
-                angle: obj.angle || obj.rotation || 0,
-                selectable: true,
-                hasControls: true,
-                opacity: obj.opacity || 1,
-                shadow: obj.shadow || null
-              });
-              
-              // Restore gradient using helper function
-              restoreGradient(obj, rect);
-              
-              canvas.add(rect);
-              console.log(`✅ Regular shape object loaded as rectangle`);
-            }
-            break;
-            
-          default:
-            console.warn(`⚠️ Unknown object type: ${obj.type}`, obj);
-            break;
-        }
-      } catch (error) {
-        console.error(`❌ Error loading object ${index + 1}:`, error, obj);
-      }
+    } finally {
+      // Reset the running flag
+      (addBrandKitLogoIfNeeded as any).isRunning = false;
     };
-    
-    // Check if this is a user-saved design or a fresh template
-    if (templateData.designFilename) {
-      console.log('📁 Loading user-saved design data from designFilename field:', templateData.designFilename);
-      try {
-        const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(templateData.designFilename));
-        if (designResponse.ok) {
-          const designData = await designResponse.json();
-          console.log('✅ User-saved design data loaded from designFilename:', designData);
-          
-          // Load user-saved background image (not template defaults)
-          if (designData.designData && designData.designData.backgroundImage) {
-            console.log('🖼️ Loading user-saved background image...');
-            setBackgroundImage(designData.designData.backgroundImage);
-          } else {
-            console.log('ℹ️ No user-saved background image found');
-            setBackgroundImage(null);
-          }
-          
-          // Load user-saved objects from design file
-          if (designData.designData && designData.designData.objects && Array.isArray(designData.designData.objects)) {
-            console.log(`🎨 Loading ${designData.designData.objects.length} user-saved objects from design file...`);
-            designData.designData.objects.forEach((obj: any, index: number) => {
-              loadObjectToCanvas(obj, index);
-            });
-          } else {
-            console.log('ℹ️ No user-saved objects found in design file');
-          }
-        } else {
-          console.warn('⚠️ Failed to load user-saved design file, falling back to database objects');
-          throw new Error('User-saved design file not found');
-        }
-      } catch (fileError) {
-        console.warn('⚠️ Error loading user-saved design file, falling back to database objects:', fileError);
-        // Load user-saved objects from database
-        if (templateData.objects && Array.isArray(templateData.objects)) {
-          console.log(`🎨 Loading ${templateData.objects.length} user-saved objects from database...`);
-          templateData.objects.forEach((obj: any, index: number) => {
-            loadObjectToCanvas(obj, index);
-          });
-        } else {
-          console.log('ℹ️ No user-saved objects found in database');
-        }
-      }
-    } else {
-      // This is a fresh template or template with default objects
-      console.log('🆕 Fresh template detected - checking for default objects...');
-      setBackgroundImage(null);
-      
-      // Load default objects from database if they exist
-      if (templateData.objects && Array.isArray(templateData.objects) && templateData.objects.length > 0) {
-        console.log(`🎨 Loading ${templateData.objects.length} default objects from database...`);
-        templateData.objects.forEach((obj: any, index: number) => {
-          loadObjectToCanvas(obj, index);
-        });
-      } else {
-        console.log('🆕 No default objects found - starting with clean canvas');
-      }
-    }
-    
-    // Wait a bit for objects to load, then render
-    setTimeout(() => {
-      canvas.renderAll();
-      saveCanvasToHistory();
-      
-      // Check if brand kit logo should be added to existing templates (after canvas is fully rendered)
-              setTimeout(async () => {
-          await addBrandKitLogoIfNeeded();
-        }, 200);
-      
-      const finalObjectCount = canvas.getObjects().length;
-      if (templateData.designFilename) {
-        console.log('✅ User-saved design loaded successfully:', templateKey);
-        console.log('🎨 Final canvas objects:', finalObjectCount);
-      } else {
-        console.log('✅ Fresh template loaded successfully:', templateKey);
-        console.log('🎨 Final canvas objects:', finalObjectCount, '(clean canvas)');
-      }
-      
-      // Final render to ensure everything is displayed
-      canvas.renderAll();
-      
-      // Log all loaded objects for debugging
-      const allObjects = canvas.getObjects();
-      allObjects.forEach((obj, index) => {
-        console.log(`🎨 Object ${index + 1}:`, {
-          type: obj.type,
-          left: obj.left,
-          top: obj.top,
-          width: obj.width,
-          height: obj.height,
-          text: obj.type === 'i-text' ? (obj as fabric.IText).text : 'N/A'
-        });
-      });
-    }, 100);
+          } catch (error) {
+    console.error("error");
   };
-
-  // Load user-saved design (for designs with saved content)
-  const loadUserSavedDesign = async (designData: any, templateData: any) => {
-    console.log('🚀 loadUserSavedDesign called with design data and template data');
-    console.log('📊 Full designData structure:', JSON.stringify(designData, null, 2));
-    console.log('📊 Full templateData structure:', JSON.stringify(templateData, null, 2));
-    
-    if (!canvas) {
-      console.error('❌ Canvas is not ready');
-      return;
-    }
-    
-    // Clear current canvas
-    canvas.clear();
-    
-    // Check for custom background from backend first
-    let customBackgroundImage = null;
-    let backgroundId = null;
-    if (user?.id) {
-      try {
-        const result = await getTemplateBackground(id, user.id);
-        if (result.success && result.background) {
-          customBackgroundImage = result.background.imageData;
-          backgroundId = result.background.id;
-          console.log('🖼️ Found custom background for template:', id, 'from backend');
-        }
-      } catch (error) {
-        console.warn('⚠️ Error reading custom backgrounds from backend:', error);
-      }
-    }
-
-    // Set background from saved design - prioritize custom background
-    const backgroundColor = designData.designData?.backgroundColor || templateData.backgroundColor || '#ffffff';
-    setBackgroundColor(backgroundColor);
-    setCurrentBackgroundId(backgroundId);
-    
-    // Load background image - prioritize custom background over saved design
-    const backgroundImageToLoad = customBackgroundImage || (designData.designData && designData.designData.backgroundImage);
-    if (backgroundImageToLoad) {
-      console.log('🖼️ Loading background image...', customBackgroundImage ? 'custom' : 'saved');
-      setBackgroundImage(backgroundImageToLoad);
-      
-      // Create and add background image to canvas
-      const imgElement = new Image();
-      imgElement.crossOrigin = 'anonymous';
-      
-      imgElement.onload = () => {
-        console.log('✅ Background image loaded successfully');
-        console.log('📏 Image dimensions:', imgElement.width, 'x', imgElement.height);
-        
-        // Create Fabric.js image from the loaded image
-        const fabricImage = new fabric.Image(imgElement);
-        console.log('✅ Fabric background image created');
-        
-        // Set properties for background image
-        fabricImage.set({
-          left: 0,
-          top: 0,
-          originX: 'left',
-          originY: 'top',
-          selectable: false,
-          evented: false,
-          lockMovementX: true,
-          lockMovementY: true,
-          lockRotation: true,
-          lockScalingX: true,
-          lockScalingY: true
-        });
-        
-        // Scale image to cover entire canvas
-        const canvasWidth = canvas.getWidth();
-        const canvasHeight = canvas.getHeight();
-        
-        if (fabricImage.width && fabricImage.height) {
-          const imageWidth = fabricImage.width;
-          const imageHeight = fabricImage.height;
-          
-          // Scale to cover entire canvas (cover mode)
-          const scaleX = canvasWidth / imageWidth;
-          const scaleY = canvasHeight / imageHeight;
-          const scale = Math.max(scaleX, scaleY);
-          
-          fabricImage.set({
-            scaleX: scale,
-            scaleY: scale
-          });
-          
-          console.log(`🎯 Background image scaled to cover canvas: scale ${scale}`);
-        }
-        
-        // Mark this as a background image
-        (fabricImage as any).isBackground = true;
-        
-        // Add background image to canvas FIRST (so it's at the bottom)
-        canvas.add(fabricImage);
-        
-        // Mark the background image properly
-        (fabricImage as any).isBackground = true;
-        (fabricImage as any).selectable = false;
-        (fabricImage as any).evented = false;
-        (fabricImage as any).zIndex = -1000; // Ensure it's at the very bottom
-        
-        // Ensure background is at the very bottom
-        const allObjects = canvas.getObjects();
-        const nonBackgroundObjects = allObjects.filter(obj => (obj as any).isBackground !== true);
-        
-        // Remove all objects temporarily
-        allObjects.forEach(obj => canvas.remove(obj));
-        
-        // Add background image first (bottom layer)
-        canvas.add(fabricImage);
-        
-        // Sort non-background objects by z-index before adding them back
-        nonBackgroundObjects.sort((a, b) => {
-          const aZ = (a as any).zIndex || 0;
-          const bZ = (b as any).zIndex || 0;
-          return aZ - bZ;
-        });
-        
-        // Add all other objects back (top layers) in proper order
-        nonBackgroundObjects.forEach(obj => canvas.add(obj));
-        
-        // Set canvas background to transparent so image shows
-        canvas.backgroundColor = 'transparent';
-        
-        // Render the canvas
-        canvas.renderAll();
-        
-        console.log('✅ Background image loaded and positioned successfully');
-        console.log('🎨 Canvas objects after background:', canvas.getObjects().length);
-        console.log('📋 Objects after background processing:', canvas.getObjects().map((obj, i) => ({
-          index: i + 1,
-          type: obj.type,
-          isBackground: (obj as any).isBackground
-        })));
-      };
-      
-      imgElement.onerror = (error) => {
-        console.error('❌ Error loading background image:', error);
-        console.error('❌ Background image URL:', backgroundImageToLoad);
-        setBackgroundImage(null);
-      };
-      
-      // Start loading the image
-      imgElement.src = backgroundImageToLoad;
-      
-    } else {
-      console.log('ℹ️ No user-saved background image found');
-      setBackgroundImage(null);
-    }
-    
-    // Set canvas background color (will be overridden if background image loads)
-    canvas.backgroundColor = backgroundColor;
-    
-    // Load user-saved objects from design file
-    if (designData.designData && designData.designData.objects && Array.isArray(designData.designData.objects)) {
-      console.log(`🎨 Loading ${designData.designData.objects.length} user-saved objects from design file...`);
-      console.log(`🔍 All objects from design file:`, JSON.stringify(designData.designData.objects, null, 2));
-      
-      // Log background image info for debugging
-      if (designData.designData.backgroundImage) {
-        console.log('🖼️ Background image URL for duplicate checking:', designData.designData.backgroundImage);
-      }
-      
-      // Sort objects by z-index before loading them
-      const sortedObjects = [...designData.designData.objects].sort((a, b) => {
-        const aZ = a.zIndex || 0;
-        const bZ = b.zIndex || 0;
-        return aZ - bZ;
-      });
-      
-      console.log('🔢 Objects sorted by z-index:', sortedObjects.map((obj, i) => ({
-        index: i,
-        type: obj.type,
-        zIndex: obj.zIndex || 0
-      })));
-      
-      sortedObjects.forEach((obj: any, index: number) => {
-        // Use the same object loading logic as in loadTemplateFromData
-        try {
-                console.log(`🎨 Loading object ${index + 1}:`, {
-        type: obj.type,
-        left: obj.left,
-        top: obj.top,
-        path: obj.path,
-        pathData: (obj as any).pathData,
-        isPath: (obj as any).isPath,
-        gradientType: obj.gradientType,
-        gradientColors: obj.gradientColors,
-        gradientStops: obj.gradientStops,
-        gradientCoords: obj.gradientCoords
-      });
-      console.log(`📋 Full object ${index + 1} data:`, JSON.stringify(obj, null, 2));
-          
-          if (obj.type === 'text' || obj.type === 'i-text') {
-            const text = new fabric.IText(obj.text || obj.content || 'Texto', {
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              fontSize: obj.fontSize !== undefined && obj.fontSize !== null ? obj.fontSize : 48,
-              fontFamily: obj.fontFamily || obj.font || 'Arial',
-              fontWeight: obj.fontWeight || 'normal',
-              fontStyle: obj.fontStyle || 'normal',
-              textAlign: obj.textAlign || 'left',
-              fill: obj.fill || obj.color || '#000000',
-              selectable: true,
-              editable: true,
-              hasControls: true,
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              width: obj.width !== undefined && obj.width !== null ? obj.width : undefined,
-              height: obj.height !== undefined && obj.height !== null ? obj.height : undefined,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-              stroke: obj.stroke || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              strokeDashArray: obj.strokeDashArray || null,
-              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
-              strokeUniform: obj.strokeUniform || false,
-              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
-              shadow: obj.shadow || null,
-              fillRule: obj.fillRule || 'nonzero',
-              paintFirst: obj.paintFirst || 'fill',
-              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
-              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
-              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
-              flipX: obj.flipX || false,
-              flipY: obj.flipY || false
-            });
-            
-            // Restore gradient using helper function
-            restoreGradient(obj, text);
-            
-            canvas.add(text);
-            console.log(`✅ Text object loaded with enhanced properties:`, {
-              text: obj.text || obj.content,
-              fontSize: text.fontSize,
-              fontFamily: text.fontFamily,
-              fontWeight: text.fontWeight,
-              fontStyle: text.fontStyle,
-              fill: text.fill,
-              stroke: text.stroke,
-              strokeWidth: text.strokeWidth,
-              scaleX: text.scaleX,
-              scaleY: text.scaleY,
-              angle: text.angle,
-              opacity: text.opacity,
-              gradientType: (text as any).gradientType,
-              gradientColors: (text as any).gradientColors
-            });
-          } else if (obj.type === 'image') {
-            // Skip image objects that are the same as the background image to avoid duplication
-            if (obj.src && obj.src !== backgroundImageToLoad) {
-              const imgElement = new Image();
-              imgElement.crossOrigin = 'anonymous';
-              imgElement.onload = () => {
-                const fabricImage = new fabric.Image(imgElement, {
-                  left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-                  top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-                  scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-                  scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-                  angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-                  opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-                  selectable: true,
-                  evented: true
-                });
-                canvas.add(fabricImage);
-                canvas.renderAll();
-              };
-              imgElement.src = obj.src;
-            } else if (obj.src === backgroundImageToLoad) {
-              console.log('🚫 Skipping duplicate image object (same as background):', obj.src);
-            }
-          } else if (obj.type === 'rect' || obj.type === 'rectangle') {
-            // Determine initial fill - use solid color if it's a gradient object, let restoreGradient handle it
-            let initialFill = '#cccccc'; // default
-            if (typeof obj.fill === 'string') {
-              initialFill = obj.fill;
-            } else if (obj.color) {
-              initialFill = obj.color;
-            }
-            
-            const rect = new fabric.Rect({
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              width: obj.width !== undefined && obj.width !== null ? obj.width : 100,
-              height: obj.height !== undefined && obj.height !== null ? obj.height : 100,
-              fill: initialFill, // Set initial fill to a solid color
-              stroke: obj.stroke || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              rx: obj.rx !== undefined && obj.rx !== null ? obj.rx : 0,  // Rounded corner radius X
-              ry: obj.ry !== undefined && obj.ry !== null ? obj.ry : 0,  // Rounded corner radius Y
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-              selectable: true,
-              hasControls: true
-            });
-            
-            // Restore gradient using helper function
-            console.log(`🔍 About to call restoreGradient for rect (loadUserSavedDesign):`, {
-              gradientType: obj.gradientType,
-              gradientColors: obj.gradientColors,
-              hasGradientType: !!obj.gradientType,
-              hasGradientColors: !!obj.gradientColors,
-              gradientColorsLength: obj.gradientColors ? obj.gradientColors.length : 0,
-              currentFill: rect.fill
-            });
-            
-            // Always call restoreGradient if gradient metadata exists
-            if (obj.gradientType && obj.gradientColors && obj.gradientColors.length >= 2) {
-              console.log(`🔍 Calling restoreGradient for rect with gradient metadata (loadUserSavedDesign)`);
-              restoreGradient(obj, rect);
-            } else {
-              console.log(`🔍 Skipping restoreGradient for rect - no gradient metadata (loadUserSavedDesign)`);
-            }
-            
-            canvas.add(rect);
-            console.log(`✅ Rectangle loaded with all properties:`, {
-              left: rect.left,
-              top: rect.top,
-              width: rect.width,
-              height: rect.height,
-              fill: rect.fill,
-              stroke: rect.stroke,
-              strokeWidth: rect.strokeWidth,
-              rx: rect.rx,
-              ry: rect.ry,
-              scaleX: rect.scaleX,
-              scaleY: rect.scaleY,
-              angle: rect.angle,
-              opacity: rect.opacity
-            });
-          } else if (obj.type === 'circle') {
-            const circle = new fabric.Circle({
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              radius: obj.radius !== undefined && obj.radius !== null ? obj.radius : ((obj.width !== undefined && obj.width !== null ? obj.width : 100) / 2),
-              fill: obj.fill || obj.color || '#cccccc',
-              stroke: obj.stroke || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-              selectable: true,
-              hasControls: true
-            });
-            canvas.add(circle);
-            console.log(`✅ Circle loaded with all properties:`, {
-              left: circle.left,
-              top: circle.top,
-              radius: circle.radius,
-              fill: circle.fill,
-              stroke: circle.stroke,
-              strokeWidth: circle.strokeWidth,
-              scaleX: circle.scaleX,
-              scaleY: circle.scaleY,
-              angle: circle.angle,
-              opacity: circle.opacity
-            });
-          } else if (obj.type === 'triangle') {
-            const triangle = new fabric.Triangle({
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              width: obj.width !== undefined && obj.width !== null ? obj.width : 100,
-              height: obj.height !== undefined && obj.height !== null ? obj.height : 100,
-              fill: obj.fill || obj.color || '#cccccc',
-              stroke: obj.stroke || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              strokeDashArray: obj.strokeDashArray || null,
-              strokeDashOffset: obj.strokeDashOffset !== undefined && obj.strokeDashOffset !== null ? obj.strokeDashOffset : 0,
-              strokeUniform: obj.strokeUniform || false,
-              strokeMiterLimit: obj.strokeMiterLimit !== undefined && obj.strokeMiterLimit !== null ? obj.strokeMiterLimit : 4,
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-              selectable: true,
-              hasControls: true,
-              fillRule: obj.fillRule || 'nonzero',
-              paintFirst: obj.paintFirst || 'fill',
-              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
-              skewX: obj.skewX !== undefined && obj.skewX !== null ? obj.skewX : 0,
-              skewY: obj.skewY !== undefined && obj.skewY !== null ? obj.skewY : 0,
-              flipX: obj.flipX || false,
-              flipY: obj.flipY || false
-            });
-            
-            // Restore gradient properties if they exist
-            if (obj.gradientType) {
-              (triangle as any).gradientType = obj.gradientType;
-            }
-            if (obj.gradientColors) {
-              (triangle as any).gradientColors = obj.gradientColors;
-              
-              // Recreate the actual gradient fill
-              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: triangle.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
-                  ]
-                });
-                triangle.set('fill', gradient);
-                console.log('🎨 Teal → Blue gradient restored for triangle');
-              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: triangle.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
-                  ]
-                });
-                triangle.set('fill', gradient);
-                console.log('🎨 Blue → Teal gradient restored for triangle');
-              }
-            }
-            
-            canvas.add(triangle);
-            console.log(`✅ Triangle object loaded with enhanced properties:`, {
-              left: triangle.left,
-              top: triangle.top,
-              width: triangle.width,
-              height: triangle.height,
-              fill: triangle.fill,
-              stroke: triangle.stroke,
-              strokeWidth: triangle.strokeWidth,
-              scaleX: triangle.scaleX,
-              scaleY: triangle.scaleY,
-              angle: triangle.angle,
-              opacity: triangle.opacity,
-              gradientType: (triangle as any).gradientType,
-              gradientColors: (triangle as any).gradientColors
-            });
-          } else if (obj.type === 'path' && (obj.path || (obj as any).pathData)) {
-            // Handle path objects (like waves) with path or pathData property
-            const pathData = obj.path || (obj as any).pathData;
-            console.log(`🎯 Creating fabric.Path for wave with pathData:`, pathData);
-            console.log(`🔍 Full path object data:`, JSON.stringify(obj, null, 2));
-            const path = new fabric.Path(pathData, {
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              fill: obj.fill || obj.color || '#cccccc',
-              stroke: obj.stroke || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              strokeDashArray: obj.strokeDashArray || null,
-              strokeDashOffset: obj.strokeDashOffset || 0,
-              strokeUniform: obj.strokeUniform || false,
-              strokeMiterLimit: obj.strokeMiterLimit || 4,
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              selectable: true,
-              hasControls: true,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-              fillRule: obj.fillRule || 'nonzero',
-              paintFirst: obj.paintFirst || 'fill',
-              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
-              skewX: obj.skewX || 0,
-              skewY: obj.skewY || 0,
-              flipX: obj.flipX || false,
-              flipY: obj.flipY || false
-            });
-            
-            // Restore gradient properties if they exist
-            if (obj.gradientType) {
-              (path as any).gradientType = obj.gradientType;
-            }
-            if (obj.gradientColors) {
-              (path as any).gradientColors = obj.gradientColors;
-              
-              // Recreate the actual gradient fill
-              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: path.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
-                  ]
-                });
-                path.set('fill', gradient);
-                console.log('🎨 Teal → Blue gradient restored for wave shape');
-              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: path.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
-                  ]
-                });
-                path.set('fill', gradient);
-                console.log('🎨 Blue → Teal gradient restored for wave shape');
-              }
-            }
-            
-            canvas.add(path);
-            console.log(`✅ Path object (wave) loaded with path data from design file:`, {
-              left: path.left,
-              top: path.top,
-              fill: path.fill,
-              stroke: path.stroke,
-              pathData: pathData,
-              gradientType: (path as any).gradientType,
-              gradientColors: (path as any).gradientColors
-            });
-          } else if (obj.type === 'shape' && (obj as any).pathData) {
-            // Handle shape objects that have path data (like waves)
-            console.log(`🎯 Creating fabric.Path for shape with pathData:`, (obj as any).pathData);
-            const path = new fabric.Path((obj as any).pathData, {
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              fill: obj.fill || obj.color || '#cccccc',
-              stroke: obj.stroke || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              strokeDashArray: obj.strokeDashArray || null,
-              strokeDashOffset: obj.strokeDashOffset || 0,
-              strokeUniform: obj.strokeUniform || false,
-              strokeMiterLimit: obj.strokeMiterLimit || 4,
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              selectable: true,
-              hasControls: true,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-              fillRule: obj.fillRule || 'nonzero',
-              paintFirst: obj.paintFirst || 'fill',
-              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
-              skewX: obj.skewX || 0,
-              skewY: obj.skewY || 0,
-              flipX: obj.flipX || false,
-              flipY: obj.flipY || false
-            });
-            
-            // Restore gradient properties if they exist
-            if (obj.gradientType) {
-              (path as any).gradientType = obj.gradientType;
-            }
-            if (obj.gradientColors) {
-              (path as any).gradientColors = obj.gradientColors;
-              
-              // Recreate the actual gradient fill
-              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: path.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
-                  ]
-                });
-                path.set('fill', gradient);
-                console.log('🎨 Teal → Blue gradient restored for shape with pathData');
-              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: path.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
-                  ]
-                });
-                path.set('fill', gradient);
-                console.log('🎨 Blue → Teal gradient restored for shape with pathData');
-              }
-            }
-            
-            canvas.add(path);
-            console.log(`✅ Shape object with path data (wave) loaded:`, {
-              left: path.left,
-              top: path.top,
-              fill: path.fill,
-              stroke: path.stroke,
-              pathData: (obj as any).pathData,
-              gradientType: (path as any).gradientType,
-              gradientColors: (path as any).gradientColors
-            });
-          } else if ((obj as any).pathData || (obj as any).isPath) {
-            // Catch-all for any object that has pathData or isPath flag (wave shapes)
-            const pathData = (obj as any).pathData || obj.path;
-            console.log(`🎯 Catch-all: Creating fabric.Path for object with pathData/isPath:`, {
-              type: obj.type,
-              pathData: pathData,
-              isPath: (obj as any).isPath
-            });
-            const path = new fabric.Path(pathData, {
-              left: obj.left !== undefined && obj.left !== null ? obj.left : (obj.x !== undefined && obj.x !== null ? obj.x : 100),
-              top: obj.top !== undefined && obj.top !== null ? obj.top : (obj.y !== undefined && obj.y !== null ? obj.y : 100),
-              fill: obj.fill || obj.color || '#cccccc',
-              stroke: obj.stroke || 'transparent',
-              strokeWidth: obj.strokeWidth !== undefined && obj.strokeWidth !== null ? obj.strokeWidth : 0,
-              strokeLineCap: obj.strokeLineCap || 'butt',
-              strokeLineJoin: obj.strokeLineJoin || 'miter',
-              strokeDashArray: obj.strokeDashArray || null,
-              strokeDashOffset: obj.strokeDashOffset || 0,
-              strokeUniform: obj.strokeUniform || false,
-              strokeMiterLimit: obj.strokeMiterLimit || 4,
-              scaleX: obj.scaleX !== undefined && obj.scaleX !== null ? obj.scaleX : 1,
-              scaleY: obj.scaleY !== undefined && obj.scaleY !== null ? obj.scaleY : 1,
-              angle: obj.angle !== undefined && obj.angle !== null ? obj.angle : (obj.rotation !== undefined && obj.rotation !== null ? obj.rotation : 0),
-              selectable: true,
-              hasControls: true,
-              opacity: obj.opacity !== undefined && obj.opacity !== null ? obj.opacity : 1,
-              fillRule: obj.fillRule || 'nonzero',
-              paintFirst: obj.paintFirst || 'fill',
-              globalCompositeOperation: obj.globalCompositeOperation || 'source-over',
-              skewX: obj.skewX || 0,
-              skewY: obj.skewY || 0,
-              flipX: obj.flipX || false,
-              flipY: obj.flipY || false
-            });
-            
-            // Restore gradient properties if they exist
-            if (obj.gradientType) {
-              (path as any).gradientType = obj.gradientType;
-            }
-            if (obj.gradientColors) {
-              (path as any).gradientColors = obj.gradientColors;
-              
-              // Recreate the actual gradient fill
-              if (obj.gradientType === 'teal-blue' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: path.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Teal on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Blue on right
-                  ]
-                });
-                path.set('fill', gradient);
-                console.log('🎨 Teal → Blue gradient restored for catch-all path object');
-              } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
-                const gradient = new fabric.Gradient({
-                  type: 'linear',
-                  coords: {
-                    x1: 0,
-                    y1: 0,
-                    x2: path.width || 200,
-                    y2: 0
-                  },
-                  colorStops: [
-                    { offset: 0, color: obj.gradientColors[0] },   // Blue on left
-                    { offset: 1, color: obj.gradientColors[1] }     // Teal on right
-                  ]
-                });
-                path.set('fill', gradient);
-                console.log('🎨 Blue → Teal gradient restored for catch-all path object');
-              }
-            }
-            
-            canvas.add(path);
-            console.log(`✅ Catch-all path object (wave) loaded:`, {
-              left: path.left,
-              top: path.top,
-              fill: path.fill,
-              stroke: path.stroke,
-              pathData: pathData,
-              gradientType: (path as any).gradientType,
-              gradientColors: (path as any).gradientColors
-            });
-          }
-        } catch (error) {
-          console.error(`❌ Error loading object ${index + 1}:`, error, obj);
-        }
-      });
-    } else {
-      console.log('ℹ️ No user-saved objects found in design file');
-    }
-    
-    // Wait a bit for objects to load, then render
-    setTimeout(() => {
-      // Ensure proper layering: background image at bottom, objects on top
-      const allObjects = canvas.getObjects();
-      const backgroundObjects = allObjects.filter(obj => (obj as any).isBackground === true);
-      const contentObjects = allObjects.filter(obj => (obj as any).isBackground !== true);
-      
-      console.log('🔍 Before final layering - Total objects:', allObjects.length);
-      console.log('🔍 Background objects found:', backgroundObjects.length);
-      console.log('🔍 Content objects found:', contentObjects.length);
-      
-      // Remove all objects temporarily
-      allObjects.forEach(obj => canvas.remove(obj));
-      
-      // Add background objects first (bottom layer)
-      backgroundObjects.forEach(obj => canvas.add(obj));
-      
-      // Sort content objects by z-index before adding them
-      contentObjects.sort((a, b) => {
-        const aZ = (a as any).zIndex || 0;
-        const bZ = (b as any).zIndex || 0;
-        return aZ - bZ;
-      });
-      
-      // Add content objects on top in proper order
-      contentObjects.forEach(obj => canvas.add(obj));
-      
-      canvas.renderAll();
-      saveCanvasToHistory();
-      
-      const finalObjectCount = canvas.getObjects().length;
-      console.log('✅ User-saved design loaded successfully');
-      console.log('🎨 Final canvas objects:', finalObjectCount);
-      console.log('🖼️ Background objects:', backgroundObjects.length);
-      console.log('🎨 Content objects:', contentObjects.length);
-      
-      // Log detailed object information for debugging
-      console.log('📋 Detailed object breakdown:');
-      const finalObjects = canvas.getObjects();
-      finalObjects.forEach((obj, index) => {
-        const objInfo: any = {
-          index: index + 1,
-          type: obj.type,
-          left: obj.left,
-          top: obj.top,
-          width: obj.width,
-          height: obj.height,
-          isBackground: (obj as any).isBackground
-        };
-        
-        if (obj.type === 'i-text') {
-          objInfo.text = (obj as fabric.IText).text;
-        } else if (obj.type === 'image') {
-          objInfo.src = (obj as any).src || 'unknown';
-        } else if (obj.type === 'path') {
-          objInfo.pathData = (obj as any).pathData ? 'present' : 'missing';
-        }
-        
-        console.log(`🎨 Object ${index + 1}:`, objInfo);
-        console.log(`📋 Full object ${index + 1} details:`, JSON.stringify(obj, null, 2));
-      });
-      
-      // Add brand kit logo after user-saved design is loaded
-      setTimeout(async () => {
-        await addBrandKitLogoIfNeeded();
-      }, 300);
-    }, 100);
   };
   
   // Add real estate specific elements
@@ -5617,7 +5605,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
 
 
   const currentConfig = editorConfigs[editorTypeState as keyof typeof editorConfigs] || editorConfigs.flyer;
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar Toolbar */}
@@ -6788,9 +6775,80 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       <div className="flex-1 overflow-auto">
           {/* Canvas */}
          <div className="bg-white rounded-2xl shadow-lg p-6 mx-6">
+              {/* Zoom Controls */}
+              <div className="flex items-center justify-center mb-4 space-x-4">
+                <button
+                  onClick={zoomOut}
+                  className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors"
+                  disabled={zoomLevel <= 25}
+                >
+                  -
+                </button>
+                
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600 min-w-[50px]">{zoomLevel}%</span>
+                  <input
+                    type="range"
+                    min="25"
+                    max="300"
+                    value={zoomLevel}
+                    onChange={(e) => handleZoomChange(parseInt(e.target.value))}
+                    className="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+                
+                <button
+                  onClick={zoomIn}
+                  className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors"
+                  disabled={zoomLevel >= 300}
+                >
+                  +
+                </button>
+                
+                <button
+                  onClick={resetZoom}
+                  className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
+              
+              {/* Slider Styles */}
+              <style jsx>{`
+                .slider::-webkit-slider-thumb {
+                  appearance: none;
+                  width: 20px;
+                  height: 20px;
+                  border-radius: 50%;
+                  background: #3b82f6;
+                  cursor: pointer;
+                  border: 2px solid #ffffff;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                }
+                
+                .slider::-moz-range-thumb {
+                  width: 20px;
+                  height: 20px;
+                  border-radius: 50%;
+                  background: #3b82f6;
+                  cursor: pointer;
+                  border: 2px solid #ffffff;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                }
+                
+                .slider:disabled {
+                  opacity: 0.5;
+                  cursor: not-allowed;
+                }
+              `}</style>
+              
               <div className="flex justify-center overflow-auto p-4">
                 <div 
-                  className="relative border-2 border-gray-300 rounded-lg shadow-lg bg-white min-w-fit"
+                  className="relative border-2 border-gray-300 rounded-lg shadow-lg bg-white min-w-fit transition-transform duration-200"
+                  style={{ 
+                    transform: `scale(${zoomLevel / 100})`,
+                    transformOrigin: 'top center'
+                  }}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                 >

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 
 interface DownloadedDesign {
   id: string;
@@ -110,8 +111,9 @@ const DownloadsPage: React.FC = React.memo(() => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 py-8">
-      <div className="max-w-7xl mx-auto px-6">
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 py-8">
+        <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center space-x-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-full text-sm font-medium mb-4 border border-orange-200">
@@ -281,8 +283,9 @@ const DownloadsPage: React.FC = React.memo(() => {
             </a>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 });
 
