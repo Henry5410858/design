@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const corsMiddleware = require('./middleware/cors');
 require('dotenv').config();
 
 // Import routes
@@ -13,20 +14,9 @@ const canvaRoutes = require('./routes/canva');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// CORS configuration
-const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    '*'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
 
-// Middleware
-app.use(cors(corsOptions));
+
+app.use(corsMiddleware);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 

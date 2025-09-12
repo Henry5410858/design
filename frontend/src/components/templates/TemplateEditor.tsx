@@ -5,7 +5,7 @@ import jsPDF from 'jspdf';
 import { useAuth } from '@/context/AuthContext';
 
 import API_ENDPOINTS from '@/config/api';
-import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
+import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject as OverlapCanvasObject } from '@/utils/overlapUtils';
 // CSS for smooth animations
 const animationStyles = `
   @keyframes fadeInScale {
@@ -342,7 +342,7 @@ export default function TemplateEditor({ id }: { id: string }) {
           
           // Generate a contrasting color based on the logo's background
           // For simplicity, we'll use the brand kit primary color as reference
-          const logoBackgroundColor = brandKit?.primaryColor || '#000000';
+          const logoBackgroundColor = brandKit?.colors?.primary || '#000000';
           const contrastingColor = getHighContrastColor(logoBackgroundColor);
           
           console.log(`🎨 Changing color from ${currentColor} to ${contrastingColor} for better contrast`);
