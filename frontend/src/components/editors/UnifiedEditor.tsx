@@ -19,6 +19,7 @@ import API_ENDPOINTS from '@/config/api';
 import { jsPDF } from 'jspdf';
 import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
 import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, canvasToBase64, getImageTypeFromDataUrl } from '@/utils/templateBackgrounds';
+import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
 
 interface UnifiedEditorProps {
   id: string;
@@ -2415,6 +2416,95 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     return color;
   };
 
+  // Adjust colors of objects that overlap with the logo for better contrast
+  const adjustOverlappingObjectColors = (logoObject: fabric.Object) => {
+    if (!canvas || !logoObject) {
+      console.log('ℹ️ Canvas or logo object not available for overlap detection');
+      return;
+    }
+
+    try {
+      // Convert logo object to our CanvasObject interface
+      const logoCanvasObject: CanvasObject = {
+        id: logoObject.get('id') || 'logo',
+        type: logoObject.type || 'image',
+        left: logoObject.left || 0,
+        top: logoObject.top || 0,
+        width: logoObject.width || 0,
+        height: logoObject.height || 0,
+        scaleX: logoObject.scaleX || 1,
+        scaleY: logoObject.scaleY || 1
+      };
+
+      // Get all canvas objects and convert them to our interface
+      const allCanvasObjects: CanvasObject[] = canvas.getObjects().map(obj => ({
+        id: obj.get('id') || Math.random().toString(36).slice(2),
+        type: obj.type || 'unknown',
+        left: obj.left || 0,
+        top: obj.top || 0,
+        width: obj.width || 0,
+        height: obj.height || 0,
+        scaleX: obj.scaleX || 1,
+        scaleY: obj.scaleY || 1,
+        color: obj.fill || obj.color || '#000000',
+        fill: obj.fill || obj.color || '#000000'
+      }));
+
+      // Find overlapping objects
+      const overlappingObjects = findOverlappingObjects(logoCanvasObject, allCanvasObjects);
+      
+      console.log(`🎨 Found ${overlappingObjects.length} overlapping objects with logo`);
+
+      // Adjust colors for overlapping objects
+      overlappingObjects.forEach((overlapInfo, index) => {
+        const { object, overlapPercentage } = overlapInfo;
+        
+        // Only adjust objects with significant overlap (more than 10%)
+        if (overlapPercentage > 10) {
+          console.log(`🎨 Adjusting color for object ${index + 1} (${overlapPercentage.toFixed(1)}% overlap)`);
+          
+          // Find the corresponding fabric object on the canvas
+          const fabricObject = canvas.getObjects().find(obj => 
+            (obj.get('id') === object.id) || 
+            (obj.left === object.left && obj.top === object.top && obj.type === object.type)
+          );
+
+          if (fabricObject && (fabricObject.type === 'text' || fabricObject.type === 'i-text' || fabricObject.type === 'rect' || fabricObject.type === 'circle' || fabricObject.type === 'triangle')) {
+            // Get the current color
+            const currentColor = fabricObject.fill || fabricObject.color || '#000000';
+            
+            // Generate a contrasting color based on the logo's background
+            // For simplicity, we'll use the gradient background color as reference
+            const logoBackgroundColor = brandKit.primaryColor || '#000000';
+            const contrastingColor = getHighContrastColor(logoBackgroundColor);
+            
+            console.log(`🎨 Changing color from ${currentColor} to ${contrastingColor} for better contrast`);
+            
+            // Apply the new color
+            fabricObject.set('fill', contrastingColor);
+            if (fabricObject.type === 'text' || fabricObject.type === 'i-text') {
+              fabricObject.set('fill', contrastingColor);
+            }
+            
+            // Mark that this object was auto-adjusted
+            fabricObject.set('autoAdjustedForLogo', true);
+            fabricObject.set('originalColor', currentColor);
+          }
+        }
+      });
+
+      // Render the canvas to show the changes
+      canvas.renderAll();
+      
+      if (overlappingObjects.length > 0) {
+        console.log(`✅ Adjusted colors for ${overlappingObjects.filter(o => o.overlapPercentage > 10).length} overlapping objects`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error adjusting overlapping object colors:', error);
+    }
+  };
+
   // Add brand kit logo to existing templates if needed
   const addBrandKitLogoIfNeeded = async () => {
     console.log('🔍 addBrandKitLogoIfNeeded called');
@@ -2569,6 +2659,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         canvas.add(fabricImage);
         // Ensure logo is on top
         canvas.bringObjectToFront(fabricImage);
+        
+        // Detect overlapping objects and adjust their colors for better contrast
+        setTimeout(() => {
+          adjustOverlappingObjectColors(fabricImage);
+        }, 100);
         
         // Force canvas to render multiple times to ensure visibility
         canvas.renderAll();

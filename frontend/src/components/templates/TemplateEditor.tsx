@@ -5,6 +5,7 @@ import jsPDF from 'jspdf';
 import { useAuth } from '@/context/AuthContext';
 
 import API_ENDPOINTS from '@/config/api';
+import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
 // CSS for smooth animations
 const animationStyles = `
   @keyframes fadeInScale {
@@ -320,24 +321,84 @@ export default function TemplateEditor({ id }: { id: string }) {
       .then(data => setBrandKit(data));
   }, [token]);
 
+  // Detect overlapping objects and adjust their colors for better contrast with logo
+  const adjustOverlappingObjectColors = (logoObject: CanvasObject) => {
+    try {
+      // Find overlapping objects
+      const overlappingObjects = findOverlappingObjects(logoObject, objects);
+      
+      console.log(`🎨 Found ${overlappingObjects.length} overlapping objects with logo`);
+
+      // Adjust colors for overlapping objects
+      overlappingObjects.forEach((overlapInfo, index) => {
+        const { object, overlapPercentage } = overlapInfo;
+        
+        // Only adjust objects with significant overlap (more than 10%)
+        if (overlapPercentage > 10) {
+          console.log(`🎨 Adjusting color for object ${index + 1} (${overlapPercentage.toFixed(1)}% overlap)`);
+          
+          // Get the current color
+          const currentColor = object.color || '#000000';
+          
+          // Generate a contrasting color based on the logo's background
+          // For simplicity, we'll use the brand kit primary color as reference
+          const logoBackgroundColor = brandKit?.primaryColor || '#000000';
+          const contrastingColor = getHighContrastColor(logoBackgroundColor);
+          
+          console.log(`🎨 Changing color from ${currentColor} to ${contrastingColor} for better contrast`);
+          
+          // Update the object color
+          setObjects(objs => objs.map(obj => 
+            obj.id === object.id 
+              ? { ...obj, color: contrastingColor, autoAdjustedForLogo: true, originalColor: currentColor }
+              : obj
+          ));
+        }
+      });
+
+      if (overlappingObjects.length > 0) {
+        console.log(`✅ Adjusted colors for ${overlappingObjects.filter(o => o.overlapPercentage > 10).length} overlapping objects`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error adjusting overlapping object colors:', error);
+    }
+  };
+
   // Apply brand kit to template objects
   useEffect(() => {
     if (!brandKit || !template) return;
-    setObjects(objs => objs.map(obj => {
-      // Replace logo images
-      if (obj.type === 'image' && brandKit.logo && obj.src && (obj.src.toLowerCase().includes('logo') || obj.src.toLowerCase().includes('placeholder'))) {
-        return { ...obj, src: brandKit.logo };
+    setObjects(objs => {
+      const updatedObjects = objs.map(obj => {
+        // Replace logo images
+        if (obj.type === 'image' && brandKit.logo && obj.src && (obj.src.toLowerCase().includes('logo') || obj.src.toLowerCase().includes('placeholder'))) {
+          return { ...obj, src: brandKit.logo };
+        }
+        // Replace colors
+        if ((obj.type === 'text' || obj.type === 'rect') && brandKit.colors) {
+          let newColor = obj.color;
+          if (obj.color === '#1D4ED8') newColor = brandKit.colors.primary;
+          if (obj.color === '#F59E0B') newColor = brandKit.colors.secondary;
+          if (obj.color === '#10B981') newColor = brandKit.colors.accent;
+          return { ...obj, color: newColor };
+        }
+        return obj;
+      });
+
+      // Check if we have a logo and detect overlaps
+      const logoObject = updatedObjects.find(obj => 
+        obj.type === 'image' && obj.src === brandKit.logo
+      );
+
+      if (logoObject) {
+        // Use setTimeout to ensure the objects are updated before checking overlaps
+        setTimeout(() => {
+          adjustOverlappingObjectColors(logoObject);
+        }, 100);
       }
-      // Replace colors
-      if ((obj.type === 'text' || obj.type === 'rect') && brandKit.colors) {
-        let newColor = obj.color;
-        if (obj.color === '#1D4ED8') newColor = brandKit.colors.primary;
-        if (obj.color === '#F59E0B') newColor = brandKit.colors.secondary;
-        if (obj.color === '#10B981') newColor = brandKit.colors.accent;
-        return { ...obj, color: newColor };
-      }
-      return obj;
-    }));
+
+      return updatedObjects;
+    });
     // Only update background color if brandKit.colors.primary is set and template/backgroundColor is not set
     // Comment out or remove the following if you want to always default to white
     // if (brandKit.colors && (backgroundColor === '#ffffff' || backgroundColor === '#FFFFFF')) {
