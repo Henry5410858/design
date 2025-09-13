@@ -9,14 +9,14 @@ This guide will walk you through setting up the Canva integration for production
 1. Visit [Canva Developers](https://www.canva.com/developers/)
 2. Click "Get Started" or "Apply for Access"
 3. Fill out the application form:
-   - **Company/Project Name**: DesignCenter
+   - **Company/Project Name**: Centro de Diseño
    - **Use Case**: Real estate marketing design platform
    - **Expected User Volume**: Your estimated user count
    - **Integration Type**: OAuth 2.0 + API integration
 
 ### 1.2 Create OAuth Application
 Once approved, create your OAuth app:
-1. **App Name**: DesignCenter Canva Integration
+1. **App Name**: Centro de Diseño Integración Canva
 2. **Description**: Professional design tools for real estate marketing
 3. **Redirect URIs**:
    - Production: `https://yourdomain.com/canva/callback`

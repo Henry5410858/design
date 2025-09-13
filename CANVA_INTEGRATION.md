@@ -1,8 +1,8 @@
-# 🎨 Canva Integration for DesignCenter
+# 🎨 Integración de Canva para Centro de Diseño
 
 ## Overview
 
-This document outlines the complete Canva integration implementation for the DesignCenter platform. The integration provides users with access to professional design tools and templates through Canva's API, with plan-based restrictions and seamless user experience.
+Este documento describe la implementación completa de la integración de Canva para la plataforma Centro de Diseño. La integración proporciona a los usuarios acceso a herramientas de diseño profesionales y plantillas a través de la API de Canva, con restricciones basadas en planes y una experiencia de usuario fluida.
 
 ## 🚀 Features Implemented
 
@@ -310,4 +310,4 @@ console.log('Canva Context:', useCanva());
 
 ---
 
-*This integration transforms DesignCenter from a basic design tool into a professional design platform, giving users access to industry-standard design capabilities while maintaining the platform's unique real estate focus.*
+*Esta integración transforma Centro de Diseño de una herramienta de diseño básica a una plataforma de diseño profesional, dando a los usuarios acceso a capacidades de diseño estándar de la industria mientras mantiene el enfoque único de la plataforma en bienes raíces.*

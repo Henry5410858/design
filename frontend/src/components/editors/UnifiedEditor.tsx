@@ -907,7 +907,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       title = `Editor of ${editorTypeState.charAt(0).toUpperCase() + editorTypeState.slice(1)}`;
       console.log('✅ Setting title to editor type:', title);
     } else {
-      title = `DesignCenter Editor`;
+      title = `Editor Centro de Diseño`;
       console.log('✅ Setting default title:', title);
     }
     
@@ -934,7 +934,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     } else if (editorTypeState) {
       document.title = `Editor of ${editorTypeState.charAt(0).toUpperCase() + editorTypeState.slice(1)}`;
       } else {
-      document.title = `DesignCenter Editor`;
+      document.title = `Editor Centro de Diseño`;
     }
   }, []); // Run only once on mount
 

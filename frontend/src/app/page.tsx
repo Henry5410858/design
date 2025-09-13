@@ -14,7 +14,7 @@ export default function HomePage() {
         <div className="text-center max-w-4xl mx-auto">
           <div className="mb-8">
             <h1 className="text-6xl font-black text-gray-900 mb-4">
-              🎨 DesignCenter
+              🎨 Centro de Diseño
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
               Plantillas de diseño profesionales y herramientas para creadores
