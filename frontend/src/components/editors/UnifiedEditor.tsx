@@ -5305,26 +5305,41 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       id: obj.get('id')
     })));
     
-    // Look for logo objects with multiple criteria
+    // Look for logo objects with multiple criteria - more flexible detection
     const logoObject = allObjects.find(obj => {
       const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
       const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
       const isLogoType = obj.type === 'image' && (obj as any).src?.includes('logo');
       
+      // Additional criteria for better logo detection
+      const hasLogoName = (obj as any).name?.toLowerCase().includes('logo');
+      const isTextLogo = (obj.type === 'text' || obj.type === 'i-text') && 
+                        (obj.text?.toLowerCase().includes('logo') || 
+                         obj.get('id')?.toLowerCase().includes('logo'));
+      const isGroupLogo = obj.type === 'group' && 
+                         obj.getObjects?.()?.some((subObj: any) => 
+                           (subObj as any).isLogo || 
+                           subObj.get('id')?.includes('logo'));
+      
       console.log('🎨 Checking object for logo criteria:', {
         type: obj.type,
         id: obj.get('id'),
+        name: (obj as any).name,
+        text: (obj as any).text,
         isLogo,
         isBrandKitLogo: (obj as any).isBrandKitLogo,
         hasLogoId,
         isLogoType,
+        hasLogoName,
+        isTextLogo,
+        isGroupLogo,
         src: (obj as any).src,
-        matches: isLogo || hasLogoId || isLogoType
+        matches: isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo || isGroupLogo
       });
       
-      return isLogo || hasLogoId || isLogoType;
+      return isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo || isGroupLogo;
     });
-    
+    console.log("logoObject", logoObject);
     if (logoObject) {
       console.log('🎨 Logo object found for harmony:', {
         type: logoObject.type,
@@ -5339,6 +5354,27 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       console.log('🎨 Color harmony monitoring started successfully');
     } else {
       console.warn('⚠️ No logo found for color harmony monitoring. Available objects:', allObjects.length);
+      
+      // Fallback: Start monitoring anyway and try to detect logo later
+      console.log('🔄 Starting monitoring without logo - will detect logo when available');
+      colorHarmonyManager.startMonitoring();
+      setIsColorHarmonyActive(true);
+      
+      // Also try to find any object that could be considered a logo (first image or text object)
+      const fallbackLogo = allObjects.find(obj => 
+        obj.type === 'image' || 
+        obj.type === 'text' || 
+        obj.type === 'i-text' ||
+        obj.type === 'group'
+      );
+      
+      if (fallbackLogo) {
+        console.log('🎯 Using fallback logo object:', {
+          type: fallbackLogo.type,
+          id: fallbackLogo.get('id')
+        });
+        colorHarmonyManager.setLogoObject(fallbackLogo);
+      }
     }
   }, [colorHarmonyManager, canvas]);
 

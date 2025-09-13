@@ -424,12 +424,45 @@ export class ColorHarmonyManager {
    */
   private monitorLogoMovement(): void {
     console.log("🔄 monitorLogoMovement - checking for overlaps");
-    if (!this.isActive || !this.logoObject) {
-      console.log("⚠️ monitorLogoMovement: Not active or no logo object", {
-        isActive: this.isActive,
-        hasLogo: !!this.logoObject
+    if (!this.isActive) {
+      console.log("⚠️ monitorLogoMovement: Not active", {
+        isActive: this.isActive
       });
       return;
+    }
+
+    // Try to find a logo object if none is set
+    if (!this.logoObject) {
+      console.log("🔍 No logo object set - trying to find one");
+      const allObjects = this.canvas.getObjects();
+      
+      // Look for potential logo objects
+      const potentialLogo = allObjects.find(obj => {
+        const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
+        const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
+        const isLogoType = obj.type === 'image' && (obj as any).src?.includes('logo');
+        const hasLogoName = (obj as any).name?.toLowerCase().includes('logo');
+        const isTextLogo = (obj.type === 'text' || obj.type === 'i-text') && 
+                          (obj.text?.toLowerCase().includes('logo') || 
+                           obj.get('id')?.toLowerCase().includes('logo'));
+        
+        return isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo;
+      });
+      
+      if (potentialLogo) {
+        console.log("🎯 Found potential logo object:", {
+          type: potentialLogo.type,
+          id: potentialLogo.get('id')
+        });
+        this.logoObject = potentialLogo;
+      } else {
+        console.log("⚠️ No logo object found - skipping this monitoring cycle");
+        // Continue monitoring in case a logo is added later
+        setTimeout(() => {
+          this.monitorLogoMovement();
+        }, 100);
+        return;
+      }
     }
 
     try {
