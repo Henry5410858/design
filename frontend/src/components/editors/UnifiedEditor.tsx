@@ -20,6 +20,7 @@ import { jsPDF } from 'jspdf';
 import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
 import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, canvasToBase64, getImageTypeFromDataUrl } from '@/utils/templateBackgrounds';
 import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
+import { ColorHarmonyManager, initializeObjectColorState } from '@/utils/colorHarmony';
 
 interface UnifiedEditorProps {
   id: string;
@@ -100,42 +101,42 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     // Legacy types (for backward compatibility)
     flyer: {
       icon: '📢',
-      name: 'Flyer',
+      name: 'Folleto',
       defaultSize: '1200x1800',
       sizes: [
-        { value: '1200x1800', label: 'Flyer A4 (1200×1800)', width: 1200, height: 1800 },
-        { value: '1200x1600', label: 'Flyer Cuadrado (1200×1600)', width: 1200, height: 1600 },
-        { value: '800x1200', label: 'Flyer Pequeño (800×1200)', width: 800, height: 1200 }
+        { value: '1200x1800', label: 'Folleto A4 (1200×1800)', width: 1200, height: 1800 },
+        { value: '1200x1600', label: 'Folleto Cuadrado (1200×1600)', width: 1200, height: 1600 },
+        { value: '800x1200', label: 'Folleto Pequeño (800×1200)', width: 800, height: 1200 }
       ]
     },
     social: {
       icon: '📱',
-      name: 'Social Media Post',
+      name: 'Publicación Redes Sociales',
       defaultSize: '1080x1080',
       sizes: [
-        { value: '1080x1080', label: 'Instagram Post (1080×1080)', width: 1080, height: 1080 },
-        { value: '1200x630', label: 'Facebook Post (1200×630)', width: 1200, height: 630 },
-        { value: '1200x1200', label: 'Twitter Post (1200×1200)', width: 1200, height: 1200 }
+        { value: '1080x1080', label: 'Publicación Instagram (1080×1080)', width: 1080, height: 1080 },
+        { value: '1200x630', label: 'Publicación Facebook (1200×630)', width: 1200, height: 630 },
+        { value: '1200x1200', label: 'Publicación Twitter (1200×1200)', width: 1200, height: 1200 }
       ]
     },
     story: {
       icon: '📖',
-      name: 'Story',
+      name: 'Historia',
       defaultSize: '1080x1920',
       sizes: [
-        { value: '1080x1920', label: 'Instagram Story (1080×1920)', width: 1080, height: 1920 },
-        { value: '1080x1350', label: 'Facebook Story (1080×1350)', width: 1080, height: 1350 },
-        { value: '1080x1920', label: 'WhatsApp Story (1080×1920)', width: 1080, height: 1920 }
+        { value: '1080x1920', label: 'Historia Instagram (1080×1920)', width: 1080, height: 1920 },
+        { value: '1080x1350', label: 'Historia Facebook (1080×1350)', width: 1080, height: 1350 },
+        { value: '1080x1920', label: 'Historia WhatsApp (1080×1920)', width: 1080, height: 1920 }
       ]
     },
     badge: {
       icon: '🏷️',
-      name: 'Badge',
+      name: 'Insignia',
       defaultSize: '600x600',
       sizes: [
-        { value: '600x600', label: 'Badge Cuadrado (600×600)', width: 600, height: 600 },
-        { value: '800x800', label: 'Badge Grande (800×800)', width: 800, height: 800 },
-        { value: '400x400', label: 'Badge Pequeño (400×400)', width: 400, height: 400 }
+        { value: '600x600', label: 'Insignia Cuadrada (600×600)', width: 600, height: 600 },
+        { value: '800x800', label: 'Insignia Grande (800×800)', width: 800, height: 800 },
+        { value: '400x400', label: 'Insignia Pequeña (400×400)', width: 400, height: 400 }
       ]
     },
     banner: {
@@ -143,66 +144,66 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       name: 'Banner',
       defaultSize: '1200x628',
       sizes: [
-        { value: '1200x628', label: 'Facebook Feed Banner (1200×628)', width: 1200, height: 628 },
-        { value: '1200x400', label: 'Facebook Feed (1200×400)', width: 1200, height: 400 },
-        { value: '1200x300', label: 'Web Banner (1200×300)', width: 1200, height: 300 },
+        { value: '1200x628', label: 'Banner Facebook (1200×628)', width: 1200, height: 628 },
+        { value: '1200x400', label: 'Feed Facebook (1200×400)', width: 1200, height: 400 },
+        { value: '1200x300', label: 'Banner Web (1200×300)', width: 1200, height: 300 },
         { value: '1200x600', label: 'Banner Alto (1200×600)', width: 1200, height: 600 }
       ]
     },
     document: {
       icon: '📄',
-      name: 'Document',
+      name: 'Documento',
       defaultSize: '2480x3508',
       sizes: [
-        { value: '2480x3508', label: 'A4 Document (2480×3508 px, 300 dpi)', width: 2480, height: 3508 },
+        { value: '2480x3508', label: 'Documento A4 (2480×3508 px, 300 dpi)', width: 2480, height: 3508 },
         { value: '1200x1600', label: 'Documento A4 (1200×1600)', width: 1200, height: 1600 },
-        { value: '1200x1800', label: 'Brochure (1200×1800)', width: 1200, height: 1800 },
+        { value: '1200x1800', label: 'Folleto (1200×1800)', width: 1200, height: 1800 },
         { value: '800x1200', label: 'Documento Pequeño (800×1200)', width: 800, height: 1200 }
       ]
     },
     brochure: {
       icon: '📋',
-      name: 'Brochure',
+      name: 'Folleto',
       defaultSize: '2480x3508',
       sizes: [
-        { value: '2480x3508', label: 'A4 Brochure (2480×3508 px, 300 dpi)', width: 2480, height: 3508 },
-        { value: '1200x1800', label: 'Trifold Brochure (1200×1800)', width: 1200, height: 1800 },
-        { value: '1200x1600', label: 'Brochure Cuadrado (1200×1600)', width: 1200, height: 1600 },
-        { value: '800x1200', label: 'Brochure Pequeño (800×1200)', width: 800, height: 1200 }
+        { value: '2480x3508', label: 'Folleto A4 (2480×3508 px, 300 dpi)', width: 2480, height: 3508 },
+        { value: '1200x1800', label: 'Folleto Tríptico (1200×1800)', width: 1200, height: 1800 },
+        { value: '1200x1600', label: 'Folleto Cuadrado (1200×1600)', width: 1200, height: 1600 },
+        { value: '800x1200', label: 'Folleto Pequeño (800×1200)', width: 800, height: 1200 }
       ]
     },
     
     // New template types from CreateTemplateModal
     'square-post': {
       icon: '📱',
-      name: 'IG/FB Square Post',
+      name: 'Publicación Cuadrada IG/FB',
       defaultSize: '1080x1080',
       sizes: [
-        { value: '1080x1080', label: 'IG/FB Square Post (1080×1080)', width: 1080, height: 1080 }
+        { value: '1080x1080', label: 'Publicación Cuadrada IG/FB (1080×1080)', width: 1080, height: 1080 }
       ]
     },
     'marketplace-flyer': {
       icon: '📄',
-      name: 'Marketplace Flyer',
+      name: 'Folleto Marketplace',
       defaultSize: '1200x1500',
       sizes: [
-        { value: '1200x1500', label: 'Marketplace Flyer (1200×1500)', width: 1200, height: 1500 }
+        { value: '1200x1500', label: 'Folleto Marketplace (1200×1500)', width: 1200, height: 1500 }
       ]
     },
     'fb-feed-banner': {
       icon: '🚩',
-      name: 'FB Feed Banner',
+      name: 'Banner Feed FB',
       defaultSize: '1200x628',
       sizes: [
-        { value: '1200x628', label: 'FB Feed Banner (1200×628)', width: 1200, height: 628 }
+        { value: '1200x628', label: 'Banner Feed FB (1200×628)', width: 1200, height: 628 }
       ]
     },
     'digital-badge': {
       icon: '🏷️',
-      name: 'Digital Badge / Visual Card',
+      name: 'Insignia Digital / Tarjeta Visual',
       defaultSize: '1080x1350',
       sizes: [
-        { value: '1080x1350', label: 'Digital Badge (1080×1350)', width: 1080, height: 1350 }
+        { value: '1080x1350', label: 'Insignia Digital (1080×1350)', width: 1080, height: 1350 }
       ]
     }
   };
@@ -226,6 +227,23 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   
   // Zoom state
   const [zoomLevel, setZoomLevel] = useState<number>(100);
+  
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    targetObject: any;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    targetObject: null
+  });
+
+  // Color harmony manager
+  const [colorHarmonyManager, setColorHarmonyManager] = useState<ColorHarmonyManager | null>(null);
+  const [isColorHarmonyActive, setIsColorHarmonyActive] = useState<boolean>(false);
   
   // UI state
   const [showShapeSelector, setShowShapeSelector] = useState(false);
@@ -1019,6 +1037,25 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         setIsCanvasTextEditing(false);
       });
       
+      // Add right-click context menu support
+      fabricCanvas.on('mouse:down', (e) => {
+        // Check if it's a right-click (only for MouseEvent, not TouchEvent)
+        if (e.e && 'button' in e.e && e.e.button === 2 && e.target) {
+          // Right-click on an object - show context menu
+          const rect = fabricCanvas.getSelectionElement();
+          if (rect) {
+            const canvasRect = rect.getBoundingClientRect();
+            const mouseEvent = e.e as MouseEvent;
+            showContextMenu({
+              clientX: mouseEvent.clientX,
+              clientY: mouseEvent.clientY,
+              preventDefault: () => {},
+              stopPropagation: () => {}
+            } as React.MouseEvent, e.target);
+          }
+        }
+      });
+      
       // Add boundary constraints to keep objects within canvas
       fabricCanvas.on('object:moving', (e) => {
         const obj = e.target;
@@ -1062,9 +1099,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           }
         }
       });
-      
+      console.log("fabricCanvas", fabricCanvas)
       setCanvas(fabricCanvas);
       
+      // Initialize color harmony manager
+      const harmonyManager = new ColorHarmonyManager(fabricCanvas);
+      setColorHarmonyManager(harmonyManager);
+      
+      console.log("1109", canvas, colorHarmonyManager)
       // Add window resize handler
       const handleResize = () => {
         if (fabricCanvas) {
@@ -1389,6 +1431,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             restoreGradient(obj, text);
             
             canvas.add(text);
+            
+            // Initialize color state with original color from saved JSON data
+            initializeObjectColorState(text, obj);
+            
             console.log(`✅ Text object loaded with enhanced properties:`, {
               text: obj.text || obj.content,
               fontSize: text.fontSize,
@@ -2074,6 +2120,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             restoreGradient(obj, text);
             
             canvas.add(text);
+            
+            // Initialize color state with original color from saved JSON data
+            initializeObjectColorState(text, obj);
+            
             console.log(`✅ Text object loaded with enhanced properties:`, {
               text: obj.text || obj.content,
               fontSize: text.fontSize,
@@ -2168,6 +2218,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             }
             
             canvas.add(rect);
+            
+            // Initialize color state with original color from saved JSON data
+            initializeObjectColorState(rect, obj);
+            
             console.log(`✅ Rectangle object loaded with rx: ${obj.rx}, ry: ${obj.ry}`);
             break;
             
@@ -2193,6 +2247,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             restoreGradient(obj, circle);
             
             canvas.add(circle);
+            
+            // Initialize color state with original color from saved JSON data
+            initializeObjectColorState(circle, obj);
+            
             console.log(`✅ Circle object loaded with radius: ${obj.radius}`);
             break;
             
@@ -2231,6 +2289,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             restoreGradient(obj, triangle);
             
             canvas.add(triangle);
+            
+            // Initialize color state with original color from saved JSON data
+            initializeObjectColorState(triangle, obj);
+            
             console.log(`✅ Triangle object loaded with enhanced properties:`, {
               left: triangle.left,
               top: triangle.top,
@@ -5072,6 +5134,162 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   }, [user?.id, currentBackgroundId, id]);
 
+  // Layer control functions
+  const bringToFront = useCallback((targetObject: any) => {
+    if (!canvas || !targetObject) return;
+    
+    // Don't allow bringing background objects to front
+    if ((targetObject as any).isBackground) {
+      console.log('🚫 Cannot bring background objects to front');
+      return;
+    }
+    
+    // Bring object to front using Fabric.js method
+    canvas.bringObjectToFront(targetObject);
+    canvas.renderAll();
+    
+    console.log('⬆️ Object brought to front');
+  }, [canvas]);
+
+  const bringToBack = useCallback((targetObject: any) => {
+    if (!canvas || !targetObject) return;
+    
+    // Don't allow bringing objects behind background
+    if ((targetObject as any).isBackground) {
+      console.log('🚫 Cannot move background objects');
+      return;
+    }
+    
+    // Find the first background object to position behind it
+    const backgroundObjects = canvas.getObjects().filter(obj => (obj as any).isBackground === true);
+    if (backgroundObjects.length > 0) {
+      // Position object just above the first background object
+      const backgroundIndex = canvas.getObjects().indexOf(backgroundObjects[0]);
+      canvas.moveObjectTo(targetObject, backgroundIndex + 1);
+    } else {
+      // No background objects, just send to back
+      canvas.sendObjectToBack(targetObject);
+    }
+    
+    canvas.renderAll();
+    console.log('⬇️ Object sent to back');
+  }, [canvas]);
+
+  // Context menu handlers
+  const showContextMenu = useCallback((e: React.MouseEvent, targetObject: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      targetObject: targetObject
+    });
+  }, []);
+
+  const hideContextMenu = useCallback(() => {
+    setContextMenu(prev => ({
+      ...prev,
+      visible: false
+    }));
+  }, []);
+
+  const handleContextMenuAction = useCallback((action: 'bringToFront' | 'bringToBack') => {
+    if (!contextMenu.targetObject) return;
+    
+    if (action === 'bringToFront') {
+      bringToFront(contextMenu.targetObject);
+    } else if (action === 'bringToBack') {
+      bringToBack(contextMenu.targetObject);
+    }
+    
+    hideContextMenu();
+  }, [contextMenu.targetObject, bringToFront, bringToBack, hideContextMenu]);
+
+  // Color harmony control functions
+  const startColorHarmony = useCallback(() => {
+    console.log("🎨 startColorHarmony called:", {
+      colorHarmonyManager: !!colorHarmonyManager,
+      canvas: !!canvas,
+      canvasObjects: canvas?.getObjects()?.length || 0
+    });
+    
+    if (!colorHarmonyManager || !canvas) {
+      console.warn('⚠️ Cannot start color harmony - missing dependencies');
+      return;
+    }
+    
+    // Find the logo object
+    const allObjects = canvas.getObjects();
+    console.log('🎨 All canvas objects:', allObjects.map(obj => ({
+      type: obj.type,
+      isLogo: (obj as any).isLogo,
+      isBrandKitLogo: (obj as any).isBrandKitLogo
+    })));
+    
+    const logoObject = allObjects.find(obj => (obj as any).isLogo || (obj as any).isBrandKitLogo);
+    
+    if (logoObject) {
+      console.log('🎨 Logo object found for harmony:', {
+        type: logoObject.type,
+        isLogo: (logoObject as any).isLogo,
+        isBrandKitLogo: (logoObject as any).isBrandKitLogo
+      });
+      colorHarmonyManager.setLogoObject(logoObject);
+      colorHarmonyManager.startMonitoring();
+      setIsColorHarmonyActive(true);
+      console.log('🎨 Color harmony monitoring started successfully');
+    } else {
+      console.warn('⚠️ No logo found for color harmony monitoring');
+    }
+  }, [colorHarmonyManager, canvas]);
+
+  const stopColorHarmony = useCallback(() => {
+    if (!colorHarmonyManager) return;
+    
+    colorHarmonyManager.stopMonitoring();
+    setIsColorHarmonyActive(false);
+    console.log('🎨 Color harmony monitoring stopped');
+  }, [colorHarmonyManager]);
+
+  const toggleColorHarmony = useCallback(() => {
+    if (isColorHarmonyActive) {
+      stopColorHarmony();
+    } else {
+      startColorHarmony();
+    }
+  }, [isColorHarmonyActive, startColorHarmony, stopColorHarmony]);
+
+  // Color harmony auto-start disabled
+  // useEffect(() => {
+  //   // Color harmony auto-start has been disabled
+  // }, [canvas, colorHarmonyManager, isColorHarmonyActive, startColorHarmony]);
+
+  // Color harmony object detection disabled
+  // useEffect(() => {
+  //   // Color harmony object detection has been disabled
+  // }, [canvas, colorHarmonyManager, isColorHarmonyActive, startColorHarmony]);
+
+  // Hide context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contextMenu.visible) {
+        hideContextMenu();
+      }
+    };
+
+    if (contextMenu.visible) {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('contextmenu', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('contextmenu', handleClickOutside);
+    };
+  }, [contextMenu.visible, hideContextMenu]);
+
   // Cleanup on component unmount
   useEffect(() => {
     return () => {
@@ -5687,6 +5905,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                     </div>
                   )}
                 </button>
+              
               
 
                           {/* Download Dropdown */}
@@ -7172,6 +7391,40 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <div
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2 min-w-[160px]"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Bring to Front */}
+          <button
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+            onClick={() => handleContextMenuAction('bringToFront')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18M7 20l-4-4m0 0l4-4m-4 4h18" />
+            </svg>
+            <span>Bring to Front</span>
+          </button>
+          
+          {/* Bring to Back */}
+          <button
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+            onClick={() => handleContextMenuAction('bringToBack')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3M17 4l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+            <span>Send to Back</span>
+          </button>
         </div>
       )}
     </div>

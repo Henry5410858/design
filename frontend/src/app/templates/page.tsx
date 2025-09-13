@@ -313,12 +313,12 @@ export default function TemplateGalleryPage() {
 
   const handleExportToZip = async () => {
     if (selectedTemplates.size === 0) {
-      showWarning('Please select at least one template to export');
+      showWarning('Por favor selecciona al menos una plantilla para exportar');
       return;
     }
 
     setIsExporting(true);
-    showInfo('Starting export process... This may take a few moments.');
+    showInfo('Iniciando proceso de exportación... Esto puede tomar unos momentos.');
 
     try {
       // Create a zip file with exported templates
@@ -359,7 +359,7 @@ export default function TemplateGalleryPage() {
           }
         } catch (error) {
           console.error(`Error exporting template ${templateId}:`, error);
-          showWarning(`Failed to export template ${templateId}`);
+          showWarning(`Error al exportar la plantilla ${templateId}`);
         }
       }
 
@@ -374,12 +374,12 @@ export default function TemplateGalleryPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      showSuccess(`Successfully exported ${selectedTemplates.size} template(s) to zip file!`);
+      showSuccess(`¡${selectedTemplates.size} plantilla(s) exportada(s) exitosamente al archivo zip!`);
       setIsExportMode(false);
       setSelectedTemplates(new Set());
     } catch (error) {
       console.error('Error creating zip file:', error);
-      showError('Failed to create zip file. Please try again.');
+      showError('Error al crear el archivo zip. Por favor intenta de nuevo.');
     } finally {
       setIsExporting(false);
     }
@@ -494,7 +494,7 @@ export default function TemplateGalleryPage() {
                 } ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Download size={16} />
-                {isExporting ? 'Exporting...' : isExportMode ? 'Exit Export' : 'Export to Zip'}
+                {isExporting ? 'Exportando...' : isExportMode ? 'Salir de Exportar' : 'Exportar a Zip'}
               </button>
 
               {/* Upload Image Button */}
@@ -511,7 +511,7 @@ export default function TemplateGalleryPage() {
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2"
                 >
                   <Upload size={16} />
-                  Upload Image
+                  Subir Imagen
                 </button>
               </div>
 
@@ -523,14 +523,14 @@ export default function TemplateGalleryPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                {isSelectionMode ? 'Exit Select' : 'Select'}
+                {isSelectionMode ? 'Salir de Seleccionar' : 'Seleccionar'}
               </button>
               
               <button
                 onClick={handleCreateTemplate}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                Create
+                Crear
               </button>
               
               {isSelectionMode && selectedTemplates.size > 0 && (
@@ -542,13 +542,13 @@ export default function TemplateGalleryPage() {
                         className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2"
                       >
                         <Check size={16} />
-                        Apply Background ({selectedTemplates.size})
+                        Aplicar Fondo ({selectedTemplates.size})
                       </button>
                       <button
                         onClick={handleCancelBackground}
                         className="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-all duration-200 shadow-md hover:shadow-lg"
                       >
-                        Cancel
+                        Cancelar
                       </button>
                     </>
                   ) : (
@@ -556,7 +556,7 @@ export default function TemplateGalleryPage() {
                       onClick={handleDeleteClick}
                       className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg"
                     >
-                      Delete ({selectedTemplates.size})
+                      Eliminar ({selectedTemplates.size})
                     </button>
                   )}
                 </>
@@ -570,7 +570,7 @@ export default function TemplateGalleryPage() {
                   className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50"
                 >
                   <Download size={16} />
-                  {isExporting ? 'Exporting...' : `Export ${selectedTemplates.size} Template(s)`}
+                  {isExporting ? 'Exportando...' : `Exportar ${selectedTemplates.size} Plantilla(s)`}
                 </button>
               )}
 
@@ -581,7 +581,7 @@ export default function TemplateGalleryPage() {
                   className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2"
                 >
                   <X size={16} />
-                  Apply Cancel
+                  Aplicar Cancelación
                 </button>
               )}
             </div>
@@ -617,12 +617,12 @@ export default function TemplateGalleryPage() {
               </div>
               
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Confirm Deletion
+                Confirmar Eliminación
               </h3>
               
               <p className="text-gray-600 mb-6">
-                Are you sure you want to delete {selectedTemplates.size} template{selectedTemplates.size !== 1 ? 's' : ''}? 
-                This action cannot be undone.
+                ¿Estás seguro de que quieres eliminar {selectedTemplates.size} plantilla{selectedTemplates.size !== 1 ? 's' : ''}? 
+                Esta acción no se puede deshacer.
               </p>
               
               <div className="flex gap-3">
@@ -630,14 +630,14 @@ export default function TemplateGalleryPage() {
                   onClick={handleDeleteCancel}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 
                 <button
                   onClick={handleDeleteConfirmed}
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors duration-200"
                 >
-                  Yes, Delete
+                  Sí, Eliminar
                 </button>
               </div>
             </div>

@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Template } from '@/types';
 import API_ENDPOINTS from '@/config/api';
+import { exportTemplateAsImage } from '@/utils/canvasExport';
 
 interface TemplateGalleryProps {
   templates: Template[];
@@ -504,6 +505,102 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
   );
 });
 
+// Component for generating and displaying actual template design images
+const TemplateDesignImage = React.memo<{ template: Template }>(({ template }) => {
+  const [designImage, setDesignImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    const generateDesignImage = async () => {
+      if (!template.id) return;
+      
+      setIsGenerating(true);
+      setHasError(false);
+      
+      try {
+        console.log(`🎨 Generating design image for template: ${template.id}`);
+        
+        // Try to generate image with template ID
+        let imageDataUrl = await exportTemplateAsImage(template.id, {
+          format: 'png',
+          quality: 0.8,
+          multiplier: 0.5 // Smaller size for gallery thumbnails
+        });
+        
+        if (!imageDataUrl) {
+          // If exportTemplateAsImage fails, try direct design data loading
+          console.log(`🔄 Trying direct design data loading for: ${template.id}`);
+          try {
+            const response = await fetch(`/api/templates/design/${template.id}.json`);
+            if (response.ok) {
+              const designData = await response.json();
+              console.log(`📁 Design data loaded directly:`, designData);
+              
+              // If we have design data, we could potentially generate a preview
+              // For now, we'll show that we found the data but couldn't generate image
+              console.log(`📊 Found design data with ${designData.designData?.objects?.length || 0} objects`);
+            }
+          } catch (directError) {
+            console.warn(`⚠️ Direct design loading also failed:`, directError);
+          }
+        }
+        
+        if (imageDataUrl) {
+          setDesignImage(imageDataUrl);
+          console.log(`✅ Design image generated for template: ${template.id}`);
+        } else {
+          setHasError(true);
+          console.warn(`⚠️ Failed to generate design image for template: ${template.id}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error generating design image for template ${template.id}:`, error);
+        setHasError(true);
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    generateDesignImage();
+  }, [template.id]);
+
+  // Show loading state
+  if (isGenerating) {
+    return (
+      <div className="w-full h-48 bg-gray-700 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+          <p className="text-xs text-gray-300">Generating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state with fallback to original thumbnail
+  if (hasError || !designImage) {
+    return (
+      <img
+        src={template.thumbnailFilename ? API_ENDPOINTS.GET_THUMBNAIL(template.thumbnailFilename) : template.thumbnail}
+        alt={template.name}
+        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+        loading="lazy"
+      />
+    );
+  }
+
+  // Show actual design image
+  return (
+    <img
+      src={designImage}
+      alt={`${template.name} design preview`}
+      className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+      loading="lazy"
+    />
+  );
+});
+
+TemplateDesignImage.displayName = 'TemplateDesignImage';
+
 const TemplateCard = React.memo<{
   template: Template;
   onEdit: (template: Template) => void;
@@ -532,12 +629,7 @@ const TemplateCard = React.memo<{
     >
       {/* Template Image */}
       <div className="relative overflow-hidden rounded-t-xl bg-gray-700">
-        <img
-          src={template.thumbnailFilename ? API_ENDPOINTS.GET_THUMBNAIL(template.thumbnailFilename) : template.thumbnail}
-          alt={template.name}
-          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-          loading="lazy"
-        />
+        <TemplateDesignImage template={template} />
         
         {/* Category Badge */}
         <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium border ${categoryInfo.color}`}>

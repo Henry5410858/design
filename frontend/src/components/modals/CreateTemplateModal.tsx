@@ -19,39 +19,39 @@ interface TemplateType {
 const templateTypes: TemplateType[] = [
   {
     value: 'square-post',
-    label: 'IG/FB Square Post',
+    label: 'Publicación Cuadrada IG/FB',
     icon: '📱',
-    description: 'Instagram and Facebook square posts'
+    description: 'Publicaciones cuadradas de Instagram y Facebook'
   },
   {
     value: 'story',
-    label: 'IG/FB/WSP Story',
+    label: 'Historia IG/FB/WSP',
     icon: '📖',
-    description: 'Instagram, Facebook, and WhatsApp stories'
+    description: 'Historias de Instagram, Facebook y WhatsApp'
   },
   {
     value: 'real-estate-flyer',
-    label: 'Real Estate Flyer',
+    label: 'Folleto Inmobiliario',
     icon: '🏠',
-    description: 'Professional real estate flyers with FOR SALE badges'
+    description: 'Folletos inmobiliarios profesionales con badges EN VENTA'
   },
   {
     value: 'fb-feed-banner',
-    label: 'FB Feed Banner',
+    label: 'Banner Feed FB',
     icon: '🚩',
-    description: 'Facebook feed banners and headers'
+    description: 'Banners y encabezados para el feed de Facebook'
   },
   {
     value: 'digital-badge',
-    label: 'Digital Badge / Visual Card',
+    label: 'Insignia Digital / Tarjeta Visual',
     icon: '🏷️',
-    description: 'Digital badges and visual cards'
+    description: 'Insignias digitales y tarjetas visuales'
   },
   {
     value: 'brochure',
-    label: 'Brochure / Simple 1-page Document',
+    label: 'Folleto / Documento Simple de 1 Página',
     icon: '📚',
-    description: 'A4 format (300 DPI) - brochures and documents'
+    description: 'Formato A4 (300 DPI) - folletos y documentos'
   }
 ];
 
@@ -82,12 +82,12 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
     
     // Validate template name length
     if (templateName.trim().length < 3) {
-      showWarning('Template name must be at least 3 characters long');
+      showWarning('El nombre de la plantilla debe tener al menos 3 caracteres');
       return;
     }
     
     if (templateName.trim().length > 100) {
-      showWarning('Template name must be less than 100 characters');
+      showWarning('El nombre de la plantilla debe tener menos de 100 caracteres');
       return;
     }
 
@@ -142,15 +142,15 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
         window.open(editorUrl, '_blank');
         
         // Show success message
-        showSuccess(`Template "${templateName}" created successfully! A new editor tab has been opened with your template.`);
+        showSuccess(`¡Plantilla "${templateName}" creada exitosamente! Se ha abierto una nueva pestaña del editor con tu plantilla.`);
         onClose();
       } else {
         console.error('Failed to create template');
-        showError('Failed to create template. Please try again.');
+        showError('Error al crear la plantilla. Por favor intenta de nuevo.');
       }
     } catch (error) {
       console.error('Error creating template:', error);
-      showError('Error creating template. Please check your connection and try again.');
+      showError('Error al crear la plantilla. Por favor verifica tu conexión e intenta de nuevo.');
     } finally {
       setIsCreating(false);
     }
@@ -199,9 +199,9 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
           <div className="flex items-center justify-between">
                          <div>
-               <h2 className="text-2xl font-bold">Create New Template</h2>
-               <p className="text-blue-100 mt-1">Choose a template type with optimized dimensions for your platform</p>
-               <p className="text-blue-200 text-sm mt-1">✨ Template will open in a new editor tab</p>
+               <h2 className="text-2xl font-bold">Crear Nueva Plantilla</h2>
+               <p className="text-blue-100 mt-1">Elige un tipo de plantilla con dimensiones optimizadas para tu plataforma</p>
+               <p className="text-blue-200 text-sm mt-1">✨ La plantilla se abrirá en una nueva pestaña del editor</p>
              </div>
             <button
               onClick={onClose}
@@ -219,7 +219,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
           {/* Template Type Selector */}
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Template Type
+              Tipo de Plantilla
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {templateTypes.map((type) => (
@@ -241,7 +241,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
                         {getDefaultDimensions(type.value).width} × {getDefaultDimensions(type.value).height}px
                         {type.value === 'brochure' && (
                           <span className="block text-xs text-blue-600 mt-1">
-                            A4 format optimized for print (300 DPI)
+                            Formato A4 optimizado para impresión (300 DPI)
                           </span>
                         )}
                       </div>
@@ -255,7 +255,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
           {/* Template Name Input */}
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Template Name
+              Nombre de la Plantilla
             </label>
             <input
               type="text"
@@ -266,7 +266,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
                   handleCreate();
                 }
               }}
-              placeholder="Enter template name..."
+              placeholder="Ingresa el nombre de la plantilla..."
               maxLength={100}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                 templateName.trim() === '' ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500'
@@ -276,7 +276,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
               <p className={`text-xs ${
                 templateName.trim() === '' ? 'text-red-500' : 'text-gray-500'
               }`}>
-                {templateName.trim() === '' ? 'Template name is required' : 'Give your template a descriptive name for easy identification'}
+                {templateName.trim() === '' ? 'El nombre de la plantilla es requerido' : 'Dale a tu plantilla un nombre descriptivo para fácil identificación'}
               </p>
               <span className="text-xs text-gray-400">
                 {templateName.length}/100
@@ -300,10 +300,10 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
                       {templateTypes.find(t => t.value === selectedType)?.description}
                     </div>
                     <div className="text-sm font-semibold text-blue-700 mt-1">
-                      Size: {getDefaultDimensions(selectedType).width} × {getDefaultDimensions(selectedType).height}px
+                      Tamaño: {getDefaultDimensions(selectedType).width} × {getDefaultDimensions(selectedType).height}px
                       {selectedType === 'brochure' && (
                         <span className="block text-xs text-blue-600 mt-1">
-                          A4 format optimized for print (300 DPI)
+                          Formato A4 optimizado para impresión (300 DPI)
                         </span>
                       )}
                     </div>
@@ -313,14 +313,14 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
                 {/* Action Buttons */}
                 <div className="flex flex-col space-y-2">
                   <div className="text-xs text-blue-600 text-center mb-2">
-                    💡 Clicking "Create Template" will open the editor in a new tab
+                    💡 Hacer clic en "Crear Plantilla" abrirá el editor en una nueva pestaña
                   </div>
                   <div className="flex space-x-2">
                     <button
                       onClick={onClose}
                       className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium shadow-sm text-sm"
                     >
-                      Cancel
+                      Cancelar
                     </button>
                     <button
                       onClick={handleCreate}
@@ -333,10 +333,10 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          <span>Creating Template...</span>
+                          <span>Creando Plantilla...</span>
                         </>
                       ) : (
-                        <span>Create Template</span>
+                        <span>Crear Plantilla</span>
                       )}
                     </button>
                   </div>

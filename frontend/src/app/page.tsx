@@ -17,7 +17,7 @@ export default function HomePage() {
               🎨 DesignCenter
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Professional design templates and tools for creators
+              Plantillas de diseño profesionales y herramientas para creadores
             </p>
           </div>
           
@@ -28,8 +28,8 @@ export default function HomePage() {
               className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
             >
               <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">🎨</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Templates</h3>
-              <p className="text-gray-600 text-sm">Professional design templates for all your needs</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Plantillas</h3>
+              <p className="text-gray-600 text-sm">Plantillas de diseño profesionales para todas tus necesidades</p>
             </Link>
 
             {/* Create Template Card */}
@@ -38,8 +38,8 @@ export default function HomePage() {
               className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
             >
               <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">➕</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Create New Template</h3>
-              <p className="text-gray-600 text-sm">Start designing with a new template</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Crear Nueva Plantilla</h3>
+              <p className="text-gray-600 text-sm">Comienza a diseñar con una nueva plantilla</p>
             </div>
 
             {/* Brand Kit Card */}
@@ -48,8 +48,8 @@ export default function HomePage() {
               className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
             >
               <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">🏷️</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Brand Kit</h3>
-              <p className="text-gray-600 text-sm">Manage your brand assets and guidelines</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Kit de Marca</h3>
+              <p className="text-gray-600 text-sm">Gestiona tus activos de marca y directrices</p>
             </Link>
           </div>
         </div>
