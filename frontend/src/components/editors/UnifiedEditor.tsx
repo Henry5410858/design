@@ -3748,11 +3748,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           lockRotation: false,
           lockScalingX: false,
           lockScalingY: false,
-          hasControls: true,
-          hasBorders: true,
+          hasControls: false,
+          hasBorders: false,
           isBrandKitLogo: true,
-          stroke: '#007bff',
-          strokeWidth: 2
+          stroke: null,
+          strokeWidth: 0
         });
         img.scaleToWidth(100);
         canvas.add(img);
@@ -4095,8 +4095,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             lockRotation: false,
             lockScalingX: false,
             lockScalingY: false,
-            stroke: '#007bff',
-            strokeWidth: 2,
+          stroke: null,
+          strokeWidth: 0,
             isBrandKitLogo: true
           });
           
@@ -4138,8 +4138,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             lockRotation: false,
             lockScalingX: false,
             lockScalingY: false,
-            stroke: '#007bff',
-            strokeWidth: 2,
+          stroke: null,
+          strokeWidth: 0,
             isBrandKitLogo: true
           });
           
@@ -4194,9 +4194,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           // Set minimum and maximum scale limits
           minScaleLimit: 0.1,
           maxScaleLimit: 3.0,
-          // Add border for visual feedback
-          stroke: '#007bff',
-          strokeWidth: 2
+          // Hide borders and controls for clean appearance
+          hasControls: false,
+          hasBorders: false,
+          // No border for clean appearance
+          stroke: null,
+          strokeWidth: 0
         });
         
         // Link the logo and background so they move together
