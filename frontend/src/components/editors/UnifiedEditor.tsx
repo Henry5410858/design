@@ -5284,11 +5284,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     console.log("🎨 startColorHarmony called:", {
       colorHarmonyManager: !!colorHarmonyManager,
       canvas: !!canvas,
-      canvasObjects: canvas?.getObjects()?.length || 0
+      canvasObjects: canvas?.getObjects()?.length || 0,
+      isColorHarmonyActive
     });
     
     if (!colorHarmonyManager || !canvas) {
-      console.warn('⚠️ Cannot start color harmony - missing dependencies');
+      console.warn('⚠️ Cannot start color harmony - missing dependencies', {
+        colorHarmonyManager: !!colorHarmonyManager,
+        canvas: !!canvas
+      });
       return;
     }
     
@@ -5306,6 +5310,17 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
       const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
       const isLogoType = obj.type === 'image' && (obj as any).src?.includes('logo');
+      
+      console.log('🎨 Checking object for logo criteria:', {
+        type: obj.type,
+        id: obj.get('id'),
+        isLogo,
+        isBrandKitLogo: (obj as any).isBrandKitLogo,
+        hasLogoId,
+        isLogoType,
+        src: (obj as any).src,
+        matches: isLogo || hasLogoId || isLogoType
+      });
       
       return isLogo || hasLogoId || isLogoType;
     });
@@ -6027,9 +6042,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   )}
                 </button>
               
-              {/* Color Harmony Debug Button */}
+              {/* Color Harmony Toggle Button */}
               <button
-                onClick={manualTriggerColorHarmony}
+                onClick={toggleColorHarmony}
                 className={`p-2 rounded-lg transition-colors ${
                   isColorHarmonyActive 
                     ? 'bg-green-100 hover:bg-green-200 text-green-700' 
@@ -6038,6 +6053,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 title={isColorHarmonyActive ? 'Color Harmony: Activo' : 'Color Harmony: Inactivo - Click para activar'}
               >
                 <Palette size={20} />
+              </button>
+
+              {/* Debug button for manual color harmony trigger */}
+              <button
+                onClick={manualTriggerColorHarmony}
+                className="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+                title="Debug: Trigger Color Harmony Manualmente"
+              >
+                🎨
               </button>
 
                           {/* Download Dropdown */}

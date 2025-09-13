@@ -284,32 +284,48 @@ export function generateHighContrastColor(logoColor: string, originalColor: stri
 
   const logoHsl = rgbToHsl(logoRgb);
   
-  // Strategy 1: Pure complementary (180° hue shift)
+  // Strategy 1: Pure complementary (180° hue shift) with extreme contrast
   const complementaryHsl = {
     h: (logoHsl.h + 180) % 360,
-    s: 0.8, // High saturation for visibility
-    l: logoHsl.l > 0.5 ? 0.3 : 0.7 // Ensure good contrast
+    s: 0.9, // Maximum saturation for visibility
+    l: logoHsl.l > 0.5 ? 0.2 : 0.8 // Extreme lightness contrast
   };
   
-  // Strategy 2: Opposite lightness with same hue
+  // Strategy 2: Triadic contrast (120° hue shift) with high saturation
+  const triadicHsl = {
+    h: (logoHsl.h + 120) % 360,
+    s: 0.85,
+    l: logoHsl.l > 0.5 ? 0.25 : 0.75
+  };
+  
+  // Strategy 3: Opposite lightness with maximum saturation
   const oppositeLightnessHsl = {
     h: logoHsl.h,
-    s: logoHsl.s,
-    l: logoHsl.l > 0.5 ? 0.2 : 0.8 // Strong lightness contrast
+    s: 0.95, // Maximum saturation
+    l: logoHsl.l > 0.5 ? 0.15 : 0.85 // Extreme lightness contrast
   };
   
-  // Strategy 3: Warm vs Cool contrast
-  const isLogoWarm = logoHsl.h < 60 || logoHsl.h > 300; // Red, yellow, orange range
+  // Strategy 4: Warm vs Cool contrast with extreme values
+  const isLogoWarm = logoHsl.h < 60 || logoHsl.h > 300;
   const coolColorHsl = {
-    h: isLogoWarm ? 200 : 20, // Blue/cyan vs Red/orange
-    s: 0.7,
+    h: isLogoWarm ? 220 : 0, // Pure blue vs pure red
+    s: 0.9,
     l: 0.5
+  };
+  
+  // Strategy 5: Pure black or white for maximum contrast
+  const pureContrastHsl = {
+    h: logoHsl.h,
+    s: 0,
+    l: logoHsl.l > 0.5 ? 0.1 : 0.9 // Near black or white
   };
   
   const options = [
     { color: rgbToHex(hslToRgb(complementaryHsl)), name: 'complementary', contrast: 0 },
+    { color: rgbToHex(hslToRgb(triadicHsl)), name: 'triadic', contrast: 0 },
     { color: rgbToHex(hslToRgb(oppositeLightnessHsl)), name: 'lightness', contrast: 0 },
-    { color: rgbToHex(hslToRgb(coolColorHsl)), name: 'temperature', contrast: 0 }
+    { color: rgbToHex(hslToRgb(coolColorHsl)), name: 'temperature', contrast: 0 },
+    { color: rgbToHex(hslToRgb(pureContrastHsl)), name: 'pure_contrast', contrast: 0 }
   ];
   
   // Calculate actual contrast and pick the best
@@ -323,6 +339,20 @@ export function generateHighContrastColor(logoColor: string, originalColor: stri
       bestContrast = contrast;
       bestOption = option;
     }
+  }
+  
+  // Ensure minimum contrast threshold
+  if (bestContrast < 15) {
+    console.warn(`⚠️ Generated color has low contrast (ΔE: ${bestContrast.toFixed(2)}), using fallback`);
+    // Use pure black or white as fallback
+    const fallbackHsl = {
+      h: 0,
+      s: 0,
+      l: logoHsl.l > 0.5 ? 0.1 : 0.9
+    };
+    const fallbackColor = rgbToHex(hslToRgb(fallbackHsl));
+    console.log(`🎯 Using fallback pure contrast color: ${fallbackColor}`);
+    return fallbackColor;
   }
   
   console.log(`🎯 High contrast ${bestOption.name} color: ${bestOption.color} (ΔE: ${bestContrast.toFixed(2)})`);
@@ -375,7 +405,7 @@ export function getDominantColorFromImage(imageUrl: string): Promise<string> {
  */
 export const COLOR_THRESHOLDS = {
   IMPERCEPTIBLE: 1,    // ΔE < 1: Imperceptible to human eye
-  JUST_NOTICEABLE: 8,  // ΔE 2-8: Just noticeable difference (increased for better distinction)
-  CLEARLY_VISIBLE: 12, // ΔE > 12: Clearly visible difference
-  VERY_DIFFERENT: 20   // ΔE > 20: Very different colors
+  JUST_NOTICEABLE: 12, // ΔE < 12: Just noticeable difference (increased for better distinction)
+  CLEARLY_VISIBLE: 20, // ΔE > 20: Clearly visible difference
+  VERY_DIFFERENT: 30   // ΔE > 30: Very different colors
 } as const;

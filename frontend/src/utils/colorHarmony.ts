@@ -250,18 +250,27 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
     };
 
     // Check if colors are too similar (need better distinction)
+    console.log(`🎨 Analyzing color similarity: Logo(${logoColor}) vs Object(${objectColor}) - ΔE: ${deltaE.toFixed(2)}, Threshold: ${COLOR_THRESHOLDS.JUST_NOTICEABLE}`);
+    
     if (areColorsTooSimilar(logoColor, objectColor, COLOR_THRESHOLDS.JUST_NOTICEABLE)) {
-      console.log(`🎨 Colors need better distinction (ΔE: ${deltaE.toFixed(2)} < ${COLOR_THRESHOLDS.JUST_NOTICEABLE}): Logo(${logoColor}) vs Object(${objectColor})`);
+      console.log(`🚨 Colors are too similar! Need better distinction (ΔE: ${deltaE.toFixed(2)} < ${COLOR_THRESHOLDS.JUST_NOTICEABLE})`);
+      console.log(`🎯 Generating high-contrast color for object...`);
       
       // Use high-contrast color for better logo visibility
       const harmoniousColor = generateHighContrastColor(logoColor, objectColor);
+      const newDeltaE = calculateDeltaE(logoColor, harmoniousColor);
+      
+      console.log(`🎨 Generated harmonious color: ${harmoniousColor} (ΔE: ${newDeltaE.toFixed(2)})`);
+      
       colorState.currentColor = harmoniousColor;
       colorState.harmonyType = 'contrast';
       
       // Apply the new color to the object
       applyColorToObject(obj, harmoniousColor);
       
-      console.log(`✨ Applied high-contrast color: ${harmoniousColor} (ΔE: ${calculateDeltaE(logoColor, harmoniousColor).toFixed(2)})`);
+      console.log(`✨ Applied high-contrast color: ${harmoniousColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
+    } else {
+      console.log(`✅ Colors are sufficiently different (ΔE: ${deltaE.toFixed(2)} >= ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - no change needed`);
     }
 
     obj.colorState = colorState;
