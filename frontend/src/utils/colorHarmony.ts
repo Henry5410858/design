@@ -352,19 +352,31 @@ export class ColorHarmonyManager {
   private monitorLogoMovement(): void {
     if (!this.isActive || !this.logoObject) return;
 
-    const overlappingObjects = detectOverlappingObjects(this.logoObject, this.canvas.getObjects());
-    console.log("overlappingObjects", overlappingObjects);
-    // Restore colors for objects that are no longer overlapping
-    restoreOriginalColors(this.canvas.getObjects(), overlappingObjects);
-    
-    // Analyze and adjust colors for currently overlapping objects
-    analyzeColorHarmony(this.logoObject, overlappingObjects).then(() => {
-      this.lastOverlappingObjects = overlappingObjects;
-      this.canvas.renderAll();
-    });
+    try {
+      const overlappingObjects = detectOverlappingObjects(this.logoObject, this.canvas.getObjects());
+      console.log("🎨 Overlapping objects detected:", overlappingObjects.length);
+      
+      // Restore colors for objects that are no longer overlapping
+      restoreOriginalColors(this.canvas.getObjects(), overlappingObjects);
+      
+      // Analyze and adjust colors for currently overlapping objects
+      if (overlappingObjects.length > 0) {
+        analyzeColorHarmony(this.logoObject, overlappingObjects).then(() => {
+          this.lastOverlappingObjects = overlappingObjects;
+          this.canvas.renderAll();
+        }).catch(error => {
+          console.error('❌ Error in color harmony analysis:', error);
+        });
+      } else {
+        this.lastOverlappingObjects = [];
+        this.canvas.renderAll();
+      }
+    } catch (error) {
+      console.error('❌ Error in color harmony monitoring:', error);
+    }
 
-    // Continue monitoring
-    requestAnimationFrame(() => this.monitorLogoMovement());
+    // Continue monitoring with a small delay to prevent excessive CPU usage
+    setTimeout(() => this.monitorLogoMovement(), 100);
   }
 
   /**

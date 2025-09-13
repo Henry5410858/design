@@ -1012,6 +1012,19 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       fabricCanvas.on('object:modified', () => {
         saveCanvasToHistory();
+        // Trigger color harmony analysis when objects are modified
+        if (isColorHarmonyActive && colorHarmonyManager) {
+          console.log('🎨 Object modified - triggering color harmony analysis');
+          startColorHarmony();
+        }
+      });
+      
+      // Trigger color harmony when objects are added
+      fabricCanvas.on('object:added', () => {
+        if (isColorHarmonyActive && colorHarmonyManager) {
+          console.log('🎨 Object added - triggering color harmony analysis');
+          startColorHarmony();
+        }
       });
       
       // Prevent text from being completely erased
@@ -1071,6 +1084,12 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           }
           if (obj.top! + obj.height! * obj.scaleY! > canvasHeight) {
             obj.top = canvasHeight - obj.height! * obj.scaleY!;
+          }
+          
+          // Trigger color harmony analysis when objects are moving
+          if (isColorHarmonyActive && colorHarmonyManager) {
+            console.log('🎨 Object moving - triggering color harmony analysis');
+            startColorHarmony();
           }
         }
       });
@@ -5225,23 +5244,33 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     console.log('🎨 All canvas objects:', allObjects.map(obj => ({
       type: obj.type,
       isLogo: (obj as any).isLogo,
-      isBrandKitLogo: (obj as any).isBrandKitLogo
+      isBrandKitLogo: (obj as any).isBrandKitLogo,
+      id: obj.get('id')
     })));
     
-    const logoObject = allObjects.find(obj => (obj as any).isLogo || (obj as any).isBrandKitLogo);
+    // Look for logo objects with multiple criteria
+    const logoObject = allObjects.find(obj => {
+      const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
+      const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
+      const isLogoType = obj.type === 'image' && (obj as any).src?.includes('logo');
+      
+      return isLogo || hasLogoId || isLogoType;
+    });
     
     if (logoObject) {
       console.log('🎨 Logo object found for harmony:', {
         type: logoObject.type,
         isLogo: (logoObject as any).isLogo,
-        isBrandKitLogo: (logoObject as any).isBrandKitLogo
+        isBrandKitLogo: (logoObject as any).isBrandKitLogo,
+        id: logoObject.get('id'),
+        src: (logoObject as any).src
       });
       colorHarmonyManager.setLogoObject(logoObject);
       colorHarmonyManager.startMonitoring();
       setIsColorHarmonyActive(true);
       console.log('🎨 Color harmony monitoring started successfully');
     } else {
-      console.warn('⚠️ No logo found for color harmony monitoring');
+      console.warn('⚠️ No logo found for color harmony monitoring. Available objects:', allObjects.length);
     }
   }, [colorHarmonyManager, canvas]);
 
@@ -5261,15 +5290,23 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   }, [isColorHarmonyActive, startColorHarmony, stopColorHarmony]);
 
-  // Color harmony auto-start disabled
-  // useEffect(() => {
-  //   // Color harmony auto-start has been disabled
-  // }, [canvas, colorHarmonyManager, isColorHarmonyActive, startColorHarmony]);
+  // Color harmony auto-start
+  useEffect(() => {
+    if (canvas && colorHarmonyManager && !isColorHarmonyActive) {
+      // Auto-start color harmony when canvas and manager are ready
+      console.log('🎨 Auto-starting color harmony system');
+      startColorHarmony();
+    }
+  }, [canvas, colorHarmonyManager, isColorHarmonyActive, startColorHarmony]);
 
-  // Color harmony object detection disabled
-  // useEffect(() => {
-  //   // Color harmony object detection has been disabled
-  // }, [canvas, colorHarmonyManager, isColorHarmonyActive, startColorHarmony]);
+  // Color harmony object detection
+  useEffect(() => {
+    if (canvas && colorHarmonyManager && isColorHarmonyActive) {
+      // Re-analyze color harmony when objects change
+      console.log('🎨 Re-analyzing color harmony due to object changes');
+      startColorHarmony();
+    }
+  }, [objects, canvas, colorHarmonyManager, isColorHarmonyActive, startColorHarmony]);
 
   // Hide context menu when clicking outside
   useEffect(() => {
