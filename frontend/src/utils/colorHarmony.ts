@@ -36,9 +36,17 @@ export interface OverlapObject {
  * Detect objects overlapping with logo using geometric collision detection
  */
 export function detectOverlappingObjects(logoObject: any, allObjects: any[]): any[] {
-  if (!logoObject || !allObjects) return [];
+  if (!logoObject || !allObjects) {
+    console.log("⚠️ detectOverlappingObjects: Missing logo or objects", {
+      hasLogo: !!logoObject,
+      objectCount: allObjects?.length || 0
+    });
+    return [];
+  }
 
   const logoBounds = logoObject.getBoundingRect();
+  console.log("🎯 Logo bounds:", logoBounds);
+  
   const overlappingObjects: any[] = [];
 
   allObjects.forEach(obj => {
@@ -51,10 +59,26 @@ export function detectOverlappingObjects(logoObject: any, allObjects: any[]): an
     
     // Check for overlap using bounding rectangles
     if (isOverlapping(logoBounds, objBounds)) {
+      console.log("🎯 Found overlap:", {
+        type: obj.type,
+        id: obj.id,
+        logoBounds,
+        objBounds,
+        overlap: true
+      });
       overlappingObjects.push(obj);
+    } else {
+      console.log("📏 No overlap:", {
+        type: obj.type,
+        id: obj.id,
+        logoBounds,
+        objBounds,
+        overlap: false
+      });
     }
   });
 
+  console.log(`🎯 Total overlapping objects found: ${overlappingObjects.length}`);
   return overlappingObjects;
 }
 
@@ -288,40 +312,53 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
  * Apply color to Fabric.js object
  */
 function applyColorToObject(fabricObject: any, color: string): void {
-  console.log(`🎨 Applying color ${color} to object:`, {
+  console.log(`🚀 APPLYING COLOR TO OBJECT:`, {
     type: fabricObject.type,
     id: fabricObject.id,
     currentFill: fabricObject.fill,
     currentColor: fabricObject.color,
-    currentStroke: fabricObject.stroke
+    currentStroke: fabricObject.stroke,
+    newColor: color
   });
   
   // Apply color based on object type
   if (fabricObject.type === 'text' || fabricObject.type === 'i-text') {
+    console.log(`📝 Setting text fill to: ${color}`);
     fabricObject.set('fill', color);
-    console.log(`✨ Applied text color: ${color}`);
+    console.log(`✅ Applied text color: ${color}`);
   } else if (fabricObject.type === 'rect' || fabricObject.type === 'circle' || fabricObject.type === 'ellipse') {
+    console.log(`🔷 Setting shape fill to: ${color}`);
     fabricObject.set('fill', color);
-    console.log(`✨ Applied shape fill: ${color}`);
+    console.log(`✅ Applied shape fill: ${color}`);
   } else if (fabricObject.type === 'image') {
     // For images, we might want to apply a tint or overlay
+    console.log(`🖼️ Setting image tint to: ${color}`);
     fabricObject.set('tint', color);
-    console.log(`✨ Applied image tint: ${color}`);
+    console.log(`✅ Applied image tint: ${color}`);
   } else {
     // Fallback: try common properties
+    console.log(`🔧 Using fallback color application for type: ${fabricObject.type}`);
     if (fabricObject.fill !== undefined) {
       fabricObject.set('fill', color);
+      console.log(`✅ Applied fallback fill: ${color}`);
     } else if (fabricObject.color !== undefined) {
       fabricObject.set('color', color);
+      console.log(`✅ Applied fallback color: ${color}`);
     } else if (fabricObject.stroke !== undefined) {
       fabricObject.set('stroke', color);
+      console.log(`✅ Applied fallback stroke: ${color}`);
+    } else {
+      console.warn(`⚠️ Could not apply color - no suitable property found for type: ${fabricObject.type}`);
     }
-    console.log(`✨ Applied fallback color: ${color}`);
   }
   
   // Force canvas re-render
   if (fabricObject.canvas) {
+    console.log(`🔄 Rendering canvas after color change`);
     fabricObject.canvas.renderAll();
+    console.log(`✅ Canvas rendered successfully`);
+  } else {
+    console.warn(`⚠️ No canvas found on object - cannot render`);
   }
 }
 
@@ -386,11 +423,18 @@ export class ColorHarmonyManager {
    * Monitor logo movement and update colors in real-time
    */
   private monitorLogoMovement(): void {
-    console.log("monitorLogoMovement");
-    if (!this.isActive || !this.logoObject) return;
+    console.log("🔄 monitorLogoMovement - checking for overlaps");
+    if (!this.isActive || !this.logoObject) {
+      console.log("⚠️ monitorLogoMovement: Not active or no logo object", {
+        isActive: this.isActive,
+        hasLogo: !!this.logoObject
+      });
+      return;
+    }
 
     try {
       const allObjects = this.canvas.getObjects();
+      console.log(`📊 Total objects on canvas: ${allObjects.length}`);
       
       // Ensure all objects have color states initialized
       allObjects.forEach((obj: any) => {
@@ -401,20 +445,32 @@ export class ColorHarmonyManager {
       });
       
       const overlappingObjects = detectOverlappingObjects(this.logoObject, allObjects);
-      console.log("🎨 Overlapping objects detected:", overlappingObjects.length);
+      console.log(`🎯 Overlapping objects detected: ${overlappingObjects.length}`);
+      
+      if (overlappingObjects.length > 0) {
+        console.log("📋 Overlapping object details:", overlappingObjects.map(obj => ({
+          type: obj.type,
+          id: obj.id,
+          fill: obj.fill,
+          color: obj.color
+        })));
+      }
       
       // Restore colors for objects that are no longer overlapping
       restoreOriginalColors(allObjects, overlappingObjects);
       
       // Analyze and adjust colors for currently overlapping objects
       if (overlappingObjects.length > 0) {
+        console.log("🚀 Starting color harmony analysis...");
         analyzeColorHarmony(this.logoObject, overlappingObjects).then(() => {
+          console.log("✅ Color harmony analysis completed");
           this.lastOverlappingObjects = overlappingObjects;
           this.canvas.renderAll();
         }).catch(error => {
           console.error('❌ Error in color harmony analysis:', error);
         });
       } else {
+        console.log("ℹ️ No overlapping objects found");
         this.lastOverlappingObjects = [];
         this.canvas.renderAll();
       }
@@ -423,9 +479,10 @@ export class ColorHarmonyManager {
     }
 
     // Continue monitoring with a small delay to prevent excessive CPU usage
-    setTimeout(() => {console.log("setTimeout");
-      this.monitorLogoMovement();}
-      , 100);
+    setTimeout(() => {
+      console.log("⏰ setTimeout - continuing monitoring");
+      this.monitorLogoMovement();
+    }, 100);
   }
 
   /**
