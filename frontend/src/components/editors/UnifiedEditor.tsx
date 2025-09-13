@@ -7084,9 +7084,25 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   </button>
                   
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(previewImageData);
-                      // You could add a toast notification here
+                    onClick={async () => {
+                      try {
+                        // Convert data URL to blob
+                        const response = await fetch(previewImageData);
+                        const blob = await response.blob();
+                        
+                        // Copy image to clipboard
+                        await navigator.clipboard.write([
+                          new ClipboardItem({
+                            [blob.type]: blob
+                          })
+                        ]);
+                        
+                        // Show success message
+                        alert('✅ Imagen copiada al portapapeles');
+                      } catch (error) {
+                        console.error('Error copying image:', error);
+                        alert('❌ Error al copiar la imagen');
+                      }
                     }}
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
                   >
@@ -7094,6 +7110,63 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                     <span>Copiar Imagen</span>
+                  </button>
+                  
+                  <button
+                    onClick={async () => {
+                      try {
+                        // Import jsPDF dynamically
+                        const { default: jsPDF } = await import('jspdf');
+                        
+                        // Create new PDF document
+                        const pdf = new jsPDF({
+                          orientation: 'portrait',
+                          unit: 'mm',
+                          format: 'a4'
+                        });
+                        
+                        // Get image dimensions
+                        const img = new Image();
+                        img.onload = () => {
+                          // Calculate dimensions to fit A4 page
+                          const pageWidth = pdf.internal.pageSize.getWidth();
+                          const pageHeight = pdf.internal.pageSize.getHeight();
+                          
+                          const imgWidth = img.width;
+                          const imgHeight = img.height;
+                          const ratio = imgWidth / imgHeight;
+                          
+                          let width = pageWidth - 20; // 10mm margin on each side
+                          let height = width / ratio;
+                          
+                          if (height > pageHeight - 20) {
+                            height = pageHeight - 20; // 10mm margin on top/bottom
+                            width = height * ratio;
+                          }
+                          
+                          // Center the image on the page
+                          const x = (pageWidth - width) / 2;
+                          const y = (pageHeight - height) / 2;
+                          
+                          // Add image to PDF
+                          pdf.addImage(previewImageData, 'PNG', x, y, width, height);
+                          
+                          // Download PDF
+                          pdf.save(`design-preview-${Date.now()}.pdf`);
+                        };
+                        
+                        img.src = previewImageData;
+                      } catch (error) {
+                        console.error('Error generating PDF:', error);
+                        alert('❌ Error al generar PDF');
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span>Descargar PDF</span>
                   </button>
                 </div>
               </div>
