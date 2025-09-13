@@ -970,7 +970,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   
   // Initialize Fabric.js canvas
   useEffect(() => {
+    console.log("973");
     if (canvasRef.current && !canvas) {
+      console.log("975");
       const fabricCanvas = new fabric.Canvas(canvasRef.current, {
         width: getCurrentCanvasSize().width,
         height: getCurrentCanvasSize().height,
@@ -1011,6 +1013,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       });
       
       fabricCanvas.on('object:modified', () => {
+        console.log("1016");
         saveCanvasToHistory();
         // Trigger color harmony analysis when objects are modified
         if (isColorHarmonyActive && colorHarmonyManager) {
@@ -1021,6 +1024,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       // Trigger color harmony when objects are added
       fabricCanvas.on('object:added', () => {
+        console.log("1027", isColorHarmonyActive, colorHarmonyManager);
+
         if (isColorHarmonyActive && colorHarmonyManager) {
           console.log('🎨 Object added - triggering color harmony analysis');
           startColorHarmony();
@@ -1088,6 +1093,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           
           // Trigger color harmony analysis when objects are moving
           if (isColorHarmonyActive && colorHarmonyManager) {
+        console.log("1096");
+
             console.log('🎨 Object moving - triggering color harmony analysis');
             startColorHarmony();
           }
@@ -3748,12 +3755,34 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           lockRotation: false,
           lockScalingX: false,
           lockScalingY: false,
-          hasControls: false,
+          hasControls: true,
           hasBorders: false,
           isBrandKitLogo: true,
           stroke: null,
           strokeWidth: 0
         });
+        
+        // Add selection event handlers to show/hide borders
+        img.on('selected', () => {
+          console.log('🎨 Logo selected - showing borders');
+          img.set({
+            hasBorders: true,
+            stroke: '#007bff',
+            strokeWidth: 2
+          });
+          img.canvas?.renderAll();
+        });
+
+        img.on('deselected', () => {
+          console.log('🎨 Logo deselected - hiding borders');
+          img.set({
+            hasBorders: false,
+            stroke: null,
+            strokeWidth: 0
+          });
+          img.canvas?.renderAll();
+        });
+        
         img.scaleToWidth(100);
         canvas.add(img);
         canvas.renderAll();
@@ -4194,14 +4223,35 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           // Set minimum and maximum scale limits
           minScaleLimit: 0.1,
           maxScaleLimit: 3.0,
-          // Hide borders and controls for clean appearance
-          hasControls: false,
+          // Show controls when selected, hide borders when unselected
+          hasControls: true,
           hasBorders: false,
-          // No border for clean appearance
+          // No border when unselected
           stroke: null,
           strokeWidth: 0
         });
         
+        // Add selection event handlers to show/hide borders
+        fabricImage.on('selected', () => {
+          console.log('🎨 Logo selected - showing borders');
+          fabricImage.set({
+            hasBorders: true,
+            stroke: '#007bff',
+            strokeWidth: 2
+          });
+          fabricImage.canvas?.renderAll();
+        });
+
+        fabricImage.on('deselected', () => {
+          console.log('🎨 Logo deselected - hiding borders');
+          fabricImage.set({
+            hasBorders: false,
+            stroke: null,
+            strokeWidth: 0
+          });
+          fabricImage.canvas?.renderAll();
+        });
+
         // Link the logo and background so they move together
         const linkObjects = (primaryObj: fabric.Object, secondaryObj: fabric.Object) => {
           primaryObj.on('moving', () => {
@@ -5293,8 +5343,39 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   }, [isColorHarmonyActive, startColorHarmony, stopColorHarmony]);
 
+  // Manual trigger for testing color harmony
+  const manualTriggerColorHarmony = useCallback(() => {
+    console.log('🎨 Manual color harmony trigger');
+    if (canvas && colorHarmonyManager) {
+      const allObjects = canvas.getObjects();
+      console.log('🎨 All objects on canvas:', allObjects.map(obj => ({
+        type: obj.type,
+        isLogo: (obj as any).isLogo,
+        isBrandKitLogo: (obj as any).isBrandKitLogo,
+        id: obj.get('id'),
+        colorState: (obj as any).colorState
+      })));
+      
+      const logoObject = allObjects.find(obj => {
+        const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
+        const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
+        const isLogoType = obj.type === 'image' && (obj as any).src?.includes('logo');
+        return isLogo || hasLogoId || isLogoType;
+      });
+      
+      if (logoObject) {
+        console.log('🎨 Found logo for manual trigger:', logoObject);
+        colorHarmonyManager.setLogoObject(logoObject);
+        startColorHarmony();
+      } else {
+        console.warn('⚠️ No logo found for manual trigger');
+      }
+    }
+  }, [canvas, colorHarmonyManager, startColorHarmony]);
+
   // Color harmony auto-start
   useEffect(() => {
+    console.log("canvas----");
     if (canvas && colorHarmonyManager && !isColorHarmonyActive) {
       // Auto-start color harmony when canvas and manager are ready
       console.log('🎨 Auto-starting color harmony system');
@@ -5946,7 +6027,18 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   )}
                 </button>
               
-              
+              {/* Color Harmony Debug Button */}
+              <button
+                onClick={manualTriggerColorHarmony}
+                className={`p-2 rounded-lg transition-colors ${
+                  isColorHarmonyActive 
+                    ? 'bg-green-100 hover:bg-green-200 text-green-700' 
+                    : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+                title={isColorHarmonyActive ? 'Color Harmony: Activo' : 'Color Harmony: Inactivo - Click para activar'}
+              >
+                <Palette size={20} />
+              </button>
 
                           {/* Download Dropdown */}
             <div className="relative download-dropdown">

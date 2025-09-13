@@ -221,6 +221,7 @@ export async function extractLogoColor(logoObject: any): Promise<string> {
  * Analyze color harmony between logo and overlapping objects
  */
 export async function analyzeColorHarmony(logoObject: any, overlappingObjects: any[]): Promise<OverlapObject[]> {
+  console.log("analyzeColorHarmony")
   const logoColor = await extractLogoColor(logoObject);
   const results: OverlapObject[] = [];
 
@@ -278,14 +279,40 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
  * Apply color to Fabric.js object
  */
 function applyColorToObject(fabricObject: any, color: string): void {
-  // Try to apply color to the most appropriate property
-  const colorProperties = ['fill', 'color', 'stroke'];
+  console.log(`🎨 Applying color ${color} to object:`, {
+    type: fabricObject.type,
+    id: fabricObject.id,
+    currentFill: fabricObject.fill,
+    currentColor: fabricObject.color,
+    currentStroke: fabricObject.stroke
+  });
   
-  for (const prop of colorProperties) {
-    if (fabricObject[prop] !== undefined) {
-      fabricObject.set(prop, color);
-      break;
+  // Apply color based on object type
+  if (fabricObject.type === 'text' || fabricObject.type === 'i-text') {
+    fabricObject.set('fill', color);
+    console.log(`✨ Applied text color: ${color}`);
+  } else if (fabricObject.type === 'rect' || fabricObject.type === 'circle' || fabricObject.type === 'ellipse') {
+    fabricObject.set('fill', color);
+    console.log(`✨ Applied shape fill: ${color}`);
+  } else if (fabricObject.type === 'image') {
+    // For images, we might want to apply a tint or overlay
+    fabricObject.set('tint', color);
+    console.log(`✨ Applied image tint: ${color}`);
+  } else {
+    // Fallback: try common properties
+    if (fabricObject.fill !== undefined) {
+      fabricObject.set('fill', color);
+    } else if (fabricObject.color !== undefined) {
+      fabricObject.set('color', color);
+    } else if (fabricObject.stroke !== undefined) {
+      fabricObject.set('stroke', color);
     }
+    console.log(`✨ Applied fallback color: ${color}`);
+  }
+  
+  // Force canvas re-render
+  if (fabricObject.canvas) {
+    fabricObject.canvas.renderAll();
   }
 }
 
@@ -350,14 +377,25 @@ export class ColorHarmonyManager {
    * Monitor logo movement and update colors in real-time
    */
   private monitorLogoMovement(): void {
+    console.log("monitorLogoMovement");
     if (!this.isActive || !this.logoObject) return;
 
     try {
-      const overlappingObjects = detectOverlappingObjects(this.logoObject, this.canvas.getObjects());
+      const allObjects = this.canvas.getObjects();
+      
+      // Ensure all objects have color states initialized
+      allObjects.forEach((obj: any) => {
+        if (!obj.colorState) {
+          console.log('🎨 Initializing missing color state for object:', obj.type, obj.id);
+          initializeObjectColorState(obj);
+        }
+      });
+      
+      const overlappingObjects = detectOverlappingObjects(this.logoObject, allObjects);
       console.log("🎨 Overlapping objects detected:", overlappingObjects.length);
       
       // Restore colors for objects that are no longer overlapping
-      restoreOriginalColors(this.canvas.getObjects(), overlappingObjects);
+      restoreOriginalColors(allObjects, overlappingObjects);
       
       // Analyze and adjust colors for currently overlapping objects
       if (overlappingObjects.length > 0) {
@@ -376,7 +414,9 @@ export class ColorHarmonyManager {
     }
 
     // Continue monitoring with a small delay to prevent excessive CPU usage
-    setTimeout(() => this.monitorLogoMovement(), 100);
+    setTimeout(() => {console.log("setTimeout");
+      this.monitorLogoMovement();}
+      , 100);
   }
 
   /**
