@@ -20,7 +20,8 @@ import { jsPDF } from 'jspdf';
 import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
 import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, canvasToBase64, getImageTypeFromDataUrl } from '@/utils/templateBackgrounds';
 import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
-import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject } from '@/utils/colorHarmony';
+import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject, extractLogoColor } from '@/utils/colorHarmony';
+import { generateHighContrastColor, calculateDeltaE } from '@/utils/colorScience';
 
 interface UnifiedEditorProps {
   id: string;
@@ -5462,9 +5463,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   }, [canvas, colorHarmonyManager, startColorHarmony]);
 
-  // Force all overlapping objects to black
-  const forceOverlappingObjectsBlack = useCallback(() => {
-    console.log('⚫ Force overlapping objects to black');
+  // Force all overlapping objects to appropriate contrasting colors
+  const forceOverlappingObjectsContrast = useCallback(async () => {
+    console.log('🎨 Force overlapping objects to contrasting colors');
     if (canvas && colorHarmonyManager) {
       const allObjects = canvas.getObjects();
       const logoObject = allObjects.find(obj => 
@@ -5474,17 +5475,22 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       );
       
       if (logoObject) {
-        console.log('⚫ Found logo, checking for overlaps...');
+        console.log('🎨 Found logo, checking for overlaps...');
         const overlappingObjects = detectOverlappingObjects(logoObject, allObjects);
-        console.log(`⚫ Found ${overlappingObjects.length} overlapping objects`);
+        console.log(`🎨 Found ${overlappingObjects.length} overlapping objects`);
+        
+        // Extract logo color and generate contrasting colors
+        const logoColor = await extractLogoColor(logoObject);
         
         overlappingObjects.forEach((obj: any) => {
-          console.log(`⚫ Changing ${obj.type} to black`);
-          applyColorToObject(obj, '#000000');
+          const contrastingColor = generateHighContrastColor(logoColor, '#000000'); // Use black as base
+          const newDeltaE = calculateDeltaE(logoColor, contrastingColor);
+          console.log(`🎨 Changing ${obj.type} to contrasting color: ${contrastingColor} (ΔE: ${newDeltaE.toFixed(2)})`);
+          applyColorToObject(obj, contrastingColor);
         });
         
         canvas.renderAll();
-        console.log('⚫ All overlapping objects changed to black');
+        console.log('🎨 All overlapping objects changed to contrasting colors');
       } else {
         console.warn('⚠️ No logo found for overlap detection');
       }
@@ -6167,13 +6173,13 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 🎨
               </button>
 
-              {/* Debug button for forcing overlapping objects to black */}
+              {/* Debug button for forcing overlapping objects to contrasting colors */}
               <button
-                onClick={forceOverlappingObjectsBlack}
+                onClick={forceOverlappingObjectsContrast}
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
-                title="Debug: Forzar Objetos Superpuestos a Negro"
+                title="Debug: Forzar Objetos Superpuestos a Colores Contrastantes"
               >
-                ⚫
+                🌈
               </button>
 
                           {/* Download Dropdown */}

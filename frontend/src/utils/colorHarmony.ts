@@ -311,23 +311,23 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
       harmonyType: null
     };
 
-    // Always change overlapping objects to black for maximum contrast
-    console.log(`🎨 Object overlapping with logo - changing to black for maximum contrast`);
+    // Generate appropriate contrasting color for better visual harmony
+    console.log(`🎨 Object overlapping with logo - generating appropriate contrasting color`);
     console.log(`🎯 Logo color: ${logoColor}, Object color: ${objectColor} (ΔE: ${deltaE.toFixed(2)})`);
     
-    // Use black color for maximum contrast with any logo color
-    const blackColor = '#000000';
-    const newDeltaE = calculateDeltaE(logoColor, blackColor);
+    // Generate high-contrast color that complements the logo
+    const contrastingColor = generateHighContrastColor(logoColor, objectColor);
+    const newDeltaE = calculateDeltaE(logoColor, contrastingColor);
     
-    console.log(`🎨 Using black color: ${blackColor} (ΔE: ${newDeltaE.toFixed(2)})`);
+    console.log(`🎨 Generated contrasting color: ${contrastingColor} (ΔE: ${newDeltaE.toFixed(2)})`);
     
-    colorState.currentColor = blackColor;
-    colorState.harmonyType = 'black_contrast';
+    colorState.currentColor = contrastingColor;
+    colorState.harmonyType = 'contrast';
     
-    // Apply black color to the object
-    applyColorToObject(obj, blackColor);
+    // Apply the contrasting color to the object
+    applyColorToObject(obj, contrastingColor);
     
-    console.log(`✨ Applied black color: ${blackColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
+    console.log(`✨ Applied contrasting color: ${contrastingColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
 
     obj.colorState = colorState;
     results.push({
