@@ -3725,6 +3725,44 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       }
     }
   };
+
+  // Make selected object black
+  const makeObjectBlack = () => {
+    if (!canvas) return;
+    
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      console.log('🎨 Changing object color to black:', {
+        type: activeObject.type,
+        id: (activeObject as any).id,
+        currentFill: activeObject.fill,
+        currentColor: (activeObject as any).color
+      });
+      
+      // Apply black color based on object type
+      if (activeObject.type === 'text' || activeObject.type === 'i-text') {
+        activeObject.set('fill', '#000000');
+      } else if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'ellipse') {
+        activeObject.set('fill', '#000000');
+      } else if (activeObject.type === 'image') {
+        activeObject.set('tint', '#000000');
+      } else {
+        // Fallback: try common properties
+        if (activeObject.fill !== undefined) {
+          activeObject.set('fill', '#000000');
+        } else if ((activeObject as any).color !== undefined) {
+          activeObject.set('color', '#000000');
+        } else if (activeObject.stroke !== undefined) {
+          activeObject.set('stroke', '#000000');
+        }
+      }
+      
+      canvas.renderAll();
+      console.log('✅ Object color changed to black successfully');
+    } else {
+      console.warn('⚠️ No object selected to change color');
+    }
+  };
   
   // Apply brand kit colors
   const applyBrandKitColors = () => {
@@ -5314,10 +5352,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       // Additional criteria for better logo detection
       const hasLogoName = (obj as any).name?.toLowerCase().includes('logo');
       const isTextLogo = (obj.type === 'text' || obj.type === 'i-text') && 
-                        (obj.text?.toLowerCase().includes('logo') || 
+                        ((obj as any).text?.toLowerCase().includes('logo') || 
                          obj.get('id')?.toLowerCase().includes('logo'));
       const isGroupLogo = obj.type === 'group' && 
-                         obj.getObjects?.()?.some((subObj: any) => 
+                         (obj as any).getObjects?.()?.some((subObj: any) => 
                            (subObj as any).isLogo || 
                            subObj.get('id')?.includes('logo'));
       
@@ -6167,6 +6205,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 title="Duplicar (Ctrl+D)"
               >
               <Scissors size={4} className="w-4 h-4" />
+              </button>
+              
+              <button
+                onClick={makeObjectBlack}
+                disabled={!selectedObject}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Hacer Negro"
+              >
+                ⚫
               </button>
               
               <button

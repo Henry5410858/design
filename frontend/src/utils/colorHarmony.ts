@@ -52,29 +52,48 @@ export function detectOverlappingObjects(logoObject: any, allObjects: any[]): an
   allObjects.forEach(obj => {
     // Skip the logo itself and background objects
     if (obj === logoObject || (obj as any).isBackground || (obj as any).isLogo) {
+      console.log("⏭️ Skipping object (logo/background):", {
+        type: obj.type,
+        id: obj.id,
+        isLogo: (obj as any).isLogo,
+        isBackground: (obj as any).isBackground,
+        isSameAsLogo: obj === logoObject
+      });
       return;
     }
 
     const objBounds = obj.getBoundingRect();
     
+    // Enhanced debugging for overlap calculation
+    const overlapResult = isOverlapping(logoBounds, objBounds);
+    const debugInfo = {
+      type: obj.type,
+      id: obj.id,
+      logoBounds: {
+        left: logoBounds.left,
+        top: logoBounds.top,
+        width: logoBounds.width,
+        height: logoBounds.height,
+        right: logoBounds.left + logoBounds.width,
+        bottom: logoBounds.top + logoBounds.height
+      },
+      objBounds: {
+        left: objBounds.left,
+        top: objBounds.top,
+        width: objBounds.width,
+        height: objBounds.height,
+        right: objBounds.left + objBounds.width,
+        bottom: objBounds.top + objBounds.height
+      },
+      overlap: overlapResult
+    };
+    
     // Check for overlap using bounding rectangles
-    if (isOverlapping(logoBounds, objBounds)) {
-      console.log("🎯 Found overlap:", {
-        type: obj.type,
-        id: obj.id,
-        logoBounds,
-        objBounds,
-        overlap: true
-      });
+    if (overlapResult) {
+      console.log("🎯 Found overlap:", debugInfo);
       overlappingObjects.push(obj);
     } else {
-      console.log("📏 No overlap:", {
-        type: obj.type,
-        id: obj.id,
-        logoBounds,
-        objBounds,
-        overlap: false
-      });
+      console.log("📏 No overlap:", debugInfo);
     }
   });
 
@@ -86,12 +105,31 @@ export function detectOverlappingObjects(logoObject: any, allObjects: any[]): an
  * Check if two bounding rectangles overlap
  */
 function isOverlapping(rect1: any, rect2: any): boolean {
-  return !(
-    rect1.left > rect2.left + rect2.width ||
-    rect2.left > rect1.left + rect1.width ||
-    rect1.top > rect2.top + rect2.height ||
-    rect2.top > rect1.top + rect1.height
+  // Check if rectangles don't overlap (if any of these conditions are true, they don't overlap)
+  const noOverlap = (
+    rect1.left > rect2.left + rect2.width ||  // rect1 is completely to the right of rect2
+    rect2.left > rect1.left + rect1.width ||  // rect2 is completely to the right of rect1
+    rect1.top > rect2.top + rect2.height ||   // rect1 is completely below rect2
+    rect2.top > rect1.top + rect1.height      // rect2 is completely below rect1
   );
+  
+  const hasOverlap = !noOverlap;
+  
+  // Debug logging for overlap calculation
+  if (hasOverlap) {
+    console.log("🔍 Overlap detected:", {
+      rect1: { left: rect1.left, top: rect1.top, width: rect1.width, height: rect1.height },
+      rect2: { left: rect2.left, top: rect2.top, width: rect2.width, height: rect2.height },
+      checks: {
+        rect1RightOfRect2: rect1.left > rect2.left + rect2.width,
+        rect2RightOfRect1: rect2.left > rect1.left + rect1.width,
+        rect1BelowRect2: rect1.top > rect2.top + rect2.height,
+        rect2BelowRect1: rect2.top > rect1.top + rect1.height
+      }
+    });
+  }
+  
+  return hasOverlap;
 }
 
 /**
@@ -437,7 +475,7 @@ export class ColorHarmonyManager {
       const allObjects = this.canvas.getObjects();
       
       // Look for potential logo objects
-      const potentialLogo = allObjects.find(obj => {
+      const potentialLogo = allObjects.find((obj: any) => {
         const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
         const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
         const isLogoType = obj.type === 'image' && (obj as any).src?.includes('logo');
@@ -468,6 +506,13 @@ export class ColorHarmonyManager {
     try {
       const allObjects = this.canvas.getObjects();
       console.log(`📊 Total objects on canvas: ${allObjects.length}`);
+      console.log(`📊 All objects details:`, allObjects.map((obj: any) => ({
+        type: obj.type,
+        id: obj.id,
+        isLogo: (obj as any).isLogo,
+        isBackground: (obj as any).isBackground,
+        bounds: obj.getBoundingRect ? obj.getBoundingRect() : 'no bounds method'
+      })));
       
       // Ensure all objects have color states initialized
       allObjects.forEach((obj: any) => {
@@ -475,6 +520,12 @@ export class ColorHarmonyManager {
           console.log('🎨 Initializing missing color state for object:', obj.type, obj.id);
           initializeObjectColorState(obj);
         }
+      });
+      
+      console.log(`🎯 About to detect overlaps with logo:`, {
+        logoType: this.logoObject.type,
+        logoId: this.logoObject.id,
+        logoBounds: this.logoObject.getBoundingRect()
       });
       
       const overlappingObjects = detectOverlappingObjects(this.logoObject, allObjects);
