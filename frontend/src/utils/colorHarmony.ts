@@ -23,7 +23,7 @@ export interface ColorState {
   currentColor: string;
   isOverlapping: boolean;
   deltaE: number;
-  harmonyType: 'complementary' | 'triadic' | 'analogous' | 'contrast' | null;
+  harmonyType: 'complementary' | 'triadic' | 'analogous' | 'contrast' | 'black_contrast' | null;
 }
 
 export interface OverlapObject {
@@ -311,29 +311,23 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
       harmonyType: null
     };
 
-    // Check if colors are too similar (need better distinction)
-    console.log(`🎨 Analyzing color similarity: Logo(${logoColor}) vs Object(${objectColor}) - ΔE: ${deltaE.toFixed(2)}, Threshold: ${COLOR_THRESHOLDS.JUST_NOTICEABLE}`);
+    // Always change overlapping objects to black for maximum contrast
+    console.log(`🎨 Object overlapping with logo - changing to black for maximum contrast`);
+    console.log(`🎯 Logo color: ${logoColor}, Object color: ${objectColor} (ΔE: ${deltaE.toFixed(2)})`);
     
-    if (areColorsTooSimilar(logoColor, objectColor, COLOR_THRESHOLDS.JUST_NOTICEABLE)) {
-      console.log(`🚨 Colors are too similar! Need better distinction (ΔE: ${deltaE.toFixed(2)} < ${COLOR_THRESHOLDS.JUST_NOTICEABLE})`);
-      console.log(`🎯 Generating high-contrast color for object...`);
-      
-      // Use high-contrast color for better logo visibility
-      const harmoniousColor = generateHighContrastColor(logoColor, objectColor);
-      const newDeltaE = calculateDeltaE(logoColor, harmoniousColor);
-      
-      console.log(`🎨 Generated harmonious color: ${harmoniousColor} (ΔE: ${newDeltaE.toFixed(2)})`);
-      
-      colorState.currentColor = harmoniousColor;
-      colorState.harmonyType = 'contrast';
-      
-      // Apply the new color to the object
-      applyColorToObject(obj, harmoniousColor);
-      
-      console.log(`✨ Applied high-contrast color: ${harmoniousColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
-    } else {
-      console.log(`✅ Colors are sufficiently different (ΔE: ${deltaE.toFixed(2)} >= ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - no change needed`);
-    }
+    // Use black color for maximum contrast with any logo color
+    const blackColor = '#000000';
+    const newDeltaE = calculateDeltaE(logoColor, blackColor);
+    
+    console.log(`🎨 Using black color: ${blackColor} (ΔE: ${newDeltaE.toFixed(2)})`);
+    
+    colorState.currentColor = blackColor;
+    colorState.harmonyType = 'black_contrast';
+    
+    // Apply black color to the object
+    applyColorToObject(obj, blackColor);
+    
+    console.log(`✨ Applied black color: ${blackColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
 
     obj.colorState = colorState;
     results.push({
@@ -349,7 +343,7 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
 /**
  * Apply color to Fabric.js object
  */
-function applyColorToObject(fabricObject: any, color: string): void {
+export function applyColorToObject(fabricObject: any, color: string): void {
   console.log(`🚀 APPLYING COLOR TO OBJECT:`, {
     type: fabricObject.type,
     id: fabricObject.id,

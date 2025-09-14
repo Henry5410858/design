@@ -20,7 +20,7 @@ import { jsPDF } from 'jspdf';
 import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
 import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, canvasToBase64, getImageTypeFromDataUrl } from '@/utils/templateBackgrounds';
 import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
-import { ColorHarmonyManager, initializeObjectColorState } from '@/utils/colorHarmony';
+import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject } from '@/utils/colorHarmony';
 
 interface UnifiedEditorProps {
   id: string;
@@ -5462,6 +5462,35 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   }, [canvas, colorHarmonyManager, startColorHarmony]);
 
+  // Force all overlapping objects to black
+  const forceOverlappingObjectsBlack = useCallback(() => {
+    console.log('⚫ Force overlapping objects to black');
+    if (canvas && colorHarmonyManager) {
+      const allObjects = canvas.getObjects();
+      const logoObject = allObjects.find(obj => 
+        (obj as any).isLogo || 
+        (obj as any).isBrandKitLogo ||
+        (obj as any).id?.includes('logo')
+      );
+      
+      if (logoObject) {
+        console.log('⚫ Found logo, checking for overlaps...');
+        const overlappingObjects = detectOverlappingObjects(logoObject, allObjects);
+        console.log(`⚫ Found ${overlappingObjects.length} overlapping objects`);
+        
+        overlappingObjects.forEach((obj: any) => {
+          console.log(`⚫ Changing ${obj.type} to black`);
+          applyColorToObject(obj, '#000000');
+        });
+        
+        canvas.renderAll();
+        console.log('⚫ All overlapping objects changed to black');
+      } else {
+        console.warn('⚠️ No logo found for overlap detection');
+      }
+    }
+  }, [canvas, colorHarmonyManager]);
+
   // Color harmony auto-start
   useEffect(() => {
     console.log("canvas----");
@@ -6136,6 +6165,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 title="Debug: Trigger Color Harmony Manualmente"
               >
                 🎨
+              </button>
+
+              {/* Debug button for forcing overlapping objects to black */}
+              <button
+                onClick={forceOverlappingObjectsBlack}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                title="Debug: Forzar Objetos Superpuestos a Negro"
+              >
+                ⚫
               </button>
 
                           {/* Download Dropdown */}
