@@ -5,11 +5,11 @@ export const dynamic = 'auto';
 
 // Mock user plans - in a real app, this would come from a database
 // These represent actual user subscription plans, not template-based plans
-const mockUserPlans: Record<string, 'Free' | 'Premium' | 'Ultra-Premium'> = {
+const mockUserPlans: Record<string, 'Gratis' | 'Premium' | 'Ultra-Premium'> = {
   // Free tier users
-  'user1': 'Free',
-  'john_doe': 'Free',
-  'jane_smith': 'Free',
+  'user1': 'Gratis',
+  'john_doe': 'Gratis',
+  'jane_smith': 'Gratis',
   
   // Premium tier users
   'user2': 'Premium',
@@ -24,7 +24,7 @@ const mockUserPlans: Record<string, 'Free' | 'Premium' | 'Ultra-Premium'> = {
   'creative_studio': 'Ultra-Premium',
   
   // Default fallback
-  'default': 'Free'
+  'default': 'Gratis'
 };
 
 export async function GET(request: NextRequest) {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     
     // For now, we'll use mock data based on user ID
     // In production, this would come from your user database
-    let userPlan: 'Free' | 'Premium' | 'Ultra-Premium' = 'Free';
+    let userPlan: 'Gratis' | 'Premium' | 'Ultra-Premium' = 'Gratis';
     
     // Check by user ID - this is the user's actual subscription plan
     userPlan = mockUserPlans[userId] || mockUserPlans['default'];

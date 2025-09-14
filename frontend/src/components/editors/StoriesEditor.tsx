@@ -33,7 +33,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
   ];
   const [fontSize, setFontSize] = useState(48);
   const { user } = useAuth();
-  const userPlan = (user?.plan as 'Free' | 'Premium' | 'Ultra-Premium') || 'Free';
+  const userPlan = (user?.plan as 'Gratis' | 'Premium' | 'Ultra-Premium') || 'Gratis';
   const [history, setHistory] = useState<any[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isDragging, setIsDragging] = useState(false);
@@ -376,7 +376,7 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
   };
 
   const handleSave = () => {
-    if (userPlan === 'Free') {
+    if (userPlan === 'Gratis') {
       alert('Free plan users cannot save template designs. Please upgrade to Pro or Enterprise.');
       return;
     }
@@ -832,13 +832,13 @@ export default function StoriesEditor({ id }: StoriesEditorProps) {
               </button>
               <button 
                 className={`px-4 py-2 rounded-lg transition-colors ${
-                  userPlan !== 'Free'
+                  userPlan !== 'Gratis'
                     ? 'bg-blue-600 text-white hover:bg-blue-700' 
                     : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                 }`}
                 onClick={handleSave}
-                disabled={userPlan === 'Free'}
-                title={userPlan === 'Free' ? 'Free plan users cannot save' : 'Save template'}
+                disabled={userPlan === 'Gratis'}
+                title={userPlan === 'Gratis' ? 'Free plan users cannot save' : 'Save template'}
               >
                 <FloppyDisk size={4} className="w-4 h-4 inline mr-2" />
                 Guardar

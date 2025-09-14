@@ -8,7 +8,7 @@ export const templatesData: Template[] = [
     description: 'Diseño optimizado para redes sociales con elementos modernos',
     category: 'post',
     dimensions: '1080×1080',
-    plan: 'Free',
+    plan: 'Gratis',
     link: 'https://www.canva.com/design/DAGxdbkH-eU/0mHiegMMx_daysssT71OHA/edit?ui=eyJEIjp7IlEiOnsiQSI6dHJ1ZX19fQ',
     thumbnail: '/api/templates/post-1/thumbnail.png'
   },
@@ -30,7 +30,7 @@ export const templatesData: Template[] = [
     description: 'Diseño vertical optimizado para Instagram y Facebook Stories',
     category: 'story',
     dimensions: '1080×1920',
-    plan: 'Free',
+    plan: 'Gratis',
     link: 'https://www.canva.com/design/DAGxdSZO4eo/_4ZG6SFuZthazYyP50DVFg/edit?ui=eyJEIjp7IlEiOnsiQSI6dHJ1ZX19fQ',
     thumbnail: '/api/templates/story-1/thumbnail.png'
   },
@@ -52,7 +52,7 @@ export const templatesData: Template[] = [
     description: 'Diseño tradicional para eventos y promociones',
     category: 'flyer',
     dimensions: '210×297',
-    plan: 'Free',
+    plan: 'Gratis',
     link: 'https://www.canva.com/design/DAGxdbRtp84/BQguFbAvqWdiorVNzA7Geg/edit',
     thumbnail: '/api/templates/flyer-1/thumbnail.png'
   },
@@ -84,7 +84,7 @@ export const templatesData: Template[] = [
     description: 'Diseño optimizado para sitios web y landing pages',
     category: 'banner',
     dimensions: '1200×628',
-    plan: 'Free',
+    plan: 'Gratis',
     link: 'https://www.canva.com/design/DAGxdhfSWIw/R_DlhmK4Chs54SVnMfUW1g/edit',
     thumbnail: '/api/templates/banner-1/thumbnail.png'
   },

@@ -30,7 +30,7 @@ router.post('/designs/create', auth, async (req, res) => {
     const user = req.user;
     
     // Check user plan
-    if (user.plan === 'Free') {
+    if (user.plan === 'Gratis') {
       return res.status(403).json({ 
         message: 'Canva access requires Premium or Ultra-Premium plan' 
       });
@@ -136,7 +136,7 @@ router.post('/designs/brand-kit', auth, async (req, res) => {
     const user = req.user;
     
     // Check user plan
-    if (user.plan === 'Free') {
+    if (user.plan === 'Gratis') {
       return res.status(403).json({ 
         message: 'Brand kit access requires Premium or Ultra-Premium plan' 
       });
@@ -181,7 +181,7 @@ router.get('/templates', auth, async (req, res) => {
     const user = req.user;
     
     // Check user plan
-    if (user.plan === 'Free') {
+    if (user.plan === 'Gratis') {
       return res.status(403).json({ 
         message: 'Template access requires Premium or Ultra-Premium plan' 
       });
@@ -234,7 +234,7 @@ router.get('/brand-kits', auth, async (req, res) => {
     const user = req.user;
     
     // Check user plan
-    if (user.plan === 'Free') {
+    if (user.plan === 'Gratis') {
       return res.status(403).json({ 
         message: 'Brand kit access requires Premium or Ultra-Premium plan' 
       });
@@ -318,7 +318,7 @@ router.get('/auth/url', auth, (req, res) => {
     const user = req.user;
     
     // Check user plan
-    if (user.plan === 'Free') {
+    if (user.plan === 'Gratis') {
       return res.status(403).json({ 
         message: 'Canva access requires Premium or Ultra-Premium plan' 
       });

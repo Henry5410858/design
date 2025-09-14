@@ -638,7 +638,7 @@ const TemplateCard = React.memo<{
         
         {/* Plan Badge */}
         <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
-          template.plan === 'Free' ? 'bg-green-900/80 text-green-200 border border-green-600' :
+          template.plan === 'Gratis' ? 'bg-green-900/80 text-green-200 border border-green-600' :
           template.plan === 'Premium' ? 'bg-blue-900/80 text-blue-200 border border-blue-600' :
           'bg-purple-900/80 text-purple-200 border border-purple-600'
         }`}>

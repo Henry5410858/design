@@ -171,7 +171,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 {user?.name || 'Usuario'}
               </p>
               <p className="text-xs text-gray-600 font-medium">
-                Plan {user?.plan || 'Free'}
+                Plan {user?.plan || 'Gratis'}
               </p>
             </div>
           </div>
@@ -228,7 +228,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <div className="flex items-center space-x-4">
               <div className="hidden sm:flex items-center space-x-3 text-sm">
                 <span className="text-gray-600 font-medium">Plan:</span>
-                <span className="font-bold text-purple-600">{user?.plan || 'Free'}</span>
+                <span className="font-bold text-purple-600">{user?.plan || 'Gratis'}</span>
               </div>
               
               {/* User Avatar Dropdown */}
@@ -247,7 +247,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                       {user?.name || 'Usuario'}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {user?.plan || 'Free'} Plan
+                      {user?.plan || 'Gratis'} Plan
                     </div>
                   </div>
                   <svg 

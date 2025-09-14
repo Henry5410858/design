@@ -22,6 +22,12 @@ import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground
 import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
 import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject, extractLogoColor } from '@/utils/colorHarmony';
 import { generateBeautifulColor, calculateDeltaE } from '@/utils/colorScience';
+import AIImageEnhancement from '@/components/AIImageEnhancement';
+import ProposalGenerator from '@/components/ProposalGenerator';
+import SmartCampaignCalendar from '@/components/SmartCampaignCalendar';
+import AITextGeneration from '@/components/AITextGeneration';
+import AdvancedAIIntegration from '@/components/AdvancedAIIntegration';
+import CollaborationPanel from '@/components/CollaborationPanel';
 
 interface UnifiedEditorProps {
   id: string;
@@ -246,6 +252,25 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const [colorHarmonyManager, setColorHarmonyManager] = useState<ColorHarmonyManager | null>(null);
   const [isColorHarmonyActive, setIsColorHarmonyActive] = useState<boolean>(false);
   
+  // AI Image Enhancement
+  const [showAIEnhancement, setShowAIEnhancement] = useState<boolean>(false);
+  const [selectedImageForEnhancement, setSelectedImageForEnhancement] = useState<string>('');
+  
+  // PDF Proposal Generator
+  const [showProposalGenerator, setShowProposalGenerator] = useState<boolean>(false);
+  
+  // Smart Campaign Calendar
+  const [showSmartCalendar, setShowSmartCalendar] = useState<boolean>(false);
+  
+  // AI Text Generation
+  const [showAITextGeneration, setShowAITextGeneration] = useState<boolean>(false);
+  
+  // Advanced AI Integration
+  const [showAdvancedAI, setShowAdvancedAI] = useState<boolean>(false);
+  
+  // Collaboration Panel
+  const [showCollaboration, setShowCollaboration] = useState<boolean>(false);
+  
   // UI state
   const [showShapeSelector, setShowShapeSelector] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -299,11 +324,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   
   // User context
   const { user } = useAuth();
-  const userPlan = (user?.plan as 'Free' | 'Premium' | 'Ultra-Premium') || 'Free';
+  const userPlan = (user?.plan as 'Gratis' | 'Premium' | 'Ultra-Premium') || 'Gratis';
 
   // Check if user can perform premium actions
   const canPerformPremiumAction = (action: string) => {
-    if (userPlan === 'Free') {
+    if (userPlan === 'Gratis') {
       setShowUpgradeModal(true);
       console.log(`🚫 Free plan restriction: ${action} requires upgrade`);
       return false;
@@ -5497,6 +5522,148 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   }, [canvas, colorHarmonyManager]);
 
+  // AI Image Enhancement functions
+  const openAIEnhancement = useCallback((imageUrl?: string) => {
+    if (imageUrl) {
+      setSelectedImageForEnhancement(imageUrl);
+    } else {
+      // If no image provided, try to get the currently selected image object
+      const activeObject = canvas?.getActiveObject();
+      if (activeObject && (activeObject.type === 'image' || activeObject.type === 'imagebox')) {
+        const imageSrc = (activeObject as any).src || (activeObject as any).getSrc();
+        if (imageSrc) {
+          setSelectedImageForEnhancement(imageSrc);
+        }
+      }
+    }
+    setShowAIEnhancement(true);
+  }, [canvas]);
+
+  const handleImageEnhanced = useCallback((originalUrl: string, enhancedUrl: string) => {
+    // Find and replace the image object with the enhanced version
+    const allObjects = canvas?.getObjects() || [];
+    const imageObject = allObjects.find(obj => {
+      const objSrc = (obj as any).src || (obj as any).getSrc();
+      return objSrc === originalUrl;
+    });
+
+    if (imageObject) {
+      // Replace the image source
+      if ((imageObject as any).setSrc) {
+        (imageObject as any).setSrc(enhancedUrl);
+      } else {
+        (imageObject as any).src = enhancedUrl;
+      }
+      canvas?.renderAll();
+      console.log('✨ Image enhanced and replaced successfully');
+    }
+  }, [canvas]);
+
+  const closeAIEnhancement = useCallback(() => {
+    setShowAIEnhancement(false);
+    setSelectedImageForEnhancement('');
+  }, []);
+
+  // PDF Proposal Generator functions
+  const openProposalGenerator = useCallback(() => {
+    setShowProposalGenerator(true);
+  }, []);
+
+  const closeProposalGenerator = useCallback(() => {
+    setShowProposalGenerator(false);
+  }, []);
+
+  // Smart Campaign Calendar functions
+  const openSmartCalendar = useCallback(() => {
+    setShowSmartCalendar(true);
+  }, []);
+
+  const closeSmartCalendar = useCallback(() => {
+    setShowSmartCalendar(false);
+  }, []);
+
+  // AI Text Generation functions
+  const openAITextGeneration = useCallback(() => {
+    setShowAITextGeneration(true);
+  }, []);
+
+  const closeAITextGeneration = useCallback(() => {
+    setShowAITextGeneration(false);
+  }, []);
+
+  const handleTextGenerated = useCallback((generatedText: string) => {
+    // Replace text in selected object or add new text
+    const activeObject = canvas?.getActiveObject();
+    if (activeObject && activeObject.type === 'text') {
+      (activeObject as any).set('text', generatedText);
+      canvas?.renderAll();
+      console.log('✨ Text replaced with AI-generated content');
+    } else {
+      // Add new text object
+      const text = new fabric.Text(generatedText, {
+        left: 100,
+        top: 100,
+        fontFamily: 'Arial',
+        fontSize: 20,
+        fill: '#000000'
+      });
+      canvas?.add(text);
+      canvas?.setActiveObject(text);
+      canvas?.renderAll();
+      console.log('✨ New text object added with AI-generated content');
+    }
+  }, [canvas]);
+
+  // Advanced AI Integration functions
+  const openAdvancedAI = useCallback(() => {
+    setShowAdvancedAI(true);
+  }, []);
+
+  const closeAdvancedAI = useCallback(() => {
+    setShowAdvancedAI(false);
+  }, []);
+
+  const handleAdvancedImageGenerated = useCallback((imageUrl: string) => {
+    // Add new image object with AI-generated image
+    fabric.Image.fromURL(imageUrl, {
+      crossOrigin: 'anonymous'
+    }).then((img: any) => {
+      img.set({
+        left: 100,
+        top: 100,
+        scaleX: 0.5,
+        scaleY: 0.5
+      });
+      canvas?.add(img);
+      canvas?.setActiveObject(img);
+      canvas?.renderAll();
+      console.log('✨ AI-generated image added to canvas');
+    }).catch((error: any) => {
+      console.error('Error loading AI-generated image:', error);
+    });
+  }, [canvas]);
+
+  const handleAdvancedAnalysisComplete = useCallback((analytics: any) => {
+    // Handle design analytics - could show insights panel or apply recommendations
+    console.log('✨ Design analysis complete:', analytics);
+    // You could show a notification or insights panel here
+  }, []);
+
+  // Collaboration Panel functions
+  const openCollaboration = useCallback(() => {
+    setShowCollaboration(true);
+  }, []);
+
+  const closeCollaboration = useCallback(() => {
+    setShowCollaboration(false);
+  }, []);
+
+  const handleVersionSelect = useCallback((version: any) => {
+    // Load design version
+    console.log('🔄 Loading design version:', version);
+    // This would typically load the version data into the canvas
+  }, []);
+
   // Color harmony auto-start
   useEffect(() => {
     console.log("canvas----");
@@ -6135,14 +6302,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 <button
                   onClick={async () => await saveDesign()}
                   className={`p-2 rounded-lg transition-colors relative ${
-                    userPlan === 'Free' 
+                    userPlan === 'Gratis' 
                       ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
                       : 'bg-gray-100 hover:bg-gray-200'
                   }`}
-                  title={userPlan === 'Free' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
+                  title={userPlan === 'Gratis' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
                 >
                   <FloppyDisk size={20} />
-                  {userPlan === 'Free' && (
+                  {userPlan === 'Gratis' && (
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                       <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
@@ -6180,6 +6347,60 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 title="Debug: Forzar Objetos Superpuestos a Colores Hermosos"
               >
                 🌈
+              </button>
+
+              {/* AI Image Enhancement button */}
+              <button
+                onClick={() => openAIEnhancement()}
+                className="p-2 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 text-purple-700 transition-colors"
+                title="AI Mejora de Imagen - Iluminación, Nitidez, Colores"
+              >
+                ✨
+              </button>
+
+              {/* PDF Proposal Generator button */}
+              <button
+                onClick={openProposalGenerator}
+                className="p-2 rounded-lg bg-gradient-to-r from-blue-100 to-indigo-100 hover:from-blue-200 hover:to-indigo-200 text-blue-700 transition-colors"
+                title="Generador de Propuestas PDF - Bienes Raíces, Empresarial, Marketing"
+              >
+                📄
+              </button>
+
+              {/* Smart Campaign Calendar button */}
+              <button
+                onClick={openSmartCalendar}
+                className="p-2 rounded-lg bg-gradient-to-r from-green-100 to-emerald-100 hover:from-green-200 hover:to-emerald-200 text-green-700 transition-colors"
+                title="Calendario Inteligente de Campañas - IA, Eventos, Cronogramas"
+              >
+                📅
+              </button>
+
+              {/* AI Text Generation button */}
+              <button
+                onClick={openAITextGeneration}
+                className="p-2 rounded-lg bg-gradient-to-r from-orange-100 to-red-100 hover:from-orange-200 hover:to-red-200 text-orange-700 transition-colors"
+                title="Generación de Texto con IA - OpenAI GPT, Plantillas, Voz de Marca"
+              >
+                🤖
+              </button>
+
+              {/* Advanced AI Integration button */}
+              <button
+                onClick={openAdvancedAI}
+                className="p-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-200 hover:to-purple-200 text-indigo-700 transition-colors"
+                title="IA Avanzada - GPT-4, DALL-E, Whisper, Análisis de Diseño"
+              >
+                🧠
+              </button>
+
+              {/* Collaboration Panel button */}
+              <button
+                onClick={openCollaboration}
+                className="p-2 rounded-lg bg-gradient-to-r from-emerald-100 to-teal-100 hover:from-emerald-200 hover:to-teal-200 text-emerald-700 transition-colors"
+                title="Colaboración en Tiempo Real - Usuarios, Comentarios, Historial, Equipos"
+              >
+                🤝
               </button>
 
                           {/* Download Dropdown */}
@@ -6264,14 +6485,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 onClick={deleteSelectedObject}
                 disabled={!selectedObject}
                 className={`p-2 rounded-lg transition-colors relative ${
-                  userPlan === 'Free' 
+                  userPlan === 'Gratis' 
                     ? 'bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200' 
                     : 'bg-gray-100 hover:bg-gray-200'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title={userPlan === 'Free' ? 'Eliminar (Premium) - Upgrade para eliminar' : 'Eliminar (Delete)'}
+                title={userPlan === 'Gratis' ? 'Eliminar (Premium) - Upgrade para eliminar' : 'Eliminar (Delete)'}
               >
                 <Trash size={4} className="w-4 h-4" />
-                {userPlan === 'Free' && (
+                {userPlan === 'Gratis' && (
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
                     <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
@@ -7709,6 +7930,56 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             <span>Send to Back</span>
           </button>
         </div>
+      )}
+
+      {/* AI Image Enhancement Modal */}
+      {showAIEnhancement && (
+        <AIImageEnhancement
+          onImageEnhanced={handleImageEnhanced}
+          onClose={closeAIEnhancement}
+        />
+      )}
+
+      {/* PDF Proposal Generator Modal */}
+      {showProposalGenerator && (
+        <ProposalGenerator
+          onClose={closeProposalGenerator}
+        />
+      )}
+
+      {/* Smart Campaign Calendar Modal */}
+      {showSmartCalendar && (
+        <SmartCampaignCalendar
+          onClose={closeSmartCalendar}
+        />
+      )}
+
+      {/* AI Text Generation Modal */}
+      {showAITextGeneration && (
+        <AITextGeneration
+          onTextGenerated={handleTextGenerated}
+          onClose={closeAITextGeneration}
+        />
+      )}
+
+      {/* Advanced AI Integration Modal */}
+      {showAdvancedAI && (
+        <AdvancedAIIntegration
+          onTextGenerated={handleTextGenerated}
+          onImageGenerated={handleAdvancedImageGenerated}
+          onAnalysisComplete={handleAdvancedAnalysisComplete}
+          onClose={closeAdvancedAI}
+        />
+      )}
+
+      {/* Collaboration Panel */}
+      {showCollaboration && (
+        <CollaborationPanel
+          designId={id}
+          currentUserId={user?.id || 'current-user'}
+          onClose={closeCollaboration}
+          onVersionSelect={handleVersionSelect}
+        />
       )}
     </div>
   );

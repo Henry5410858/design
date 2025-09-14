@@ -3,7 +3,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  plan: 'Free' | 'Premium' | 'Ultra-Premium';
+  plan: 'Gratis' | 'Premium' | 'Ultra-Premium';
   avatar?: string;
 }
 
@@ -17,7 +17,7 @@ export interface Template {
   link: string;
   dimensions: string;
   description: string;
-  plan: 'Free' | 'Premium' | 'Ultra-Premium';
+  plan: 'Gratis' | 'Premium' | 'Ultra-Premium';
 }
 
 // Brand kit types
@@ -30,7 +30,7 @@ export interface BrandKit {
 
 // Plan comparison
 export const PLAN_LEVELS = {
-  'Free': 0,
+  'Gratis': 0,
   'Premium': 1,
   'Ultra-Premium': 2
 } as const;
