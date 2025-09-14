@@ -8,6 +8,7 @@ import {
   areColorsTooSimilar, 
   generateHarmoniousColor,
   generateHighContrastColor,
+  generateBeautifulColor,
   generateContrastingColor,
   COLOR_THRESHOLDS,
   type RGB,
@@ -23,7 +24,7 @@ export interface ColorState {
   currentColor: string;
   isOverlapping: boolean;
   deltaE: number;
-  harmonyType: 'complementary' | 'triadic' | 'analogous' | 'contrast' | 'black_contrast' | null;
+  harmonyType: 'complementary' | 'triadic' | 'analogous' | 'contrast' | 'black_contrast' | 'beautiful' | null;
 }
 
 export interface OverlapObject {
@@ -311,23 +312,23 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
       harmonyType: null
     };
 
-    // Generate appropriate contrasting color for better visual harmony
-    console.log(`🎨 Object overlapping with logo - generating appropriate contrasting color`);
+    // Generate beautiful, aesthetically pleasing color for visual harmony
+    console.log(`🎨 Object overlapping with logo - generating beautiful color`);
     console.log(`🎯 Logo color: ${logoColor}, Object color: ${objectColor} (ΔE: ${deltaE.toFixed(2)})`);
     
-    // Generate high-contrast color that complements the logo
-    const contrastingColor = generateHighContrastColor(logoColor, objectColor);
-    const newDeltaE = calculateDeltaE(logoColor, contrastingColor);
+    // Generate beautiful color that complements the logo
+    const beautifulColor = generateBeautifulColor(logoColor, objectColor);
+    const newDeltaE = calculateDeltaE(logoColor, beautifulColor);
     
-    console.log(`🎨 Generated contrasting color: ${contrastingColor} (ΔE: ${newDeltaE.toFixed(2)})`);
+    console.log(`🎨 Generated beautiful color: ${beautifulColor} (ΔE: ${newDeltaE.toFixed(2)})`);
     
-    colorState.currentColor = contrastingColor;
-    colorState.harmonyType = 'contrast';
+    colorState.currentColor = beautifulColor;
+    colorState.harmonyType = 'beautiful';
     
-    // Apply the contrasting color to the object
-    applyColorToObject(obj, contrastingColor);
+    // Apply the beautiful color to the object
+    applyColorToObject(obj, beautifulColor);
     
-    console.log(`✨ Applied contrasting color: ${contrastingColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
+    console.log(`✨ Applied beautiful color: ${beautifulColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
 
     obj.colorState = colorState;
     results.push({

@@ -21,7 +21,7 @@ import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSi
 import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, canvasToBase64, getImageTypeFromDataUrl } from '@/utils/templateBackgrounds';
 import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
 import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject, extractLogoColor } from '@/utils/colorHarmony';
-import { generateHighContrastColor, calculateDeltaE } from '@/utils/colorScience';
+import { generateBeautifulColor, calculateDeltaE } from '@/utils/colorScience';
 
 interface UnifiedEditorProps {
   id: string;
@@ -5483,14 +5483,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         const logoColor = await extractLogoColor(logoObject);
         
         overlappingObjects.forEach((obj: any) => {
-          const contrastingColor = generateHighContrastColor(logoColor, '#000000'); // Use black as base
-          const newDeltaE = calculateDeltaE(logoColor, contrastingColor);
-          console.log(`🎨 Changing ${obj.type} to contrasting color: ${contrastingColor} (ΔE: ${newDeltaE.toFixed(2)})`);
-          applyColorToObject(obj, contrastingColor);
+          const beautifulColor = generateBeautifulColor(logoColor, '#000000'); // Use black as base
+          const newDeltaE = calculateDeltaE(logoColor, beautifulColor);
+          console.log(`✨ Changing ${obj.type} to beautiful color: ${beautifulColor} (ΔE: ${newDeltaE.toFixed(2)})`);
+          applyColorToObject(obj, beautifulColor);
         });
         
         canvas.renderAll();
-        console.log('🎨 All overlapping objects changed to contrasting colors');
+        console.log('✨ All overlapping objects changed to beautiful colors');
       } else {
         console.warn('⚠️ No logo found for overlap detection');
       }
@@ -6173,11 +6173,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 🎨
               </button>
 
-              {/* Debug button for forcing overlapping objects to contrasting colors */}
+              {/* Debug button for forcing overlapping objects to beautiful colors */}
               <button
                 onClick={forceOverlappingObjectsContrast}
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
-                title="Debug: Forzar Objetos Superpuestos a Colores Contrastantes"
+                title="Debug: Forzar Objetos Superpuestos a Colores Hermosos"
               >
                 🌈
               </button>

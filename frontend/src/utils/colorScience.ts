@@ -275,88 +275,181 @@ export function generateHarmoniousColor(logoColor: string, originalColor: string
 }
 
 /**
- * Generate a high-contrast color specifically for logo visibility
- * This function prioritizes maximum contrast over harmony
+ * Generate beautiful, aesthetically pleasing colors for overlapping objects
+ * This function prioritizes visual beauty and harmony while maintaining good contrast
  */
-export function generateHighContrastColor(logoColor: string, originalColor: string): string {
+export function generateBeautifulColor(logoColor: string, originalColor: string): string {
   const logoRgb = hexToRgb(logoColor);
   if (!logoRgb) return originalColor;
 
   const logoHsl = rgbToHsl(logoRgb);
   
-  // Strategy 1: Pure complementary (180° hue shift) with extreme contrast
-  const complementaryHsl = {
-    h: (logoHsl.h + 180) % 360,
-    s: 0.9, // Maximum saturation for visibility
-    l: logoHsl.l > 0.5 ? 0.2 : 0.8 // Extreme lightness contrast
-  };
-  
-  // Strategy 2: Triadic contrast (120° hue shift) with high saturation
-  const triadicHsl = {
-    h: (logoHsl.h + 120) % 360,
-    s: 0.85,
-    l: logoHsl.l > 0.5 ? 0.25 : 0.75
-  };
-  
-  // Strategy 3: Opposite lightness with maximum saturation
-  const oppositeLightnessHsl = {
-    h: logoHsl.h,
-    s: 0.95, // Maximum saturation
-    l: logoHsl.l > 0.5 ? 0.15 : 0.85 // Extreme lightness contrast
-  };
-  
-  // Strategy 4: Warm vs Cool contrast with extreme values
-  const isLogoWarm = logoHsl.h < 60 || logoHsl.h > 300;
-  const coolColorHsl = {
-    h: isLogoWarm ? 220 : 0, // Pure blue vs pure red
-    s: 0.9,
-    l: 0.5
-  };
-  
-  // Strategy 5: Pure black or white for maximum contrast
-  const pureContrastHsl = {
-    h: logoHsl.h,
-    s: 0,
-    l: logoHsl.l > 0.5 ? 0.1 : 0.9 // Near black or white
-  };
-  
-  const options = [
-    { color: rgbToHex(hslToRgb(complementaryHsl)), name: 'complementary', contrast: 0 },
-    { color: rgbToHex(hslToRgb(triadicHsl)), name: 'triadic', contrast: 0 },
-    { color: rgbToHex(hslToRgb(oppositeLightnessHsl)), name: 'lightness', contrast: 0 },
-    { color: rgbToHex(hslToRgb(coolColorHsl)), name: 'temperature', contrast: 0 },
-    { color: rgbToHex(hslToRgb(pureContrastHsl)), name: 'pure_contrast', contrast: 0 }
+  // Define beautiful color palettes that avoid dark/ugly colors
+  const beautifulPalettes = [
+    // Vibrant complementary colors
+    {
+      name: 'vibrant_complementary',
+      h: (logoHsl.h + 180) % 360,
+      s: 0.8, // High saturation for vibrancy
+      l: 0.6, // Good lightness - not too dark, not too light
+      beauty: 9
+    },
+    // Triadic harmony - vibrant and balanced
+    {
+      name: 'triadic_vibrant',
+      h: (logoHsl.h + 120) % 360,
+      s: 0.75,
+      l: 0.65,
+      beauty: 9
+    },
+    // Analogous harmony - smooth and pleasing
+    {
+      name: 'analogous_smooth',
+      h: (logoHsl.h + 45) % 360,
+      s: 0.7,
+      l: 0.7,
+      beauty: 8
+    },
+    // Split complementary - rich and dynamic
+    {
+      name: 'split_complementary_rich',
+      h: (logoHsl.h + 150) % 360,
+      s: 0.85,
+      l: 0.55,
+      beauty: 8
+    },
+    // Beautiful pastels - soft and elegant
+    {
+      name: 'beautiful_pastel',
+      h: (logoHsl.h + 60) % 360,
+      s: 0.6, // Moderate saturation for pastel beauty
+      l: 0.75, // Light but not washed out
+      beauty: 7
+    },
+    // Jewel tones - rich and luxurious
+    {
+      name: 'jewel_luxury',
+      h: (logoHsl.h + 90) % 360,
+      s: 0.9, // Very high saturation
+      l: 0.5, // Perfect jewel tone lightness
+      beauty: 10
+    },
+    // Warm/cool harmony - temperature contrast
+    {
+      name: 'temperature_harmony',
+      h: logoHsl.h < 60 || logoHsl.h > 300 ? 200 : 20, // Cool blue or warm orange
+      s: 0.8,
+      l: 0.6,
+      beauty: 8
+    },
+    // Sunset colors - warm and inviting
+    {
+      name: 'sunset_warm',
+      h: logoHsl.h < 60 || logoHsl.h > 300 ? 30 : 210, // Warm orange or cool blue
+      s: 0.75,
+      l: 0.65,
+      beauty: 9
+    },
+    // Ocean colors - cool and refreshing
+    {
+      name: 'ocean_cool',
+      h: 180, // Pure teal
+      s: 0.7,
+      l: 0.6,
+      beauty: 8
+    },
+    // Forest colors - natural and calming
+    {
+      name: 'forest_natural',
+      h: 120, // Pure green
+      s: 0.6,
+      l: 0.55,
+      beauty: 7
+    }
   ];
   
-  // Calculate actual contrast and pick the best
-  let bestOption = options[0];
-  let bestContrast = 0;
+  // Generate colors and evaluate them
+  const colorOptions = beautifulPalettes.map(palette => {
+    const color = rgbToHex(hslToRgb(palette));
+    const contrast = calculateDeltaE(logoColor, color);
+    
+    // Check if color is too dark (avoid colors like #010101)
+    const colorRgb = hexToRgb(color);
+    const isTooDark = colorRgb && (colorRgb.r < 50 && colorRgb.g < 50 && colorRgb.b < 50);
+    const isTooLight = colorRgb && (colorRgb.r > 200 && colorRgb.g > 200 && colorRgb.b > 200);
+    
+    // Penalize dark/light colors
+    const darknessPenalty = isTooDark ? -5 : 0;
+    const lightnessPenalty = isTooLight ? -2 : 0;
+    
+    // Calculate beauty score with penalties
+    const adjustedBeauty = palette.beauty + darknessPenalty + lightnessPenalty;
+    
+    return {
+      color,
+      name: palette.name,
+      contrast,
+      beauty: Math.max(0, adjustedBeauty), // Ensure non-negative beauty score
+      isTooDark,
+      isTooLight
+    };
+  });
   
-  for (const option of options) {
-    const contrast = calculateDeltaE(logoColor, option.color);
-    option.contrast = contrast;
-    if (contrast > bestContrast) {
-      bestContrast = contrast;
-      bestOption = option;
+  // Filter out ugly colors and find the best option
+  const goodColors = colorOptions.filter(option => 
+    !option.isTooDark && 
+    !option.isTooLight && 
+    option.contrast > 10 && // Good contrast requirement
+    option.beauty > 5 // Minimum beauty requirement
+  );
+  
+  // If we have good colors, pick the best one
+  if (goodColors.length > 0) {
+    const bestColor = goodColors.reduce((best, current) => {
+      const bestScore = (best.beauty * 0.7) + (Math.min(best.contrast / 20, 10) * 0.3);
+      const currentScore = (current.beauty * 0.7) + (Math.min(current.contrast / 20, 10) * 0.3);
+      return currentScore > bestScore ? current : best;
+    });
+    
+    console.log(`✨ Beautiful ${bestColor.name} color: ${bestColor.color} (ΔE: ${bestColor.contrast.toFixed(2)}, Beauty: ${bestColor.beauty})`);
+    return bestColor.color;
+  }
+  
+  // Fallback: use a guaranteed beautiful color
+  const fallbackColors = [
+    '#FF6B6B', // Coral red
+    '#4ECDC4', // Turquoise
+    '#45B7D1', // Sky blue
+    '#96CEB4', // Mint green
+    '#FECA57', // Golden yellow
+    '#FF9FF3', // Pink
+    '#54A0FF', // Blue
+    '#5F27CD'  // Purple
+  ];
+  
+  // Pick the fallback color with best contrast
+  let bestFallback = fallbackColors[0];
+  let bestFallbackContrast = 0;
+  
+  for (const fallbackColor of fallbackColors) {
+    const contrast = calculateDeltaE(logoColor, fallbackColor);
+    if (contrast > bestFallbackContrast) {
+      bestFallbackContrast = contrast;
+      bestFallback = fallbackColor;
     }
   }
   
-  // Ensure minimum contrast threshold
-  if (bestContrast < 15) {
-    console.warn(`⚠️ Generated color has low contrast (ΔE: ${bestContrast.toFixed(2)}), using fallback`);
-    // Use pure black or white as fallback
-    const fallbackHsl = {
-      h: 0,
-      s: 0,
-      l: logoHsl.l > 0.5 ? 0.1 : 0.9
-    };
-    const fallbackColor = rgbToHex(hslToRgb(fallbackHsl));
-    console.log(`🎯 Using fallback pure contrast color: ${fallbackColor}`);
-    return fallbackColor;
-  }
-  
-  console.log(`🎯 High contrast ${bestOption.name} color: ${bestOption.color} (ΔE: ${bestContrast.toFixed(2)})`);
-  return bestOption.color;
+  console.log(`✨ Using beautiful fallback color: ${bestFallback} (ΔE: ${bestFallbackContrast.toFixed(2)})`);
+  return bestFallback;
+}
+
+/**
+ * Generate a high-contrast color specifically for logo visibility (legacy function)
+ * This function prioritizes maximum contrast over harmony
+ */
+export function generateHighContrastColor(logoColor: string, originalColor: string): string {
+  // For backward compatibility, use the beautiful color function
+  return generateBeautifulColor(logoColor, originalColor);
 }
 
 /**
