@@ -36,12 +36,12 @@ const CanvaTemplateGallery: React.FC = () => {
 
   // Sample data for templates
   const sampleData: TemplateProps = {
-    title: "Amazing Product Launch",
-    subtitle: "Revolutionary Innovation",
-    description: "Discover our latest breakthrough product that will transform your business. Built with cutting-edge technology and designed for maximum efficiency.",
+    title: "Lanzamiento de Producto Increíble",
+    subtitle: "Innovación Revolucionaria",
+    description: "Descubre nuestro último producto innovador que transformará tu negocio. Construido con tecnología de vanguardia y diseñado para máxima eficiencia.",
     image: "/assets/sample-product.jpg",
     logo: "/assets/company-logo.png",
-    ctaText: "Get Started Today"
+    ctaText: "Comienza Hoy"
   };
 
   // Template definitions with Canva integration
@@ -49,10 +49,10 @@ const CanvaTemplateGallery: React.FC = () => {
     // SquarePost Templates
     {
       id: 'square-post-1',
-      name: 'Minimal Square Post',
+      name: 'Post Cuadrado Mínimo',
       category: 'SquarePost',
       dimensions: '1080×1080',
-      description: 'Clean, professional design for Instagram and Facebook',
+      description: 'Diseño limpio y profesional para Instagram y Facebook',
       template: SquarePostTemplate1,
       canvaCategory: 'social-media',
       color: 'from-slate-400 to-slate-600',
@@ -60,10 +60,10 @@ const CanvaTemplateGallery: React.FC = () => {
     },
     {
       id: 'square-post-2',
-      name: 'Vibrant Square Post',
+      name: 'Post Cuadrado Vibrante',
       category: 'SquarePost',
       dimensions: '1080×1080',
-      description: 'Bold, eye-catching design with modern aesthetics',
+      description: 'Diseño audaz y llamativo con estética moderna',
       template: SquarePostTemplate2,
       canvaCategory: 'social-media',
       color: 'from-purple-400 to-pink-500',
@@ -72,10 +72,10 @@ const CanvaTemplateGallery: React.FC = () => {
     // Story Templates
     {
       id: 'story-1',
-      name: 'Minimal Story',
+      name: 'Historia Mínima',
       category: 'Story',
       dimensions: '1080×1920',
-      description: 'Professional story design for Instagram and WhatsApp',
+      description: 'Diseño de historia profesional para Instagram y WhatsApp',
       template: StoryTemplate1,
       canvaCategory: 'social-media',
       color: 'from-slate-400 to-slate-600',
@@ -83,10 +83,10 @@ const CanvaTemplateGallery: React.FC = () => {
     },
     {
       id: 'story-2',
-      name: 'Vibrant Story',
+      name: 'Historia Vibrante',
       category: 'Story',
       dimensions: '1080×1920',
-      description: 'Creative story design with bold colors and animations',
+      description: 'Diseño de historia creativo con colores audaces y animaciones',
       template: StoryTemplate2,
       canvaCategory: 'social-media',
       color: 'from-indigo-400 to-pink-500',
@@ -95,10 +95,10 @@ const CanvaTemplateGallery: React.FC = () => {
     // Flyer Templates
     {
       id: 'flyer-1',
-      name: 'Minimal Flyer',
+      name: 'Flyer Mínimo',
       category: 'Flyer',
       dimensions: '1200×1500',
-      description: 'Professional flyer design for print and digital',
+      description: 'Diseño de flyer profesional para impresión y digital',
       template: FlyerTemplate1,
       canvaCategory: 'flyers',
       color: 'from-slate-400 to-slate-600',
@@ -106,10 +106,10 @@ const CanvaTemplateGallery: React.FC = () => {
     },
     {
       id: 'flyer-2',
-      name: 'Vibrant Flyer',
+      name: 'Flyer Vibrante',
       category: 'Flyer',
       dimensions: '1200×1500',
-      description: 'Eye-catching flyer with modern design elements',
+      description: 'Flyer llamativo con elementos de diseño moderno',
       template: FlyerTemplate2,
       canvaCategory: 'flyers',
       color: 'from-purple-400 to-orange-400',
@@ -118,10 +118,10 @@ const CanvaTemplateGallery: React.FC = () => {
     // Banner Templates
     {
       id: 'banner-1',
-      name: 'Minimal Banner',
+      name: 'Banner Mínimo',
       category: 'Banner',
       dimensions: '1200×628',
-      description: 'Professional banner for Facebook feed and ads',
+      description: 'Banner profesional para feed de Facebook y anuncios',
       template: BannerTemplate1,
       canvaCategory: 'social-media',
       color: 'from-slate-400 to-slate-600',
@@ -129,10 +129,10 @@ const CanvaTemplateGallery: React.FC = () => {
     },
     {
       id: 'banner-2',
-      name: 'Vibrant Banner',
+      name: 'Banner Vibrante',
       category: 'Banner',
       dimensions: '1200×628',
-      description: 'Attention-grabbing banner with bold colors',
+      description: 'Banner llamativo con colores audaces',
       template: BannerTemplate2,
       canvaCategory: 'social-media',
       color: 'from-blue-400 to-pink-500',
@@ -141,10 +141,10 @@ const CanvaTemplateGallery: React.FC = () => {
     // Badge Templates
     {
       id: 'badge-1',
-      name: 'Minimal Badge',
+      name: 'Insignia Mínima',
       category: 'Badge',
       dimensions: '800×800',
-      description: 'Clean badge design for digital and print use',
+      description: 'Diseño de insignia limpio para uso digital e impreso',
       template: BadgeTemplate1,
       canvaCategory: 'social-media',
       color: 'from-slate-400 to-slate-600',
@@ -152,10 +152,10 @@ const CanvaTemplateGallery: React.FC = () => {
     },
     {
       id: 'badge-2',
-      name: 'Vibrant Badge',
+      name: 'Insignia Vibrante',
       category: 'Badge',
       dimensions: '800×800',
-      description: 'Colorful badge with modern design elements',
+      description: 'Insignia colorida con elementos de diseño moderno',
       template: BadgeTemplate2,
       canvaCategory: 'social-media',
       color: 'from-emerald-400 to-cyan-500',
@@ -164,10 +164,10 @@ const CanvaTemplateGallery: React.FC = () => {
     // Brochure Templates
     {
       id: 'brochure-1',
-      name: 'Minimal Brochure',
+      name: 'Folleto Mínimo',
       category: 'Brochure',
       dimensions: '1200×1500',
-      description: 'Professional brochure layout for business use',
+      description: 'Diseño de folleto profesional para uso empresarial',
       template: BrochureTemplate1,
       canvaCategory: 'presentations',
       color: 'from-slate-400 to-slate-600',
@@ -175,10 +175,10 @@ const CanvaTemplateGallery: React.FC = () => {
     },
     {
       id: 'brochure-2',
-      name: 'Vibrant Brochure',
+      name: 'Folleto Vibrante',
       category: 'Brochure',
       dimensions: '1200×1500',
-      description: 'Creative brochure with bold design elements',
+      description: 'Folleto creativo con elementos de diseño audaces',
       template: BrochureTemplate2,
       canvaCategory: 'presentations',
       color: 'from-rose-400 to-purple-500',

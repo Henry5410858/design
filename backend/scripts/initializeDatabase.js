@@ -200,8 +200,8 @@ const initialData = {
       canvasSize: '1080x1350'
     },
     {
-      name: 'Achievement Badge',
-      description: 'Modern achievement badge for awards and accomplishments',
+      name: 'Insignia de Logro',
+      description: 'Insignia moderna para premios y logros',
       type: 'badge',
       category: 'badges',
       templateKey: 'achievementBadge',
