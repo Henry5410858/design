@@ -52,7 +52,7 @@ const CanvasObjectSchema = new mongoose.Schema({
 const TemplateSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
-  type: { type: String, enum: ['square-post', 'story', 'marketplace-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'], required: true },
+  type: { type: String, enum: ['square-post', 'story', 'marketplace-flyer', 'real-estate-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'], required: true },
   category: { type: String, enum: ['social-posts', 'stories', 'flyers', 'banners', 'badges', 'documents', 'marketplace-flyers', 'fb-banners'], required: true },
   templateKey: { type: String, unique: true, sparse: true },
   thumbnail: { type: String, default: '/uploads/default-thumbnail.png' },
@@ -125,4 +125,279 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    console.log('🚀 Frontend templates POST API called');
+    
+    await connectDB();
+    console.log('✅ Database connected');
+    
+    const body = await request.json();
+    console.log('📝 Request body:', body);
+    
+    const { name, type, dimensions, brandKitLogo } = body;
+    
+    if (!type) {
+      return NextResponse.json({ error: 'Template type is required' }, { status: 400 });
+    }
+    
+    // Validate template type
+    const validTypes = ['square-post', 'story', 'marketplace-flyer', 'real-estate-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'];
+    if (!validTypes.includes(type)) {
+      return NextResponse.json({ error: 'Invalid template type' }, { status: 400 });
+    }
+    
+    // Generate default name if none provided
+    const templateName = name || generateDefaultTemplateName(type);
+    
+    // Generate a unique template key
+    const templateKey = `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Get default objects and add logo if available
+    let templateObjects = getDefaultObjectsForType(type);
+    
+    // Add brand kit logo to template if available
+    if (brandKitLogo) {
+      const logoObject = {
+        id: 'brand-logo',
+        type: 'image',
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 60,
+        src: brandKitLogo,
+        selectable: true,
+        evented: true,
+        lockMovementX: false,
+        lockMovementY: false,
+        lockRotation: false,
+        lockScalingX: false,
+        lockScalingY: false,
+        cornerStyle: 'circle',
+        cornerColor: '#00525b',
+        cornerSize: 8,
+        transparentCorners: false,
+        borderColor: '#00525b',
+        borderScaleFactor: 1
+      };
+      
+      // Add logo as the first object
+      templateObjects.unshift(logoObject);
+    }
+    
+    // Create new template with default content based on type
+    const newTemplate = await Template.create({
+      name: templateName,
+      type: type,
+      category: getCategoryForType(type),
+      thumbnail: '/uploads/default-thumbnail.png', // Will be updated when saved
+      objects: templateObjects,
+      backgroundColor: '#ffffff',
+      dimensions: dimensions || getDefaultDimensions(type),
+      templateKey: templateKey,
+    });
+    
+    console.log('✅ Template created successfully:', newTemplate._id);
+    
+    return NextResponse.json(newTemplate, { status: 201 });
+    
+  } catch (error) {
+    console.error('❌ Error creating template:', error);
+    return NextResponse.json(
+      { error: 'Failed to create template' },
+      { status: 500 }
+    );
+  }
+}
+
+// Helper functions
+function generateDefaultTemplateName(type: string): string {
+  const typeNames: { [key: string]: string } = {
+    'square-post': 'Nueva Publicación Cuadrada',
+    'story': 'Nueva Historia',
+    'marketplace-flyer': 'Nuevo Flyer de Mercado',
+    'real-estate-flyer': 'Nuevo Flyer Inmobiliario',
+    'fb-feed-banner': 'Nuevo Banner de Facebook',
+    'digital-badge': 'Nueva Insignia Digital',
+    'brochure': 'Nuevo Folleto'
+  };
+  
+  return typeNames[type] || 'Nueva Plantilla';
+}
+
+function getDefaultObjectsForType(type: string): any[] {
+  const defaultObjects: { [key: string]: any[] } = {
+    'square-post': [
+      {
+        id: 'text-1',
+        type: 'text',
+        x: 50,
+        y: 50,
+        width: 400,
+        height: 60,
+        text: 'Tu Texto Aquí',
+        fontSize: 32,
+        fontFamily: 'Arial',
+        fontWeight: 'bold',
+        color: '#000000',
+        textAlign: 'center'
+      }
+    ],
+    'story': [
+      {
+        id: 'text-1',
+        type: 'text',
+        x: 50,
+        y: 100,
+        width: 300,
+        height: 80,
+        text: 'Tu Historia',
+        fontSize: 48,
+        fontFamily: 'Arial',
+        fontWeight: 'bold',
+        color: '#000000',
+        textAlign: 'center'
+      }
+    ],
+    'real-estate-flyer': [
+      {
+        id: 'text-1',
+        type: 'text',
+        x: 100,
+        y: 100,
+        width: 500,
+        height: 60,
+        text: 'PROPIEDAD EN VENTA',
+        fontSize: 36,
+        fontFamily: 'Arial',
+        fontWeight: 'bold',
+        color: '#1e40af',
+        textAlign: 'center'
+      },
+      {
+        id: 'text-2',
+        type: 'text',
+        x: 100,
+        y: 200,
+        width: 500,
+        height: 40,
+        text: 'Descripción de la propiedad',
+        fontSize: 24,
+        fontFamily: 'Arial',
+        fontWeight: 'normal',
+        color: '#374151',
+        textAlign: 'center'
+      }
+    ],
+    'marketplace-flyer': [
+      {
+        id: 'text-1',
+        type: 'text',
+        x: 100,
+        y: 100,
+        width: 500,
+        height: 60,
+        text: 'OFERTA ESPECIAL',
+        fontSize: 36,
+        fontFamily: 'Arial',
+        fontWeight: 'bold',
+        color: '#dc2626',
+        textAlign: 'center'
+      },
+      {
+        id: 'text-2',
+        type: 'text',
+        x: 100,
+        y: 200,
+        width: 500,
+        height: 40,
+        text: 'Descripción del producto',
+        fontSize: 24,
+        fontFamily: 'Arial',
+        fontWeight: 'normal',
+        color: '#374151',
+        textAlign: 'center'
+      }
+    ],
+    'fb-feed-banner': [
+      {
+        id: 'text-1',
+        type: 'text',
+        x: 100,
+        y: 100,
+        width: 600,
+        height: 60,
+        text: 'Banner de Facebook',
+        fontSize: 32,
+        fontFamily: 'Arial',
+        fontWeight: 'bold',
+        color: '#1877f2',
+        textAlign: 'center'
+      }
+    ],
+    'digital-badge': [
+      {
+        id: 'text-1',
+        type: 'text',
+        x: 100,
+        y: 200,
+        width: 400,
+        height: 60,
+        text: 'INSIGNIA',
+        fontSize: 48,
+        fontFamily: 'Arial',
+        fontWeight: 'bold',
+        color: '#1e40af',
+        textAlign: 'center'
+      }
+    ],
+    'brochure': [
+      {
+        id: 'text-1',
+        type: 'text',
+        x: 100,
+        y: 100,
+        width: 500,
+        height: 60,
+        text: 'Título del Folleto',
+        fontSize: 36,
+        fontFamily: 'Arial',
+        fontWeight: 'bold',
+        color: '#000000',
+        textAlign: 'left'
+      }
+    ]
+  };
+  
+  return defaultObjects[type] || [];
+}
+
+function getCategoryForType(type: string): string {
+  const categoryMap: { [key: string]: string } = {
+    'square-post': 'social-posts',
+    'story': 'stories',
+    'marketplace-flyer': 'marketplace-flyers',
+    'real-estate-flyer': 'flyers',
+    'fb-feed-banner': 'fb-banners',
+    'digital-badge': 'badges',
+    'brochure': 'documents'
+  };
+  
+  return categoryMap[type] || 'documents';
+}
+
+function getDefaultDimensions(type: string): { width: number; height: number } {
+  const dimensionsMap: { [key: string]: { width: number; height: number } } = {
+    'square-post': { width: 1080, height: 1080 },
+    'story': { width: 1080, height: 1920 },
+    'marketplace-flyer': { width: 1200, height: 1500 },
+    'real-estate-flyer': { width: 1200, height: 1500 },
+    'fb-feed-banner': { width: 1200, height: 628 },
+    'digital-badge': { width: 1080, height: 1350 },
+    'brochure': { width: 1200, height: 1500 }
+  };
+  
+  return dimensionsMap[type] || { width: 1200, height: 1500 };
 }
