@@ -522,6 +522,12 @@ const getTemplateBackgroundImage = (template: Template): string => {
   const category = template.category.toLowerCase();
   const templateId = template.id.toLowerCase();
   
+  console.log('🎨 Getting background image for template:', {
+    id: template.id,
+    category: template.category,
+    categoryLower: category
+  });
+  
   // Map categories to background images
   const backgroundMap: { [key: string]: string[] } = {
     'flyer': ['flyer 1.png', 'flyer 2.png'],
@@ -535,14 +541,31 @@ const getTemplateBackgroundImage = (template: Template): string => {
   // Get available images for the category
   const availableImages = backgroundMap[category] || [];
   
+  console.log('🎨 Available images for category:', {
+    category,
+    availableImages,
+    backgroundMapKeys: Object.keys(backgroundMap)
+  });
+  
   if (availableImages.length === 0) {
     // Fallback to first available image
+    console.log('⚠️ No images found for category, using fallback');
     return '/assets/templatebackgrounds/flyer 1.png';
   }
   
   // Use template ID to consistently select the same image for the same template
   const imageIndex = templateId.length % availableImages.length;
-  return `/assets/templatebackgrounds/${availableImages[imageIndex]}`;
+  const selectedImage = availableImages[imageIndex];
+  const imagePath = `/assets/templatebackgrounds/${selectedImage}`;
+  
+  console.log('🎨 Selected background image:', {
+    templateId,
+    imageIndex,
+    selectedImage,
+    imagePath
+  });
+  
+  return imagePath;
 };
 
 // Component for displaying template background images
@@ -601,17 +624,27 @@ const TemplateDesignImage = React.memo<{ template: Template }>(({ template }) =>
   // Show background image by default, with option to show generated design
   return (
     <div className="relative w-full h-48 group">
+      {/* Debug Info */}
+      <div className="absolute top-0 left-0 bg-black bg-opacity-75 text-white text-xs p-1 z-10">
+        {template.category} - {backgroundImage.split('/').pop()}
+      </div>
+      
       {/* Background Image */}
       <img
         src={backgroundImage}
         alt={`${template.name} plantilla`}
         className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
         loading="lazy"
+        onLoad={() => {
+          console.log('✅ Background image loaded successfully:', backgroundImage);
+        }}
         onError={(e) => {
-          console.warn(`Failed to load background image: ${backgroundImage}`);
+          console.error(`❌ Failed to load background image: ${backgroundImage}`);
           // Fallback to original thumbnail
           const target = e.target as HTMLImageElement;
-          target.src = template.thumbnailFilename ? API_ENDPOINTS.GET_THUMBNAIL(template.thumbnailFilename) : template.thumbnail;
+          const fallbackSrc = template.thumbnailFilename ? API_ENDPOINTS.GET_THUMBNAIL(template.thumbnailFilename) : template.thumbnail;
+          console.log('🔄 Falling back to:', fallbackSrc);
+          target.src = fallbackSrc;
         }}
       />
       
