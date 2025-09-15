@@ -140,26 +140,32 @@ export async function POST(request: NextRequest) {
     const { name, type, dimensions, brandKitLogo } = body;
     
     if (!type) {
+      console.log('❌ No template type provided');
       return NextResponse.json({ error: 'Template type is required' }, { status: 400 });
     }
     
     // Validate template type
     const validTypes = ['square-post', 'story', 'marketplace-flyer', 'real-estate-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'];
     if (!validTypes.includes(type)) {
+      console.log('❌ Invalid template type:', type);
       return NextResponse.json({ error: 'Invalid template type' }, { status: 400 });
     }
     
     // Generate default name if none provided
     const templateName = name || generateDefaultTemplateName(type);
+    console.log('📝 Template name:', templateName);
     
     // Generate a unique template key
     const templateKey = `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log('🔑 Template key:', templateKey);
     
     // Get default objects and add logo if available
     let templateObjects = getDefaultObjectsForType(type);
+    console.log('📦 Default objects:', templateObjects.length);
     
     // Add brand kit logo to template if available
     if (brandKitLogo) {
+      console.log('🏷️ Adding brand kit logo');
       const logoObject = {
         id: 'brand-logo',
         type: 'image',
@@ -187,17 +193,33 @@ export async function POST(request: NextRequest) {
       templateObjects.unshift(logoObject);
     }
     
-    // Create new template with default content based on type
-    const newTemplate = await Template.create({
+    // Prepare dimensions
+    const templateDimensions = dimensions || getDefaultDimensions(type);
+    console.log('📐 Template dimensions:', templateDimensions);
+    
+    // Prepare template data
+    const templateData = {
       name: templateName,
       type: type,
       category: getCategoryForType(type),
-      thumbnail: '/uploads/default-thumbnail.png', // Will be updated when saved
+      thumbnail: '/uploads/default-thumbnail.png',
       objects: templateObjects,
       backgroundColor: '#ffffff',
-      dimensions: dimensions || getDefaultDimensions(type),
+      dimensions: templateDimensions,
       templateKey: templateKey,
+    };
+    
+    console.log('📋 Template data to create:', {
+      name: templateData.name,
+      type: templateData.type,
+      category: templateData.category,
+      templateKey: templateData.templateKey,
+      dimensions: templateData.dimensions,
+      objectsCount: templateData.objects.length
     });
+    
+    // Create new template with default content based on type
+    const newTemplate = await Template.create(templateData);
     
     console.log('✅ Template created successfully:', newTemplate._id);
     
@@ -205,8 +227,16 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('❌ Error creating template:', error);
+    console.error('❌ Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      code: (error as any)?.code,
+      keyPattern: (error as any)?.keyPattern,
+      keyValue: (error as any)?.keyValue,
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json(
-      { error: 'Failed to create template' },
+      { error: 'Failed to create template', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

@@ -9,14 +9,14 @@ const isProduction = process.env.NODE_ENV === 'production';
 // Determine API base URL based on environment
 let API_BASE_URL;
 if (isDevelopment) {
-  // Development: use localhost backend
-  API_BASE_URL = 'http://localhost:4000';
+  // Development: use frontend API routes (same domain)
+  API_BASE_URL = '';
 } else if (isProduction) {
   // Production: use Vercel API routes (same domain)
   API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 } else {
-  // Fallback
-  API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  // Fallback: use frontend API routes
+  API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 }
 
 export const API_ENDPOINTS = {
