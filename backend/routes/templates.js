@@ -1335,10 +1335,35 @@ router.delete('/:id', auth, async (req, res) => {
     // Clean up associated files before deleting the template
     console.log('🗑️ Cleaning up files for template:', id);
     
-    // Delete design file if it exists
+    // Delete design file(s) if they exist
+    // Method 1: Delete by template.designFilename if it exists
     if (template.designFilename) {
-              const designFilePath = path.resolve(__dirname, '../uploads/designs', template.designFilename);
+      const designFilePath = path.resolve(__dirname, '../uploads/designs', template.designFilename);
       deleteFileSafely(designFilePath);
+    }
+    
+    // Method 2: Delete by template ID (most common case)
+    const designFilePathById = path.resolve(__dirname, '../uploads/designs', `${id}.json`);
+    deleteFileSafely(designFilePathById);
+    
+    // Method 3: Delete any design files with template ID as prefix (for multi-part designs)
+    try {
+      const designsDir = path.resolve(__dirname, '../uploads/designs');
+      if (fs.existsSync(designsDir)) {
+        const designFiles = fs.readdirSync(designsDir);
+        const templateIdPrefix = id;
+        
+        designFiles.forEach(filename => {
+          // Check if filename starts with template ID (for files like templateId_part1.json)
+          if (filename.startsWith(templateIdPrefix) && filename.endsWith('.json')) {
+            const filePath = path.join(designsDir, filename);
+            console.log(`🗑️ Deleting design file with template ID prefix: ${filename}`);
+            deleteFileSafely(filePath);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error cleaning up design files with template ID prefix:', error);
     }
     
     // Delete thumbnail file if it exists and it's not the default thumbnail

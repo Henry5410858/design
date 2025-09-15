@@ -61,12 +61,38 @@ export default function TemplateGalleryPage() {
 
   const handleDeleteConfirmed = async () => {
     try {
+      // Check user plan - Free plan users cannot delete templates
+      if (user?.plan === 'Gratis') {
+        showError('Eliminar plantillas requiere plan Premium o Ultra-Premium. ¡Upgrade tu plan para eliminar plantillas!');
+        setShowDeleteConfirm(false);
+        return;
+      }
+
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showError('No se encontró token de autenticación. Por favor, inicia sesión nuevamente.');
+        setShowDeleteConfirm(false);
+        return;
+      }
+
       // Delete selected templates from database
-      const deletePromises = Array.from(selectedTemplates).map(templateId =>
-        fetch(API_ENDPOINTS.TEMPLATE_BY_ID(templateId), {
+      const deletePromises = Array.from(selectedTemplates).map(async (templateId) => {
+        const response = await fetch(API_ENDPOINTS.DELETE_TEMPLATE(templateId), {
           method: 'DELETE',
-        })
-      );
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to delete template ${templateId}: ${response.status}`);
+        }
+
+        return response.json();
+      });
       
       await Promise.all(deletePromises);
       
@@ -75,10 +101,14 @@ export default function TemplateGalleryPage() {
       setIsSelectionMode(false);
       setShowDeleteConfirm(false);
       
+      // Show success message
+      showSuccess(`Se eliminaron ${selectedTemplates.size} plantilla(s) exitosamente`);
+      
       // Refresh the template gallery (you might want to add a refresh function)
       console.log('Templates deleted successfully');
     } catch (error) {
       console.error('Error deleting templates:', error);
+      showError(`Error al eliminar plantillas: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 

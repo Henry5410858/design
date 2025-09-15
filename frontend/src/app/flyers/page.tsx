@@ -131,7 +131,7 @@ export default function FlyersPage() {
     }
     
     try {
-      const response = await fetch(API_ENDPOINTS.TEMPLATE_BY_ID(id), {
+      const response = await fetch(API_ENDPOINTS.DELETE_TEMPLATE(id), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
