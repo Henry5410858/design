@@ -1091,6 +1091,16 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           startColorHarmony();
         }
       });
+
+      // Handle object removal to stop color harmony when logo is deleted
+      fabricCanvas.on('object:removed', (e) => {
+        console.log('🗑️ Object removed from canvas:', e.target);
+        
+        // Notify color harmony manager about object removal
+        if (colorHarmonyManager) {
+          colorHarmonyManager.onObjectRemoved(e.target);
+        }
+      });
       
       // Prevent text from being completely erased
       fabricCanvas.on('text:changed', (e) => {
@@ -5483,6 +5493,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const stopColorHarmony = useCallback(() => {
     if (!colorHarmonyManager) return;
     
+    console.log('🛑 Manually stopping color harmony monitoring');
     colorHarmonyManager.stopMonitoring();
     setIsColorHarmonyActive(false);
     console.log('🎨 Color harmony monitoring stopped');

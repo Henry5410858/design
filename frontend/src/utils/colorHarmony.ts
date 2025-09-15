@@ -503,6 +503,49 @@ export class ColorHarmonyManager {
    */
   setLogoObject(logoObject: any): void {
     this.logoObject = logoObject;
+    console.log("🎯 Logo object set:", {
+      type: logoObject?.type,
+      id: logoObject?.get('id'),
+      hasGetBoundingRect: typeof logoObject?.getBoundingRect === 'function'
+    });
+  }
+
+  /**
+   * Check if the current logo object is still valid and exists on canvas
+   */
+  private isLogoObjectValid(): boolean {
+    if (!this.logoObject) {
+      return false;
+    }
+
+    try {
+      // Check if the object still exists on the canvas
+      const allObjects = this.canvas.getObjects();
+      const logoStillExists = allObjects.includes(this.logoObject);
+      
+      if (!logoStillExists) {
+        console.log("🗑️ Logo object no longer exists on canvas");
+        return false;
+      }
+
+      // Check if the object still has required methods
+      if (typeof this.logoObject.getBoundingRect !== 'function') {
+        console.log("⚠️ Logo object missing getBoundingRect method");
+        return false;
+      }
+
+      // Try to get bounds to ensure object is still functional
+      const bounds = this.logoObject.getBoundingRect();
+      if (!bounds || typeof bounds.left !== 'number' || typeof bounds.top !== 'number') {
+        console.log("⚠️ Logo object has invalid bounds");
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.log("⚠️ Error validating logo object:", error);
+      return false;
+    }
   }
 
   /**
@@ -517,8 +560,28 @@ export class ColorHarmonyManager {
    * Stop real-time monitoring
    */
   stopMonitoring(): void {
+    console.log("🛑 Stopping color harmony monitoring");
     this.isActive = false;
+    this.logoObject = null;
     this.restoreAllOriginalColors();
+  }
+
+  /**
+   * Handle object removal - check if logo was deleted
+   */
+  onObjectRemoved(removedObject: any): void {
+    console.log("🗑️ Object removed from canvas:", {
+      type: removedObject?.type,
+      id: removedObject?.get('id'),
+      isLogo: (removedObject as any)?.isLogo,
+      isBrandKitLogo: (removedObject as any)?.isBrandKitLogo
+    });
+
+    // If the removed object was our logo, stop monitoring
+    if (removedObject === this.logoObject) {
+      console.log("🗑️ Logo object was removed - stopping color harmony monitoring");
+      this.stopMonitoring();
+    }
   }
 
   /**
@@ -530,6 +593,15 @@ export class ColorHarmonyManager {
       console.log("⚠️ monitorLogoMovement: Not active", {
         isActive: this.isActive
       });
+      return;
+    }
+
+    // Check if the current logo object is still valid
+    if (this.logoObject && !this.isLogoObjectValid()) {
+      console.log("🗑️ Logo object is no longer valid - stopping color harmony monitoring");
+      this.logoObject = null;
+      this.restoreAllOriginalColors();
+      this.stopMonitoring();
       return;
     }
 
@@ -558,11 +630,9 @@ export class ColorHarmonyManager {
         });
         this.logoObject = potentialLogo;
       } else {
-        console.log("⚠️ No logo object found - skipping this monitoring cycle");
-        // Continue monitoring in case a logo is added later
-        setTimeout(() => {
-          this.monitorLogoMovement();
-        }, 100);
+        console.log("⚠️ No logo object found - stopping color harmony monitoring");
+        this.restoreAllOriginalColors();
+        this.stopMonitoring();
         return;
       }
     }
