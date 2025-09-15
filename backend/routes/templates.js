@@ -1177,11 +1177,22 @@ router.get('/thumbnail/:filename', (req, res) => {
 });
 
 // POST /api/templates - Create new template
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
+    const user = req.user;
+    
+    // Check user plan - Free plan users cannot create templates
+    if (user.plan === 'Gratis') {
+      return res.status(403).json({ 
+        error: 'Template creation requires Premium or Ultra-Premium plan',
+        message: 'Upgrade your plan to create custom templates'
+      });
+    }
+    
     const { name, type, dimensions, brandKitLogo } = req.body;
 
-    console.log( name, type, dimensions, brandKitLogo );
+    console.log('Creating template for user:', user.username, 'Plan:', user.plan);
+    console.log('Template data:', { name, type, dimensions, brandKitLogo });
     
     if (!type) {
       return res.status(400).json({ error: 'Template type is required' });
@@ -1288,8 +1299,18 @@ router.post('/:id/duplicate', async (req, res) => {
 });
 
 // DELETE /api/templates/:id - Delete template
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
+    const user = req.user;
+    
+    // Check user plan - Free plan users cannot delete templates
+    if (user.plan === 'Gratis') {
+      return res.status(403).json({ 
+        error: 'Template deletion requires Premium or Ultra-Premium plan',
+        message: 'Upgrade your plan to delete custom templates'
+      });
+    }
+    
     const { id } = req.params;
     
     // Validate ID parameter
@@ -1337,8 +1358,18 @@ router.delete('/:id', async (req, res) => {
 });
 
 // PUT /api/templates/:id - Save template changes
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
+    const user = req.user;
+    
+    // Check user plan - Free plan users cannot edit templates
+    if (user.plan === 'Gratis') {
+      return res.status(403).json({ 
+        error: 'Template editing requires Premium or Ultra-Premium plan',
+        message: 'Upgrade your plan to edit custom templates'
+      });
+    }
+    
     const { id } = req.params;
     
     // Validate ID parameter

@@ -137,7 +137,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('📝 Request body:', body);
     
-    const { name, type, dimensions, brandKitLogo } = body;
+    const { name, type, dimensions, brandKitLogo, userId } = body;
+    
+    // Check user plan - Free plan users cannot create templates
+    if (userId) {
+      const userPlanResponse = await fetch(`${request.nextUrl.origin}/api/user/plan?userId=${userId}`);
+      if (userPlanResponse.ok) {
+        const userPlanData = await userPlanResponse.json();
+        if (userPlanData.plan === 'Gratis') {
+          console.log('❌ Free plan user attempting to create template');
+          return NextResponse.json({ 
+            error: 'Template creation requires Premium or Ultra-Premium plan',
+            message: 'Upgrade your plan to create custom templates'
+          }, { status: 403 });
+        }
+      }
+    }
     
     if (!type) {
       console.log('❌ No template type provided');

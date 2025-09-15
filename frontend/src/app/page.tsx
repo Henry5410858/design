@@ -4,9 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import CreateTemplateModal from '@/components/modals/CreateTemplateModal';
+import { useAuth } from '@/context/AuthContext';
 
 export default function HomePage() {
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
+  const { user } = useAuth();
 
   return (
     <DashboardLayout>
@@ -34,12 +36,26 @@ export default function HomePage() {
 
             {/* Create Template Card */}
             <div 
-              onClick={() => setShowCreateTemplateModal(true)}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
+              onClick={() => user?.plan === 'Gratis' ? null : setShowCreateTemplateModal(true)}
+              className={`bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 transition-all duration-300 group ${
+                user?.plan === 'Gratis' 
+                  ? 'cursor-not-allowed opacity-60' 
+                  : 'hover:shadow-xl hover:scale-105 cursor-pointer'
+              }`}
+              title={user?.plan === 'Gratis' ? 'Crear plantillas requiere plan Premium o Ultra-Premium' : 'Crear nueva plantilla'}
             >
-              <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">➕</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Crear Nueva Plantilla</h3>
-              <p className="text-gray-600 text-sm">Comienza a diseñar con una nueva plantilla</p>
+              <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                {user?.plan === 'Gratis' ? '🔒' : '➕'}
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                {user?.plan === 'Gratis' ? 'Crear Plantilla (Premium)' : 'Crear Nueva Plantilla'}
+              </h3>
+              <p className="text-gray-600 text-sm">
+                {user?.plan === 'Gratis' 
+                  ? 'Upgrade para crear plantillas personalizadas' 
+                  : 'Comienza a diseñar con una nueva plantilla'
+                }
+              </p>
             </div>
 
             {/* Brand Kit Card */}

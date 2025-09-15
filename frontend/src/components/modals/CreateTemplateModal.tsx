@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNotification } from '@/context/NotificationContext';
+import { useAuth } from '@/context/AuthContext';
 import API_ENDPOINTS from '@/config/api';
 
 interface CreateTemplateModalProps {
@@ -62,6 +63,7 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
   
   // Notification context
   const { showSuccess, showError, showWarning } = useNotification();
+  const { user } = useAuth();
 
   // Set initial template name when modal opens
   useEffect(() => {
@@ -79,6 +81,12 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
 
   const handleCreate = async () => {
     if (!selectedType || !templateName.trim()) return;
+    
+    // Check user plan - Free plan users cannot create templates
+    if (user?.plan === 'Gratis') {
+      showError('Crear plantillas requiere plan Premium o Ultra-Premium. ¡Upgrade tu plan para crear plantillas personalizadas!');
+      return;
+    }
     
     // Validate template name length
     if (templateName.trim().length < 3) {

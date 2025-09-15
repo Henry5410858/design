@@ -528,9 +528,15 @@ export default function TemplateGalleryPage() {
               
               <button
                 onClick={handleCreateTemplate}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                disabled={user?.plan === 'Gratis'}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg ${
+                  user?.plan === 'Gratis' 
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+                title={user?.plan === 'Gratis' ? 'Crear plantillas requiere plan Premium o Ultra-Premium' : 'Crear nueva plantilla'}
               >
-                Crear
+                {user?.plan === 'Gratis' ? 'Crear (Premium)' : 'Crear'}
               </button>
               
               {isSelectionMode && selectedTemplates.size > 0 && (
