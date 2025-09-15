@@ -4,6 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Template } from '@/types';
 import API_ENDPOINTS from '@/config/api';
 import { exportTemplateAsImage } from '@/utils/canvasExport';
+import { templateDesignManager, useTemplateDesignManager } from '@/utils/templateDesignManager';
 
 interface TemplateGalleryProps {
   templates: Template[];
@@ -15,6 +16,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set());
   const [showInstructions, setShowInstructions] = useState(false);
   const [instructionData, setInstructionData] = useState<{template: Template, format: 'png' | 'pdf'} | null>(null);
+  const designManager = useTemplateDesignManager();
 
   // Cleanup function for modal state
   const closeModal = useCallback(() => {
@@ -48,6 +50,16 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [showInstructions, closeModal]);
+
+  // Preload design images for better performance
+  useEffect(() => {
+    if (templates.length > 0) {
+      console.log(`🚀 Preloading design images for ${templates.length} templates...`);
+      designManager.preloadDesignImages(templates).catch(error => {
+        console.error('❌ Error preloading design images:', error);
+      });
+    }
+  }, [templates, designManager]);
 
   // Safe modal open function
   const openModal = useCallback((data: {template: Template, format: 'png' | 'pdf'} | null) => {
@@ -505,72 +517,50 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
   );
 });
 
-// Component for generating and displaying actual template design images
+// Component for automatically generating and displaying template design images
 const TemplateDesignImage = React.memo<{ template: Template }>(({ template }) => {
   const [designImage, setDesignImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const designManager = useTemplateDesignManager();
 
   useEffect(() => {
-    const generateDesignImage = async () => {
-      if (!template.id) return;
+    const generateImage = async () => {
+      if (designImage || isGenerating) return;
       
       setIsGenerating(true);
       setHasError(false);
       
       try {
-        console.log(`🎨 Generating design image for template: ${template.id}`);
+        console.log(`🎨 Auto-generating design image for template: ${template.id}`);
         
-        // Try to generate image with template ID
-        let imageDataUrl = await exportTemplateAsImage(template.id, {
-          format: 'png',
-          quality: 0.8,
-          multiplier: 0.5 // Smaller size for gallery thumbnails
-        });
+        // Use the template design manager to generate images
+        const designImages = await designManager.getDesignImages(template);
         
-        if (!imageDataUrl) {
-          // If exportTemplateAsImage fails, try direct design data loading
-          console.log(`🔄 Trying direct design data loading for: ${template.id}`);
-          try {
-            const response = await fetch(`/api/templates/design/${template.id}.json`);
-            if (response.ok) {
-              const designData = await response.json();
-              console.log(`📁 Design data loaded directly:`, designData);
-              
-              // If we have design data, we could potentially generate a preview
-              // For now, we'll show that we found the data but couldn't generate image
-              console.log(`📊 Found design data with ${designData.designData?.objects?.length || 0} objects`);
-            }
-          } catch (directError) {
-            console.warn(`⚠️ Direct design loading also failed:`, directError);
-          }
-        }
-        
-        if (imageDataUrl) {
-          setDesignImage(imageDataUrl);
-          console.log(`✅ Design image generated for template: ${template.id}`);
+        if (designImages && designImages.generated) {
+          setDesignImage(designImages.preview);
+          console.log(`✅ Auto-generated design image for template: ${template.id}`);
         } else {
           setHasError(true);
-          console.warn(`⚠️ Failed to generate design image for template: ${template.id}`);
+          console.warn(`⚠️ Failed to auto-generate design image for template: ${template.id}`);
         }
       } catch (error) {
-        console.error(`❌ Error generating design image for template ${template.id}:`, error);
+        console.error(`❌ Error auto-generating design image for template ${template.id}:`, error);
         setHasError(true);
       } finally {
         setIsGenerating(false);
       }
     };
 
-    generateDesignImage();
-  }, [template.id]);
+    generateImage();
+  }, [template.id, designImage, isGenerating, designManager]);
 
-  // Show loading state
   if (isGenerating) {
     return (
-      <div className="w-full h-48 bg-gray-700 flex items-center justify-center">
+      <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-          <p className="text-xs text-gray-300">Generating...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+          <div className="text-indigo-600 text-sm font-medium">Generando diseño...</div>
         </div>
       </div>
     );
@@ -579,23 +569,38 @@ const TemplateDesignImage = React.memo<{ template: Template }>(({ template }) =>
   // Show error state with fallback to original thumbnail
   if (hasError || !designImage) {
     return (
-      <img
-        src={template.thumbnailFilename ? API_ENDPOINTS.GET_THUMBNAIL(template.thumbnailFilename) : template.thumbnail}
-        alt={template.name}
-        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-        loading="lazy"
-      />
+      <div className="relative w-full h-48 bg-gray-100 group">
+        <img
+          src={template.thumbnailFilename ? API_ENDPOINTS.GET_THUMBNAIL(template.thumbnailFilename) : template.thumbnail}
+          alt={template.name}
+          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
+            Imagen de plantilla
+          </div>
+        </div>
+      </div>
     );
   }
 
-  // Show actual design image
+  // Show auto-generated design image
   return (
-    <img
-      src={designImage}
-      alt={`${template.name} design preview`}
-      className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-      loading="lazy"
-    />
+    <div className="relative w-full h-48 group">
+      <img
+        src={designImage}
+        alt={`${template.name} diseño generado`}
+        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+        loading="lazy"
+      />
+      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="text-white text-xs bg-green-600 bg-opacity-80 px-2 py-1 rounded flex items-center">
+          <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+          Diseño generado automáticamente
+        </div>
+      </div>
+    </div>
   );
 });
 

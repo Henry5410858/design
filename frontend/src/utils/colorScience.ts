@@ -295,69 +295,61 @@ export function generateHarmoniousColorFromOriginal(logoColor: string, originalO
     originalHsl
   });
   
-  // Strategy: Create harmonious variations based on the original color
-  const harmoniousOptions = [
-    // Complementary to original (opposite hue)
+  // Strategy: Use the specific color palette from the user's image
+  const userColorPalette = [
     {
-      name: 'complementary',
-      h: (originalHsl.h + 180) % 360,
-      s: Math.min(originalHsl.s + 0.2, 1),
-      l: Math.min(originalHsl.l + 0.1, 0.8),
+      name: 'bright_cyan',
+      color: '#00D4FF', // Bright Cyan/Turquoise
+      beauty: 9
+    },
+    {
+      name: 'dark_teal',
+      color: '#006B7D', // Dark Teal/Deep Cyan
       beauty: 8
     },
-    // Triadic (120 degrees from original)
     {
-      name: 'triadic_1',
-      h: (originalHsl.h + 120) % 360,
-      s: originalHsl.s,
-      l: originalHsl.l,
+      name: 'vibrant_aqua',
+      color: '#00FFFF', // Vibrant Aqua/Light Turquoise
+      beauty: 9
+    },
+    {
+      name: 'deep_indigo',
+      color: '#4B0082', // Deep Indigo/Dark Purple
+      beauty: 8
+    },
+    {
+      name: 'white',
+      color: '#FFFFFF', // Pure White
       beauty: 7
     },
-    // Triadic (240 degrees from original)
     {
-      name: 'triadic_2',
-      h: (originalHsl.h + 240) % 360,
-      s: originalHsl.s,
-      l: originalHsl.l,
-      beauty: 7
-    },
-    // Analogous (30 degrees from original)
-    {
-      name: 'analogous_warm',
-      h: (originalHsl.h + 30) % 360,
-      s: Math.min(originalHsl.s + 0.1, 1),
-      l: originalHsl.l,
+      name: 'black',
+      color: '#000000', // Solid Black
       beauty: 6
-    },
-    // Analogous (-30 degrees from original)
-    {
-      name: 'analogous_cool',
-      h: (originalHsl.h - 30 + 360) % 360,
-      s: Math.min(originalHsl.s + 0.1, 1),
-      l: originalHsl.l,
-      beauty: 6
-    },
-    // Lighter version of original
-    {
-      name: 'lighter_original',
-      h: originalHsl.h,
-      s: originalHsl.s * 0.8,
-      l: Math.min(originalHsl.l + 0.3, 0.9),
-      beauty: 5
-    },
-    // Darker version of original
-    {
-      name: 'darker_original',
-      h: originalHsl.h,
-      s: originalHsl.s * 0.8,
-      l: Math.max(originalHsl.l - 0.2, 0.1),
-      beauty: 5
     }
   ];
+
+  // Convert palette colors to HSL for analysis
+  const harmoniousOptions = userColorPalette.map(paletteColor => {
+    const colorRgb = hexToRgb(paletteColor.color);
+    if (!colorRgb) return null;
+    
+    const colorHsl = rgbToHsl(colorRgb);
+    
+    return {
+      name: paletteColor.name,
+      h: colorHsl.h,
+      s: colorHsl.s,
+      l: colorHsl.l,
+      beauty: paletteColor.beauty,
+      originalColor: paletteColor.color
+    };
+  }).filter(option => option !== null);
   
   // Generate colors and evaluate them
   const colorOptions = harmoniousOptions.map(option => {
-    const color = rgbToHex(hslToRgb(option));
+    // Use the original color from the palette
+    const color = option.originalColor;
     const contrast = calculateDeltaE(logoColor, color);
     
     // Check if color is too dark or light
@@ -365,29 +357,22 @@ export function generateHarmoniousColorFromOriginal(logoColor: string, originalO
     const isTooDark = colorRgb && (colorRgb.r < 50 && colorRgb.g < 50 && colorRgb.b < 50);
     const isTooLight = colorRgb && (colorRgb.r > 200 && colorRgb.g > 200 && colorRgb.b > 200);
     
-    // Penalize dark/light colors
-    const darknessPenalty = isTooDark ? -5 : 0;
-    const lightnessPenalty = isTooLight ? -2 : 0;
-    
-    // Calculate beauty score with penalties
-    const adjustedBeauty = option.beauty + darknessPenalty + lightnessPenalty;
+    // Don't penalize the specific palette colors
+    const adjustedBeauty = option.beauty;
     
     return {
       color,
       name: option.name,
       contrast,
-      beauty: Math.max(0, adjustedBeauty),
+      beauty: adjustedBeauty,
       isTooDark,
       isTooLight
     };
   });
   
-  // Filter out bad colors and find the best option
+  // Filter colors - prioritize contrast with logo
   const goodColors = colorOptions.filter(option => 
-    !option.isTooDark && 
-    !option.isTooLight && 
-    option.contrast > 8 && // Good contrast with logo
-    option.beauty > 3 // Minimum beauty requirement
+    option.contrast > 5 // Minimum contrast with logo (lowered to allow more colors)
   );
   
   // If we have good colors, pick the best one
@@ -403,8 +388,8 @@ export function generateHarmoniousColorFromOriginal(logoColor: string, originalO
   }
   
   // Fallback to beautiful color generation
-  console.log(`⚠️ No good harmonious colors found, using fallback`);
-  return generateBeautifulColor(logoColor, originalObjectColor);
+  console.log(`⚠️ No good harmonious colors found, using fallback from user palette`);
+  return userColorPalette[0].color;
 }
 
 /**
