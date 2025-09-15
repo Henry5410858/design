@@ -112,10 +112,32 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Database query:', query);
     console.log('🔍 Template model:', Template ? 'Loaded' : 'Not loaded');
     
-    const templates = await Template.find(query).sort({ createdAt: -1 });
-    console.log(`✅ Found ${templates.length} templates`);
+    // Add pagination and select only necessary fields for gallery
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const skip = (page - 1) * limit;
     
-    return NextResponse.json(templates);
+    // Only select fields needed for gallery display to reduce payload
+    const templates = await Template.find(query)
+      .select('_id name type category thumbnail thumbnailFilename dimensions canvasSize createdAt templateKey')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    // Get total count for pagination
+    const totalTemplates = await Template.countDocuments(query);
+    
+    console.log(`✅ Found ${templates.length} templates (page ${page}/${Math.ceil(totalTemplates / limit)})`);
+    
+    return NextResponse.json({
+      templates,
+      pagination: {
+        page,
+        limit,
+        total: totalTemplates,
+        pages: Math.ceil(totalTemplates / limit)
+      }
+    });
     
   } catch (error) {
     console.error('❌ Error fetching templates:', error);

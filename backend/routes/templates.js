@@ -687,11 +687,33 @@ router.get('/', async (req, res) => {
     console.log('🔍 Database query:', query);
     console.log('🔍 About to execute Template.find()...');
     
-    const templates = await Template.find(query).sort({ createdAt: -1 });
-    console.log(`✅ Found ${templates.length} templates`);
+    // Add pagination and select only necessary fields for gallery
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+    
+    // Only select fields needed for gallery display to reduce payload
+    const templates = await Template.find(query)
+      .select('_id name type category thumbnail thumbnailFilename dimensions canvasSize createdAt templateKey')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    // Get total count for pagination
+    const totalTemplates = await Template.countDocuments(query);
+    
+    console.log(`✅ Found ${templates.length} templates (page ${page}/${Math.ceil(totalTemplates / limit)})`);
     console.log('🔍 First template:', templates[0] ? 'Exists' : 'No templates');
     
-    res.json(templates);
+    res.json({
+      templates,
+      pagination: {
+        page,
+        limit,
+        total: totalTemplates,
+        pages: Math.ceil(totalTemplates / limit)
+      }
+    });
   } catch (error) {
     console.error('❌ Error fetching templates:', error);
     console.error('❌ Error message:', error.message);

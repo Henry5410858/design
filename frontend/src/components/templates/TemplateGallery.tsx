@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../ui/Card';
 import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
 import API_ENDPOINTS from '@/config/api';
 import { 
   SquaresFour, 
   Download, 
   Image as ImageIcon, 
   Stack, 
-  FilePdf 
+  FilePdf,
+  Lock,
+  Crown
 } from 'phosphor-react';
 
 interface TemplateItem {
@@ -42,6 +45,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   isExportMode = false
 }) => {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<'all' | TemplateItem['category']>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
@@ -49,6 +53,18 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   const [apiError, setApiError] = useState<string | null>(null);
   const [templateThumbnails, setTemplateThumbnails] = useState<Record<string, { thumbnail: string; updatedAt: string }>>({});
   const [thumbnailLoadingStates, setThumbnailLoadingStates] = useState<Record<string, boolean>>({});
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0
+  });
+  const [hasMore, setHasMore] = useState(true);
+
+  // Check if user can perform premium actions
+  const canCreateTemplate = user?.plan !== 'Gratis';
+  const canEditTemplate = user?.plan !== 'Gratis';
+  const canDeleteTemplate = user?.plan !== 'Gratis';
 
   // Load custom thumbnails from localStorage
   useEffect(() => {
@@ -115,34 +131,63 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     };
   }, []);
 
-  // Fetch templates from API
+  // Fetch templates from API with pagination and caching
   useEffect(() => {
-    const fetchTemplates = async () => {
+    const fetchTemplates = async (page = 1, append = false) => {
       try {
-        setLoading(true);
+        if (!append) {
+          setLoading(true);
+        }
         setApiError(null);
-        console.log('🔄 Fetching templates from API...');
-        console.log('🔗 API Endpoint:', API_ENDPOINTS.TEMPLATES);
+        console.log('🔄 Fetching templates from API...', { page, append });
         
-        // Fetch all templates
-        console.log('🌐 Making fetch request to:', API_ENDPOINTS.TEMPLATES);
-        const response = await fetch(API_ENDPOINTS.TEMPLATES, {
+        // Check cache first
+        const cacheKey = `templates_${selectedCategory}_${page}`;
+        const cached = localStorage.getItem(cacheKey);
+        const cacheTimestamp = localStorage.getItem(`${cacheKey}_timestamp`);
+        const cacheAge = cacheTimestamp ? Date.now() - parseInt(cacheTimestamp) : Infinity;
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+        
+        if (cached && cacheAge < CACHE_DURATION) {
+          console.log('📦 Using cached templates');
+          const cachedData = JSON.parse(cached);
+          if (append) {
+            setTemplates(prev => [...prev, ...cachedData.templates]);
+          } else {
+            setTemplates(cachedData.templates);
+          }
+          setPagination(cachedData.pagination);
+          setHasMore(cachedData.pagination.page < cachedData.pagination.pages);
+          setLoading(false);
+          return;
+        }
+        
+        // Build query parameters
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: '20'
+        });
+        
+        if (selectedCategory !== 'all') {
+          params.append('category', selectedCategory);
+        }
+        
+        const url = `${API_ENDPOINTS.TEMPLATES}?${params.toString()}`;
+        console.log('🌐 Making fetch request to:', url);
+        
+        const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
         });
-        console.log('📡 Response status:', response.status);
-        console.log('📡 Response ok:', response.ok);
-        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
         
         if (response.ok) {
-          const apiTemplates = await response.json();
-          console.log('✅ Templates fetched from API:', apiTemplates.length);
-          console.log('📋 Raw API data:', apiTemplates);
+          const data = await response.json();
+          console.log('✅ Templates fetched from API:', data.templates?.length || 0);
           
           // Convert API templates to TemplateItem format
-          const convertedTemplates: TemplateItem[] = apiTemplates.map((template: any) => ({
+          const convertedTemplates: TemplateItem[] = (data.templates || []).map((template: any) => ({
             id: template._id || template.id,
             name: template.name,
             category: template.category,
@@ -154,9 +199,22 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             templateKey: template.templateKey
           }));
           
-          setTemplates(convertedTemplates);
+          // Cache the response
+          const cacheData = {
+            templates: convertedTemplates,
+            pagination: data.pagination
+          };
+          localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+          localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
+          
+          if (append) {
+            setTemplates(prev => [...prev, ...convertedTemplates]);
+          } else {
+            setTemplates(convertedTemplates);
+          }
+          setPagination(data.pagination);
+          setHasMore(data.pagination.page < data.pagination.pages);
           console.log('✅ Templates converted and set:', convertedTemplates.length);
-          console.log('📋 Converted templates:', convertedTemplates);
         } else {
           const errorText = await response.text();
           console.error('❌ Failed to fetch templates from API');
@@ -180,7 +238,14 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     };
 
     fetchTemplates();
-  }, []);
+  }, [selectedCategory]);
+
+  // Load more templates function
+  const loadMoreTemplates = () => {
+    if (hasMore && !loading) {
+      fetchTemplates(pagination.page + 1, true);
+    }
+  };
 
   const categories = [
     { id: 'all', name: 'Todos', icon: <SquaresFour size={24} />, color: 'from-gray-500 to-gray-700' },
@@ -393,6 +458,12 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           const isSelected = selectedTemplates.has(template.id);
           onTemplateSelection?.(template.id, !isSelected);
         } else {
+          // Check if user can edit templates
+          if (!canEditTemplate) {
+            // Show upgrade modal or message
+            alert('Para editar plantillas necesitas un plan Premium o Ultra-Premium. ¡Upgrade tu plan!');
+            return;
+          }
           handleEditTemplate(template);
         }
       }}
@@ -468,16 +539,27 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center bg-black/40">
           <div className="text-center text-white">
             <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-              <ImageIcon size={24} />
+              {!canEditTemplate ? <Lock size={24} /> : <ImageIcon size={24} />}
             </div>
             <p className="font-medium">
-              {isSelectionMode ? 'Click to select' : 'Editar en Editor'}
+              {isSelectionMode ? 'Click to select' : 
+               !canEditTemplate ? 'Requiere plan Premium' : 'Editar en Editor'}
             </p>
             <p className="text-sm opacity-80">
-              {isSelectionMode ? 'Select template' : 'Click para abrir'}
+              {isSelectionMode ? 'Select template' : 
+               !canEditTemplate ? 'Upgrade para editar' : 'Click para abrir'}
             </p>
           </div>
         </div>
+
+        {/* Free Plan Lock Overlay */}
+        {!canEditTemplate && (
+          <div className="absolute top-3 right-3 z-10">
+            <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+              <Lock size={16} className="text-white" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -509,9 +591,19 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (!canEditTemplate) {
+                    alert('Para descargar plantillas necesitas un plan Premium o Ultra-Premium. ¡Upgrade tu plan!');
+                    return;
+                  }
                   onDownloadTemplate?.(template.id);
                 }}
-                className="p-1 h-8 w-8 hover:bg-gray-100 rounded transition-colors duration-200"
+                className={`p-1 h-8 w-8 rounded transition-colors duration-200 ${
+                  canEditTemplate 
+                    ? 'hover:bg-gray-100' 
+                    : 'opacity-50 cursor-not-allowed'
+                }`}
+                disabled={!canEditTemplate}
+                title={!canEditTemplate ? 'Requiere plan Premium' : 'Descargar plantilla'}
               >
                 <Download size={16} />
               </button>
@@ -524,6 +616,33 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
 
   return (
     <div className="space-y-8">
+      {/* Free Plan Upgrade Banner */}
+      {!canCreateTemplate && (
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <Crown size={24} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-lg">¡Desbloquea el poder completo!</h3>
+                <p className="text-white/90 text-sm">Crea, edita y descarga plantillas ilimitadas con Premium</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => {
+                // Redirect to billing or upgrade page
+                const billingUrl = process.env.NEXT_PUBLIC_BILLING_URL || '/billing';
+                window.location.href = billingUrl;
+              }}
+              className="bg-white text-orange-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors duration-200"
+            >
+              Upgrade Ahora
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
@@ -623,6 +742,19 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {categoryTemplates.map(template => renderTemplateCard(template))}
                 </div>
+
+                {/* Load More Button */}
+                {hasMore && (
+                  <div className="flex justify-center mt-8">
+                    <button
+                      onClick={loadMoreTemplates}
+                      disabled={loading}
+                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
+                    >
+                      {loading ? 'Cargando...' : 'Cargar más plantillas'}
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

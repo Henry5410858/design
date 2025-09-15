@@ -73,10 +73,32 @@ app.get('/', async (req, res) => {
     
     console.log('🔍 Database query:', query);
     
-    const templates = await Template.find(query).sort({ createdAt: -1 }).limit(50);
-    console.log(`✅ Found ${templates.length} templates`);
+    // Add pagination and select only necessary fields for gallery
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
     
-    res.json(templates);
+    // Only select fields needed for gallery display to reduce payload
+    const templates = await Template.find(query)
+      .select('_id name type category thumbnail thumbnailFilename dimensions canvasSize createdAt templateKey')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    // Get total count for pagination
+    const totalTemplates = await Template.countDocuments(query);
+    
+    console.log(`✅ Found ${templates.length} templates (page ${page}/${Math.ceil(totalTemplates / limit)})`);
+    
+    res.json({
+      templates,
+      pagination: {
+        page,
+        limit,
+        total: totalTemplates,
+        pages: Math.ceil(totalTemplates / limit)
+      }
+    });
   } catch (error) {
     console.error('❌ Error fetching templates:', error);
     res.status(500).json({ 

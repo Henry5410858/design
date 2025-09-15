@@ -43,6 +43,11 @@ export default function TemplateGalleryPage() {
   };
 
   const handleCreateTemplate = () => {
+    // Check if user can create templates
+    if (user?.plan === 'Gratis') {
+      showError('Crear plantillas requiere plan Premium o Ultra-Premium. ¡Upgrade tu plan!');
+      return;
+    }
     setShowCreateModal(true);
   };
 
