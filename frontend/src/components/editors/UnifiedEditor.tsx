@@ -5498,30 +5498,69 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
 
   // Manual trigger for testing color harmony
   const manualTriggerColorHarmony = useCallback(() => {
-    console.log('🎨 Manual color harmony trigger');
-    if (canvas && colorHarmonyManager) {
-      const allObjects = canvas.getObjects();
-      console.log('🎨 All objects on canvas:', allObjects.map(obj => ({
-        type: obj.type,
-        isLogo: (obj as any).isLogo,
-        isBrandKitLogo: (obj as any).isBrandKitLogo,
-        id: obj.get('id'),
-        colorState: (obj as any).colorState
-      })));
+    console.log('🧪 Manual color harmony trigger called');
+    
+    if (!canvas || !colorHarmonyManager) {
+      console.warn('⚠️ Cannot trigger color harmony - missing dependencies', {
+        canvas: !!canvas,
+        colorHarmonyManager: !!colorHarmonyManager
+      });
+      return;
+    }
+    
+    const allObjects = canvas.getObjects();
+    console.log('🔍 All canvas objects for manual trigger:', allObjects.map((obj, index) => ({
+      index,
+      type: obj.type,
+      id: obj.get('id'),
+      isLogo: (obj as any).isLogo,
+      isBrandKitLogo: (obj as any).isBrandKitLogo,
+      hasGetBoundingRect: typeof obj.getBoundingRect === 'function',
+      bounds: obj.getBoundingRect ? obj.getBoundingRect() : 'no bounds method'
+    })));
+    
+    const logoObject = allObjects.find(obj => {
+      const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
+      const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
+      const isLogoType = obj.type === 'image' && (obj as any).src?.includes('logo');
+      const hasLogoName = (obj as any).name?.toLowerCase().includes('logo');
       
-      const logoObject = allObjects.find(obj => {
-        const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
-        const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
-        const isLogoType = obj.type === 'image' && (obj as any).src?.includes('logo');
-        return isLogo || hasLogoId || isLogoType;
+      console.log('🔍 Checking object for logo criteria:', {
+        type: obj.type,
+        id: obj.get('id'),
+        name: (obj as any).name,
+        isLogo,
+        isBrandKitLogo: (obj as any).isBrandKitLogo,
+        hasLogoId,
+        isLogoType,
+        hasLogoName,
+        matches: isLogo || hasLogoId || isLogoType || hasLogoName
       });
       
-      if (logoObject) {
-        console.log('🎨 Found logo for manual trigger:', logoObject);
-        colorHarmonyManager.setLogoObject(logoObject);
+      return isLogo || hasLogoId || isLogoType || hasLogoName;
+    });
+    
+    if (logoObject) {
+      console.log('🎨 Found logo for manual trigger:', {
+        type: logoObject.type,
+        id: logoObject.get('id'),
+        bounds: logoObject.getBoundingRect ? logoObject.getBoundingRect() : 'no bounds method'
+      });
+      colorHarmonyManager.setLogoObject(logoObject);
+      startColorHarmony();
+    } else {
+      console.warn('⚠️ No logo found for manual trigger. Available objects:', allObjects.length);
+      
+      // Try to use the first object as a test logo
+      if (allObjects.length > 0) {
+        const testLogo = allObjects[0];
+        console.log('🧪 Using first object as test logo:', {
+          type: testLogo.type,
+          id: testLogo.get('id'),
+          bounds: testLogo.getBoundingRect ? testLogo.getBoundingRect() : 'no bounds method'
+        });
+        colorHarmonyManager.setLogoObject(testLogo);
         startColorHarmony();
-      } else {
-        console.warn('⚠️ No logo found for manual trigger');
       }
     }
   }, [canvas, colorHarmonyManager, startColorHarmony]);

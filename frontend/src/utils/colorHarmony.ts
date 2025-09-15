@@ -110,6 +110,25 @@ export function detectOverlappingObjects(logoObject: any, allObjects: any[]): an
  * Check if two bounding rectangles overlap
  */
 function isOverlapping(rect1: any, rect2: any): boolean {
+  // Validate input rectangles
+  if (!rect1 || !rect2) {
+    console.warn("⚠️ isOverlapping: Invalid rectangles", { rect1, rect2 });
+    return false;
+  }
+
+  // Check if rectangles have required properties
+  const requiredProps = ['left', 'top', 'width', 'height'];
+  const rect1Valid = requiredProps.every(prop => typeof rect1[prop] === 'number' && !isNaN(rect1[prop]));
+  const rect2Valid = requiredProps.every(prop => typeof rect2[prop] === 'number' && !isNaN(rect2[prop]));
+
+  if (!rect1Valid || !rect2Valid) {
+    console.warn("⚠️ isOverlapping: Invalid rectangle properties", {
+      rect1: { left: rect1.left, top: rect1.top, width: rect1.width, height: rect1.height },
+      rect2: { left: rect2.left, top: rect2.top, width: rect2.width, height: rect2.height }
+    });
+    return false;
+  }
+
   // Check if rectangles don't overlap (if any of these conditions are true, they don't overlap)
   const noOverlap = (
     rect1.left > rect2.left + rect2.width ||  // rect1 is completely to the right of rect2
@@ -120,19 +139,33 @@ function isOverlapping(rect1: any, rect2: any): boolean {
   
   const hasOverlap = !noOverlap;
   
-  // Debug logging for overlap calculation
-  if (hasOverlap) {
-    console.log("🔍 Overlap detected:", {
-      rect1: { left: rect1.left, top: rect1.top, width: rect1.width, height: rect1.height },
-      rect2: { left: rect2.left, top: rect2.top, width: rect2.width, height: rect2.height },
-      checks: {
-        rect1RightOfRect2: rect1.left > rect2.left + rect2.width,
-        rect2RightOfRect1: rect2.left > rect1.left + rect1.width,
-        rect1BelowRect2: rect1.top > rect2.top + rect2.height,
-        rect2BelowRect1: rect2.top > rect1.top + rect1.height
-      }
-    });
-  }
+  // Enhanced debug logging for ALL overlap calculations
+  console.log("🔍 Overlap calculation:", {
+    rect1: { 
+      left: rect1.left, 
+      top: rect1.top, 
+      width: rect1.width, 
+      height: rect1.height,
+      right: rect1.left + rect1.width,
+      bottom: rect1.top + rect1.height
+    },
+    rect2: { 
+      left: rect2.left, 
+      top: rect2.top, 
+      width: rect2.width, 
+      height: rect2.height,
+      right: rect2.left + rect2.width,
+      bottom: rect2.top + rect2.height
+    },
+    checks: {
+      rect1RightOfRect2: rect1.left > rect2.left + rect2.width,
+      rect2RightOfRect1: rect2.left > rect1.left + rect1.width,
+      rect1BelowRect2: rect1.top > rect2.top + rect2.height,
+      rect2BelowRect1: rect2.top > rect1.top + rect1.height
+    },
+    noOverlap,
+    hasOverlap
+  });
   
   return hasOverlap;
 }
