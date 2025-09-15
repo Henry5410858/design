@@ -65,7 +65,6 @@ const CanvasObjectSchema = new mongoose.Schema({
 }, { _id: false });
 
 const TemplateSchema = new mongoose.Schema({
-  _id: {type: String, required: true},
   name: { type: String, required: true },
   description: { type: String },
   type: { type: String, enum: ['square-post', 'story', 'marketplace-flyer', 'fb-feed-banner', 'digital-badge', 'brochure'], required: true },

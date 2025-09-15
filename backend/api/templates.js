@@ -259,7 +259,6 @@ app.post('/:id/duplicate', async (req, res) => {
     
     const duplicatedTemplate = new Template({
       ...originalTemplate.toObject(),
-      _id: undefined,
       name: name || `${originalTemplate.name} (Copy)`,
       templateKey: uuidv4(),
       createdAt: new Date(),

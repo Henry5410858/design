@@ -1180,6 +1180,8 @@ router.get('/thumbnail/:filename', (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { name, type, dimensions, brandKitLogo } = req.body;
+
+    console.log( name, type, dimensions, brandKitLogo );
     
     if (!type) {
       return res.status(400).json({ error: 'Template type is required' });
@@ -1272,7 +1274,6 @@ router.post('/:id/duplicate', async (req, res) => {
     
     const newTemplate = await Template.create({
       ...template.toObject(),
-      _id: undefined, // Remove the original ID
       name: template.name + ' (Copy)',
               // Copied templates inherit properties from original
       createdAt: new Date(),
