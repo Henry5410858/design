@@ -26,6 +26,9 @@ export interface ColorState {
   isOverlapping: boolean;
   deltaE: number;
   harmonyType: 'complementary' | 'triadic' | 'analogous' | 'contrast' | 'black_contrast' | 'beautiful' | null;
+  isColorLocked: boolean; // Prevent further color changes
+  lastChangeTime: number; // Timestamp of last color change
+  hasBeenChanged: boolean; // Track if color was changed in this overlap session
 }
 
 export interface OverlapObject {
@@ -301,7 +304,10 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
         currentColor: objectColor,
         isOverlapping: false,
         deltaE: 0,
-        harmonyType: null
+        harmonyType: null,
+        isColorLocked: false,
+        lastChangeTime: 0,
+        hasBeenChanged: false
       };
     }
 
@@ -310,16 +316,19 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
       currentColor: obj.colorState.currentColor,
       isOverlapping: true,
       deltaE: deltaE,
-      harmonyType: null
+      harmonyType: obj.colorState.harmonyType,
+      isColorLocked: obj.colorState.isColorLocked,
+      lastChangeTime: obj.colorState.lastChangeTime,
+      hasBeenChanged: obj.colorState.hasBeenChanged
     };
 
-    // Check if the object color is too similar to the logo color (lowered threshold)
+    // Check if the object color is too similar to the logo color
     const isTooSimilar = areColorsTooSimilar(logoColor, objectColor, COLOR_THRESHOLDS.JUST_NOTICEABLE);
     
-    console.log(`🎯 Logo color: ${logoColor}, Object color: ${objectColor} (ΔE: ${deltaE.toFixed(2)}, Too similar: ${isTooSimilar})`);
+    console.log(`🎯 Logo color: ${logoColor}, Object color: ${objectColor} (ΔE: ${deltaE.toFixed(2)}, Too similar: ${isTooSimilar}, Locked: ${colorState.isColorLocked}, Changed: ${colorState.hasBeenChanged})`);
     
-    // Only change color if it's too similar to the logo
-    if (isTooSimilar) {
+    // Only change color if it's too similar to the logo AND not already locked/changed
+    if (isTooSimilar && !colorState.isColorLocked && !colorState.hasBeenChanged) {
       console.log(`🎨 Object color too similar to logo (ΔE: ${deltaE.toFixed(2)} < ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - generating harmonious color`);
       
       // Generate harmonious color based on the original object color
@@ -330,20 +339,29 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
       
       colorState.currentColor = harmoniousColor;
       colorState.harmonyType = 'beautiful';
+      colorState.isColorLocked = true; // Lock the color to prevent further changes
+      colorState.lastChangeTime = Date.now();
+      colorState.hasBeenChanged = true;
       
       // Apply the harmonious color to the object
       applyColorToObject(obj, harmoniousColor);
       
-      console.log(`✨ Applied harmonious color: ${harmoniousColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
+      console.log(`✨ Applied harmonious color: ${harmoniousColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)}) - COLOR LOCKED`);
+    } else if (!isTooSimilar && colorState.hasBeenChanged) {
+      console.log(`✅ Object color is now sufficiently different from logo (ΔE: ${deltaE.toFixed(2)} >= ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - restoring original color`);
+      
+      // Restore original color and unlock
+      applyColorToObject(obj, obj.colorState.originalColor);
+      colorState.currentColor = obj.colorState.originalColor;
+      colorState.isColorLocked = false;
+      colorState.hasBeenChanged = false;
+      colorState.harmonyType = null;
+      
+      console.log(`🔄 Restored original color: ${obj.colorState.originalColor} - COLOR UNLOCKED`);
+    } else if (isTooSimilar && colorState.isColorLocked) {
+      console.log(`🔒 Color is locked - keeping current harmonious color: ${colorState.currentColor}`);
     } else {
       console.log(`✅ Object color is sufficiently different from logo (ΔE: ${deltaE.toFixed(2)} >= ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - no change needed`);
-      
-      // Restore original color if it was changed before
-      if (obj.colorState.currentColor !== obj.colorState.originalColor) {
-        applyColorToObject(obj, obj.colorState.originalColor);
-        colorState.currentColor = obj.colorState.originalColor;
-        console.log(`🔄 Restored original color: ${obj.colorState.originalColor}`);
-      }
     }
 
     obj.colorState = colorState;
@@ -423,11 +441,13 @@ export function restoreOriginalColors(allObjects: any[], currentlyOverlapping: a
       obj.colorState.isOverlapping = false;
       obj.colorState.currentColor = obj.colorState.originalColor;
       obj.colorState.harmonyType = null;
+      obj.colorState.isColorLocked = false; // Unlock color
+      obj.colorState.hasBeenChanged = false; // Reset change flag
       
       // Apply original color
       applyColorToObject(obj, obj.colorState.originalColor);
       
-      console.log(`🔄 Restored original color for object: ${obj.colorState.originalColor}`);
+      console.log(`🔄 Restored original color for object: ${obj.colorState.originalColor} - COLOR UNLOCKED`);
     }
   });
 }

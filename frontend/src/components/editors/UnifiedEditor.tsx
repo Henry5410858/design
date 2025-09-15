@@ -1192,7 +1192,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       const harmonyManager = new ColorHarmonyManager(fabricCanvas);
       setColorHarmonyManager(harmonyManager);
       
-      console.log("1109", canvas, colorHarmonyManager)
+      console.log("🎨 Color Harmony Manager initialized:", {
+        manager: !!harmonyManager,
+        canvas: !!fabricCanvas,
+        canvasObjects: fabricCanvas.getObjects().length
+      });
       // Add window resize handler
       const handleResize = () => {
         if (fabricCanvas) {
@@ -6530,6 +6534,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 title="Debug: Forzar Objetos Superpuestos a Colores Hermosos"
               >
                 🌈
+              </button>
+
+              {/* Color Harmony Test Button */}
+              <button
+                onClick={manualTriggerColorHarmony}
+                className="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+                title="Probar Armonía de Colores - Buscar Logo y Cambiar Colores"
+              >
+                🧪
               </button>
 
               {/* AI Image Enhancement button */}
