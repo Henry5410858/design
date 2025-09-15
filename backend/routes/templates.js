@@ -9,6 +9,7 @@ const Template = require('../models/Template');
 const TemplateBackground = require('../models/TemplateBackground');
 const User = require("../models/User");
 const { ObjectId } = require('mongoose').Types;
+const auth = require('../middleware/auth');
 
 // Helper function to safely delete files
 const deleteFileSafely = (filePath) => {
