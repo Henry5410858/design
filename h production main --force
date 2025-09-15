@@ -1,0 +1,5 @@
+[33me96f956[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add template background images to gallery cards
+[33md81dd6f[m Add debugging for template background images
+[33m7313b3b[m Add template background images to gallery cards
+[33m09075b9[m Fix continuous overlap events when logo is deleted
+[33m2b763c8[m Add comprehensive overlap detection debugging
