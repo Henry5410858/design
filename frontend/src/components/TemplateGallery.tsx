@@ -517,55 +517,47 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
   );
 });
 
-// Function to get template background image based on category
+// Function to get template background image based on template type
 const getTemplateBackgroundImage = (template: Template): string => {
-  const category = template.category.toLowerCase();
-  const templateId = template.id.toLowerCase();
+  const templateType = template.category?.toLowerCase() || 'default';
   
-  console.log('🎨 Getting background image for template:', {
-    id: template.id,
-    category: template.category,
-    categoryLower: category
-  });
-  
-  // Map categories to background images
+  // Map template types to multiple background images for variety
   const backgroundMap: { [key: string]: string[] } = {
-    'flyer': ['flyer 1.png', 'flyer 2.png'],
-    'post': ['post 1.png', 'post 2.png'],
-    'story': ['story 1.png', 'story 2.png'],
-    'banner': ['banner 1.png', 'banner 2.png'],
-    'document': ['document 1.png', 'document 2.png'],
-    'badge': ['badge 1.png', 'badge2.png']
+    'badge': ['/assets/templatebackgrounds/badge 1.png', '/assets/templatebackgrounds/badge2.png'],
+    'badges': ['/assets/templatebackgrounds/badge 1.png', '/assets/templatebackgrounds/badge2.png'],
+    'banner': ['/assets/templatebackgrounds/banner 1.png', '/assets/templatebackgrounds/banner 2.png'],
+    'banners': ['/assets/templatebackgrounds/banner 1.png', '/assets/templatebackgrounds/banner 2.png'],
+    'document': ['/assets/templatebackgrounds/document 1.png', '/assets/templatebackgrounds/document 2.png'],
+    'documents': ['/assets/templatebackgrounds/document 1.png', '/assets/templatebackgrounds/document 2.png'],
+    'flyer': ['/assets/templatebackgrounds/flyer 1.png', '/assets/templatebackgrounds/flyer 2.png'],
+    'flyers': ['/assets/templatebackgrounds/flyer 1.png', '/assets/templatebackgrounds/flyer 2.png'],
+    'post': ['/assets/templatebackgrounds/post 1.png', '/assets/templatebackgrounds/post 2.png'],
+    'posts': ['/assets/templatebackgrounds/post 1.png', '/assets/templatebackgrounds/post 2.png'],
+    'social': ['/assets/templatebackgrounds/post 1.png', '/assets/templatebackgrounds/post 2.png'],
+    'story': ['/assets/templatebackgrounds/story 1.png', '/assets/templatebackgrounds/story 2.png'],
+    'stories': ['/assets/templatebackgrounds/story 1.png', '/assets/templatebackgrounds/story 2.png'],
+    'square-post': ['/assets/templatebackgrounds/post 2.png', '/assets/templatebackgrounds/post 1.png'],
+    'marketplace-flyer': ['/assets/templatebackgrounds/flyer 2.png', '/assets/templatebackgrounds/flyer 1.png'],
+    'fb-feed-banner': ['/assets/templatebackgrounds/banner 2.png', '/assets/templatebackgrounds/banner 1.png'],
+    'digital-badge': ['/assets/templatebackgrounds/badge2.png', '/assets/templatebackgrounds/badge 1.png']
   };
-  
-  // Get available images for the category
-  const availableImages = backgroundMap[category] || [];
-  
-  console.log('🎨 Available images for category:', {
-    category,
-    availableImages,
-    backgroundMapKeys: Object.keys(backgroundMap)
-  });
-  
-  if (availableImages.length === 0) {
-    // Fallback to first available image
-    console.log('⚠️ No images found for category, using fallback');
-    return '/assets/templatebackgrounds/flyer 1.png';
+
+  // Try to find matching background images
+  for (const [key, imagePaths] of Object.entries(backgroundMap)) {
+    if (templateType.includes(key)) {
+      // Use template ID to consistently select the same image for the same template
+      const templateId = template.id || template.name || 'default';
+      const hash = templateId.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+      }, 0);
+      const imageIndex = Math.abs(hash) % imagePaths.length;
+      return imagePaths[imageIndex];
+    }
   }
-  
-  // Use template ID to consistently select the same image for the same template
-  const imageIndex = templateId.length % availableImages.length;
-  const selectedImage = availableImages[imageIndex];
-  const imagePath = `/assets/templatebackgrounds/${selectedImage}`;
-  
-  console.log('🎨 Selected background image:', {
-    templateId,
-    imageIndex,
-    selectedImage,
-    imagePath
-  });
-  
-  return imagePath;
+
+  // Default fallback
+  return '/assets/templatebackgrounds/flyer 1.png';
 };
 
 // Component for displaying template background images
@@ -573,112 +565,53 @@ const TemplateDesignImage = React.memo<{ template: Template }>(({ template }) =>
   const [designImage, setDesignImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [showBackgroundImage, setShowBackgroundImage] = useState(true);
   const designManager = useTemplateDesignManager();
 
   useEffect(() => {
-    const generateImage = async () => {
-      if (designImage || isGenerating || !showBackgroundImage) return;
-      
-      setIsGenerating(true);
-      setHasError(false);
-      
-      try {
-        console.log(`🎨 Auto-generating design image for template: ${template.id}`);
-        
-        // Use the template design manager to generate images
-        const designImages = await designManager.getDesignImages(template);
-        
-        if (designImages && designImages.generated) {
-          setDesignImage(designImages.preview);
-          console.log(`✅ Auto-generated design image for template: ${template.id}`);
-        } else {
-          setHasError(true);
-          console.warn(`⚠️ Failed to auto-generate design image for template: ${template.id}`);
-        }
-      } catch (error) {
-        console.error(`❌ Error auto-generating design image for template ${template.id}:`, error);
-        setHasError(true);
-      } finally {
-        setIsGenerating(false);
-      }
-    };
+    // Get the appropriate background image for this template
+    const backgroundImage = getTemplateBackgroundImage(template);
+    setDesignImage(backgroundImage);
+    console.log(`🎨 Using background image for template ${template.id}: ${backgroundImage}`);
+  }, [template.id, template.category]);
 
-    generateImage();
-  }, [template.id, designImage, isGenerating, designManager, showBackgroundImage]);
-
-  // Get the background image for this template
-  const backgroundImage = getTemplateBackgroundImage(template);
-
-  if (isGenerating) {
+  // Show template background image
+  if (designImage) {
     return (
-      <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
-          <div className="text-indigo-600 text-sm font-medium">Generando diseño...</div>
+      <div className="relative w-full h-48 group">
+        <img
+          src={designImage}
+          alt={`${template.name} plantilla`}
+          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+          loading="lazy"
+          onError={() => {
+            console.warn(`⚠️ Failed to load background image: ${designImage}`);
+            setHasError(true);
+          }}
+        />
+        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="text-white text-xs bg-blue-600 bg-opacity-80 px-2 py-1 rounded flex items-center">
+            <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+            {template.category || 'Plantilla'}
+          </div>
         </div>
       </div>
     );
   }
 
-  // Show background image by default, with option to show generated design
+  // Fallback to original thumbnail if no background image
   return (
-    <div className="relative w-full h-48 group">
-      {/* Debug Info */}
-      <div className="absolute top-0 left-0 bg-black bg-opacity-75 text-white text-xs p-1 z-10">
-        {template.category} - {backgroundImage.split('/').pop()}
-      </div>
-      
-      {/* Background Image */}
+    <div className="relative w-full h-48 bg-gray-100 group">
       <img
-        src={backgroundImage}
-        alt={`${template.name} plantilla`}
+        src={template.thumbnailFilename ? API_ENDPOINTS.GET_THUMBNAIL(template.thumbnailFilename) : template.thumbnail}
+        alt={template.name}
         className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
         loading="lazy"
-        onLoad={() => {
-          console.log('✅ Background image loaded successfully:', backgroundImage);
-        }}
-        onError={(e) => {
-          console.error(`❌ Failed to load background image: ${backgroundImage}`);
-          // Fallback to original thumbnail
-          const target = e.target as HTMLImageElement;
-          const fallbackSrc = template.thumbnailFilename ? API_ENDPOINTS.GET_THUMBNAIL(template.thumbnailFilename) : template.thumbnail;
-          console.log('🔄 Falling back to:', fallbackSrc);
-          target.src = fallbackSrc;
-        }}
       />
-      
-      {/* Generated Design Image Overlay (if available) */}
-      {designImage && showBackgroundImage && (
-        <img
-          src={designImage}
-          alt={`${template.name} diseño generado`}
-          className="absolute inset-0 w-full h-48 object-cover transition-opacity duration-300 opacity-0 group-hover:opacity-100"
-          loading="lazy"
-        />
-      )}
-      
-      {/* Hover Overlay with Info */}
       <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded flex items-center gap-2">
-          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-          {designImage ? 'Diseño generado' : 'Plantilla de fondo'}
+        <div className="text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
+          Imagen de plantilla
         </div>
       </div>
-      
-      {/* Toggle Button for Generated Design */}
-      {designImage && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowBackgroundImage(!showBackgroundImage);
-          }}
-          className="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white text-xs px-2 py-1 rounded transition-all duration-200"
-          title={showBackgroundImage ? 'Mostrar diseño generado' : 'Mostrar plantilla de fondo'}
-        >
-          {showBackgroundImage ? '🎨' : '🖼️'}
-        </button>
-      )}
     </div>
   );
 });
