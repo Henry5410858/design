@@ -275,6 +275,139 @@ export function generateHarmoniousColor(logoColor: string, originalColor: string
 }
 
 /**
+ * Generate harmonious color based on original object color that contrasts with logo
+ */
+export function generateHarmoniousColorFromOriginal(logoColor: string, originalObjectColor: string): string {
+  const logoRgb = hexToRgb(logoColor);
+  const originalRgb = hexToRgb(originalObjectColor);
+  
+  if (!logoRgb || !originalRgb) {
+    return generateBeautifulColor(logoColor, originalObjectColor);
+  }
+  
+  const logoHsl = rgbToHsl(logoRgb);
+  const originalHsl = rgbToHsl(originalRgb);
+  
+  console.log(`🎨 Generating harmonious color from original:`, {
+    logoColor,
+    originalObjectColor,
+    logoHsl,
+    originalHsl
+  });
+  
+  // Strategy: Create harmonious variations based on the original color
+  const harmoniousOptions = [
+    // Complementary to original (opposite hue)
+    {
+      name: 'complementary',
+      h: (originalHsl.h + 180) % 360,
+      s: Math.min(originalHsl.s + 0.2, 1),
+      l: Math.min(originalHsl.l + 0.1, 0.8),
+      beauty: 8
+    },
+    // Triadic (120 degrees from original)
+    {
+      name: 'triadic_1',
+      h: (originalHsl.h + 120) % 360,
+      s: originalHsl.s,
+      l: originalHsl.l,
+      beauty: 7
+    },
+    // Triadic (240 degrees from original)
+    {
+      name: 'triadic_2',
+      h: (originalHsl.h + 240) % 360,
+      s: originalHsl.s,
+      l: originalHsl.l,
+      beauty: 7
+    },
+    // Analogous (30 degrees from original)
+    {
+      name: 'analogous_warm',
+      h: (originalHsl.h + 30) % 360,
+      s: Math.min(originalHsl.s + 0.1, 1),
+      l: originalHsl.l,
+      beauty: 6
+    },
+    // Analogous (-30 degrees from original)
+    {
+      name: 'analogous_cool',
+      h: (originalHsl.h - 30 + 360) % 360,
+      s: Math.min(originalHsl.s + 0.1, 1),
+      l: originalHsl.l,
+      beauty: 6
+    },
+    // Lighter version of original
+    {
+      name: 'lighter_original',
+      h: originalHsl.h,
+      s: originalHsl.s * 0.8,
+      l: Math.min(originalHsl.l + 0.3, 0.9),
+      beauty: 5
+    },
+    // Darker version of original
+    {
+      name: 'darker_original',
+      h: originalHsl.h,
+      s: originalHsl.s * 0.8,
+      l: Math.max(originalHsl.l - 0.2, 0.1),
+      beauty: 5
+    }
+  ];
+  
+  // Generate colors and evaluate them
+  const colorOptions = harmoniousOptions.map(option => {
+    const color = rgbToHex(hslToRgb(option));
+    const contrast = calculateDeltaE(logoColor, color);
+    
+    // Check if color is too dark or light
+    const colorRgb = hexToRgb(color);
+    const isTooDark = colorRgb && (colorRgb.r < 50 && colorRgb.g < 50 && colorRgb.b < 50);
+    const isTooLight = colorRgb && (colorRgb.r > 200 && colorRgb.g > 200 && colorRgb.b > 200);
+    
+    // Penalize dark/light colors
+    const darknessPenalty = isTooDark ? -5 : 0;
+    const lightnessPenalty = isTooLight ? -2 : 0;
+    
+    // Calculate beauty score with penalties
+    const adjustedBeauty = option.beauty + darknessPenalty + lightnessPenalty;
+    
+    return {
+      color,
+      name: option.name,
+      contrast,
+      beauty: Math.max(0, adjustedBeauty),
+      isTooDark,
+      isTooLight
+    };
+  });
+  
+  // Filter out bad colors and find the best option
+  const goodColors = colorOptions.filter(option => 
+    !option.isTooDark && 
+    !option.isTooLight && 
+    option.contrast > 8 && // Good contrast with logo
+    option.beauty > 3 // Minimum beauty requirement
+  );
+  
+  // If we have good colors, pick the best one
+  if (goodColors.length > 0) {
+    const bestColor = goodColors.reduce((best, current) => {
+      const bestScore = (best.beauty * 0.6) + (Math.min(best.contrast / 15, 10) * 0.4);
+      const currentScore = (current.beauty * 0.6) + (Math.min(current.contrast / 15, 10) * 0.4);
+      return currentScore > bestScore ? current : best;
+    });
+    
+    console.log(`✨ Harmonious ${bestColor.name} color: ${bestColor.color} (ΔE: ${bestColor.contrast.toFixed(2)}, Beauty: ${bestColor.beauty})`);
+    return bestColor.color;
+  }
+  
+  // Fallback to beautiful color generation
+  console.log(`⚠️ No good harmonious colors found, using fallback`);
+  return generateBeautifulColor(logoColor, originalObjectColor);
+}
+
+/**
  * Generate beautiful, aesthetically pleasing colors for overlapping objects
  * This function prioritizes visual beauty and harmony while maintaining good contrast
  */
@@ -498,7 +631,7 @@ export function getDominantColorFromImage(imageUrl: string): Promise<string> {
  */
 export const COLOR_THRESHOLDS = {
   IMPERCEPTIBLE: 1,    // ΔE < 1: Imperceptible to human eye
-  JUST_NOTICEABLE: 12, // ΔE < 12: Just noticeable difference (increased for better distinction)
+  JUST_NOTICEABLE: 8,  // ΔE < 8: Just noticeable difference (lowered for better detection)
   CLEARLY_VISIBLE: 20, // ΔE > 20: Clearly visible difference
   VERY_DIFFERENT: 30   // ΔE > 30: Very different colors
 } as const;

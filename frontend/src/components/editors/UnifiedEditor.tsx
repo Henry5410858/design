@@ -28,6 +28,18 @@ import SmartCampaignCalendar from '@/components/SmartCampaignCalendar';
 import AITextGeneration from '@/components/AITextGeneration';
 import AdvancedAIIntegration from '@/components/AdvancedAIIntegration';
 import CollaborationPanel from '@/components/CollaborationPanel';
+import AdvancedExportIntegration from '@/components/AdvancedExportIntegration';
+import AdvancedAnalyticsDashboard from '@/components/AdvancedAnalyticsDashboard';
+import AdvancedCustomizationDashboard from '@/components/AdvancedCustomizationDashboard';
+import MobileEditor from '@/components/mobile/MobileEditor';
+import { mobileOptimization } from '@/utils/mobileOptimization';
+import PerformanceDashboard from '@/components/PerformanceDashboard';
+import { performanceOptimization } from '@/utils/performanceOptimization';
+import { advancedCache } from '@/utils/advancedCaching';
+import SecurityDashboard from '@/components/SecurityDashboard';
+import { advancedSecurity } from '@/utils/advancedSecurity';
+import InfrastructureDashboard from '@/components/InfrastructureDashboard';
+import { scalabilitySystem } from '@/utils/scalabilitySystem';
 
 interface UnifiedEditorProps {
   id: string;
@@ -270,6 +282,28 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   
   // Collaboration Panel
   const [showCollaboration, setShowCollaboration] = useState<boolean>(false);
+  
+  // Advanced Export & Integration
+  const [showAdvancedExport, setShowAdvancedExport] = useState<boolean>(false);
+  
+  // Advanced Analytics Dashboard
+  const [showAnalytics, setShowAnalytics] = useState<boolean>(false);
+  
+  // Advanced Customization Dashboard
+  const [showCustomization, setShowCustomization] = useState<boolean>(false);
+  
+  // Mobile Optimization
+  const [isMobileMode, setIsMobileMode] = useState<boolean>(false);
+  const [mobileAnalytics, setMobileAnalytics] = useState<any>(null);
+  
+  // Performance Optimization
+  const [showPerformanceDashboard, setShowPerformanceDashboard] = useState<boolean>(false);
+  
+  // Security Dashboard
+  const [showSecurityDashboard, setShowSecurityDashboard] = useState<boolean>(false);
+  
+  // Infrastructure Dashboard
+  const [showInfrastructureDashboard, setShowInfrastructureDashboard] = useState<boolean>(false);
   
   // UI state
   const [showShapeSelector, setShowShapeSelector] = useState(false);
@@ -5664,6 +5698,155 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     // This would typically load the version data into the canvas
   }, []);
 
+  // Advanced Export & Integration functions
+  const openAdvancedExport = useCallback(() => {
+    setShowAdvancedExport(true);
+  }, []);
+
+  const closeAdvancedExport = useCallback(() => {
+    setShowAdvancedExport(false);
+  }, []);
+
+  const handleExportComplete = useCallback((result: any) => {
+    console.log('✅ Export completed:', result);
+    // Handle export completion - could show notification or update UI
+  }, []);
+
+  // Advanced Analytics Dashboard functions
+  const openAnalytics = useCallback(() => {
+    setShowAnalytics(true);
+  }, []);
+
+  const closeAnalytics = useCallback(() => {
+    setShowAnalytics(false);
+  }, []);
+
+  const handleAnalyticsExport = useCallback((data: any) => {
+    console.log('📊 Analytics data exported:', data);
+    // Handle analytics data export
+  }, []);
+
+  // Advanced Customization Dashboard functions
+  const openCustomization = useCallback(() => {
+    setShowCustomization(true);
+  }, []);
+
+  const closeCustomization = useCallback(() => {
+    setShowCustomization(false);
+  }, []);
+
+  const handleCustomizationSave = useCallback((settings: any) => {
+    console.log('🎨 Customization settings saved:', settings);
+    // Handle customization settings save
+  }, []);
+
+  const handleCustomizationExport = useCallback((config: string) => {
+    console.log('🎨 Customization config exported:', config);
+    // Handle customization config export
+  }, []);
+
+  const handleCustomizationImport = useCallback((config: string) => {
+    console.log('🎨 Customization config imported:', config);
+    // Handle customization config import
+  }, []);
+
+  // Mobile Optimization functions
+  const toggleMobileMode = useCallback(() => {
+    setIsMobileMode(!isMobileMode);
+    mobileOptimization.triggerHaptic('medium');
+  }, [isMobileMode]);
+
+  const updateMobileAnalytics = useCallback(() => {
+    setMobileAnalytics(mobileOptimization.getAnalytics());
+  }, []);
+
+  // Performance Optimization functions
+  const openPerformanceDashboard = useCallback(() => {
+    setShowPerformanceDashboard(true);
+  }, []);
+
+  const closePerformanceDashboard = useCallback(() => {
+    setShowPerformanceDashboard(false);
+  }, []);
+
+  const handlePerformanceExport = useCallback((report: any) => {
+    console.log('⚡ Performance report exported:', report);
+    // Handle performance report export
+  }, []);
+
+  // Security Dashboard functions
+  const openSecurityDashboard = useCallback(() => {
+    setShowSecurityDashboard(true);
+  }, []);
+
+  const closeSecurityDashboard = useCallback(() => {
+    setShowSecurityDashboard(false);
+  }, []);
+
+  const handleSecurityExport = useCallback((data: any) => {
+    console.log('🔒 Security data exported:', data);
+    // Handle security data export
+  }, []);
+
+  // Infrastructure Dashboard functions
+  const openInfrastructureDashboard = useCallback(() => {
+    setShowInfrastructureDashboard(true);
+  }, []);
+
+  const closeInfrastructureDashboard = useCallback(() => {
+    setShowInfrastructureDashboard(false);
+  }, []);
+
+  const handleInfrastructureExport = useCallback((data: any) => {
+    console.log('🚀 Infrastructure data exported:', data);
+    // Handle infrastructure data export
+  }, []);
+
+  // Initialize mobile optimization
+  useEffect(() => {
+    if (mobileOptimization.isMobile()) {
+      setIsMobileMode(true);
+      updateMobileAnalytics();
+    }
+  }, [updateMobileAnalytics]);
+
+  // Initialize performance optimization
+  useEffect(() => {
+    // Initialize performance monitoring
+    console.log('⚡ Performance optimization initialized');
+    
+    // Cache any existing data
+    if (canvas) {
+      const canvasData = canvas.toJSON();
+      advancedCache.set('canvas_data', canvasData, {
+        tags: ['canvas', 'design'],
+        ttl: 30 * 60 * 1000 // 30 minutes
+      });
+    }
+  }, [canvas]);
+
+  // Initialize security system
+  useEffect(() => {
+    // Log security event for editor access
+    advancedSecurity.logSecurityEvent({
+      type: 'authentication',
+      severity: 'low',
+      details: {
+        action: 'editor_access',
+        editorType: editorType || 'unknown'
+      }
+    });
+  }, [editorType]);
+
+  // Initialize infrastructure system
+  useEffect(() => {
+    // Initialize scalability system
+    console.log('🚀 Infrastructure system initialized');
+    
+    // Track editor usage metrics
+    scalabilitySystem.getMetrics();
+  }, []);
+
   // Color harmony auto-start
   useEffect(() => {
     console.log("canvas----");
@@ -6401,6 +6584,73 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 title="Colaboración en Tiempo Real - Usuarios, Comentarios, Historial, Equipos"
               >
                 🤝
+              </button>
+
+              {/* Advanced Export & Integration button */}
+              <button
+                onClick={openAdvancedExport}
+                className="p-2 rounded-lg bg-gradient-to-r from-violet-100 to-purple-100 hover:from-violet-200 hover:to-purple-200 text-violet-700 transition-colors"
+                title="Exportación e Integración Avanzada - PDF, SVG, EPS, Nube, Redes Sociales, Impresión"
+              >
+                📤
+              </button>
+
+              {/* Advanced Analytics Dashboard button */}
+              <button
+                onClick={openAnalytics}
+                className="p-2 rounded-lg bg-gradient-to-r from-indigo-100 to-blue-100 hover:from-indigo-200 hover:to-blue-200 text-indigo-700 transition-colors"
+                title="Panel de Análisis Avanzado - Métricas, Tendencias, Pruebas A/B, Perspectivas"
+              >
+                📊
+              </button>
+
+              {/* Advanced Customization Dashboard button */}
+              <button
+                onClick={openCustomization}
+                className="p-2 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 text-purple-700 transition-colors"
+                title="Personalización Avanzada - Temas, Marca, Flujos de Trabajo, Características Empresariales"
+              >
+                🎨
+              </button>
+
+              {/* Mobile Mode button */}
+              <button
+                onClick={toggleMobileMode}
+                className={`p-2 rounded-lg transition-colors ${
+                  isMobileMode 
+                    ? 'bg-gradient-to-r from-green-100 to-emerald-100 hover:from-green-200 hover:to-emerald-200 text-green-700'
+                    : 'bg-gradient-to-r from-gray-100 to-slate-100 hover:from-gray-200 hover:to-slate-200 text-gray-700'
+                }`}
+                title={isMobileMode ? "Salir del Modo Móvil" : "Activar Modo Móvil - Optimización para Dispositivos Móviles"}
+              >
+                📱
+              </button>
+
+              {/* Performance Dashboard button */}
+              <button
+                onClick={openPerformanceDashboard}
+                className="p-2 rounded-lg bg-gradient-to-r from-yellow-100 to-orange-100 hover:from-yellow-200 hover:to-orange-200 text-yellow-700 transition-colors"
+                title="Dashboard de Rendimiento - Métricas, Optimización, Caché, Core Web Vitals"
+              >
+                ⚡
+              </button>
+
+              {/* Security Dashboard button */}
+              <button
+                onClick={openSecurityDashboard}
+                className="p-2 rounded-lg bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200 text-red-700 transition-colors"
+                title="Dashboard de Seguridad - Amenazas, Cumplimiento, Encriptación, Auditoría"
+              >
+                🔒
+              </button>
+
+              {/* Infrastructure Dashboard button */}
+              <button
+                onClick={openInfrastructureDashboard}
+                className="p-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-200 hover:to-purple-200 text-indigo-700 transition-colors"
+                title="Dashboard de Infraestructura - Escalabilidad, Balanceador de Carga, Métricas del Sistema"
+              >
+                🚀
               </button>
 
                           {/* Download Dropdown */}
@@ -7979,6 +8229,75 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           currentUserId={user?.id || 'current-user'}
           onClose={closeCollaboration}
           onVersionSelect={handleVersionSelect}
+        />
+      )}
+
+      {/* Advanced Export & Integration Modal */}
+      {showAdvancedExport && (
+        <AdvancedExportIntegration
+          canvas={canvas?.getElement() || undefined}
+          fabricCanvas={canvas}
+          onClose={closeAdvancedExport}
+          onExportComplete={handleExportComplete}
+        />
+      )}
+
+      {/* Advanced Analytics Dashboard Modal */}
+      {showAnalytics && (
+        <AdvancedAnalyticsDashboard
+          userId={user?.id || 'current-user'}
+          onClose={closeAnalytics}
+          onExportData={handleAnalyticsExport}
+        />
+      )}
+
+      {/* Advanced Customization Dashboard Modal */}
+      {showCustomization && (
+        <AdvancedCustomizationDashboard
+          onClose={closeCustomization}
+          onSave={handleCustomizationSave}
+          onExport={handleCustomizationExport}
+          onImport={handleCustomizationImport}
+        />
+      )}
+
+      {/* Mobile Editor Modal */}
+      {isMobileMode && (
+        <MobileEditor
+          canvas={canvas}
+          onClose={toggleMobileMode}
+          onSave={() => {
+            console.log('💾 Saving design from mobile mode');
+            // Add mobile-specific save logic
+          }}
+          onExport={() => {
+            console.log('📤 Exporting design from mobile mode');
+            // Add mobile-specific export logic
+          }}
+        />
+      )}
+
+      {/* Performance Dashboard Modal */}
+      {showPerformanceDashboard && (
+        <PerformanceDashboard
+          onClose={closePerformanceDashboard}
+          onExport={handlePerformanceExport}
+        />
+      )}
+
+      {/* Security Dashboard Modal */}
+      {showSecurityDashboard && (
+        <SecurityDashboard
+          onClose={closeSecurityDashboard}
+          onExport={handleSecurityExport}
+        />
+      )}
+
+      {/* Infrastructure Dashboard Modal */}
+      {showInfrastructureDashboard && (
+        <InfrastructureDashboard
+          onClose={closeInfrastructureDashboard}
+          onExport={handleInfrastructureExport}
         />
       )}
     </div>

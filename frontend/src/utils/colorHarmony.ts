@@ -10,6 +10,7 @@ import {
   generateHighContrastColor,
   generateBeautifulColor,
   generateContrastingColor,
+  generateHarmoniousColorFromOriginal,
   COLOR_THRESHOLDS,
   type RGB,
   type HSL,
@@ -312,23 +313,38 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
       harmonyType: null
     };
 
-    // Generate beautiful, aesthetically pleasing color for visual harmony
-    console.log(`🎨 Object overlapping with logo - generating beautiful color`);
-    console.log(`🎯 Logo color: ${logoColor}, Object color: ${objectColor} (ΔE: ${deltaE.toFixed(2)})`);
+    // Check if the object color is too similar to the logo color (lowered threshold)
+    const isTooSimilar = areColorsTooSimilar(logoColor, objectColor, COLOR_THRESHOLDS.JUST_NOTICEABLE);
     
-    // Generate beautiful color that complements the logo
-    const beautifulColor = generateBeautifulColor(logoColor, objectColor);
-    const newDeltaE = calculateDeltaE(logoColor, beautifulColor);
+    console.log(`🎯 Logo color: ${logoColor}, Object color: ${objectColor} (ΔE: ${deltaE.toFixed(2)}, Too similar: ${isTooSimilar})`);
     
-    console.log(`🎨 Generated beautiful color: ${beautifulColor} (ΔE: ${newDeltaE.toFixed(2)})`);
-    
-    colorState.currentColor = beautifulColor;
-    colorState.harmonyType = 'beautiful';
-    
-    // Apply the beautiful color to the object
-    applyColorToObject(obj, beautifulColor);
-    
-    console.log(`✨ Applied beautiful color: ${beautifulColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
+    // Only change color if it's too similar to the logo
+    if (isTooSimilar) {
+      console.log(`🎨 Object color too similar to logo (ΔE: ${deltaE.toFixed(2)} < ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - generating harmonious color`);
+      
+      // Generate harmonious color based on the original object color
+      const harmoniousColor = generateHarmoniousColorFromOriginal(logoColor, obj.colorState.originalColor);
+      const newDeltaE = calculateDeltaE(logoColor, harmoniousColor);
+      
+      console.log(`🎨 Generated harmonious color: ${harmoniousColor} (ΔE: ${newDeltaE.toFixed(2)})`);
+      
+      colorState.currentColor = harmoniousColor;
+      colorState.harmonyType = 'beautiful';
+      
+      // Apply the harmonious color to the object
+      applyColorToObject(obj, harmoniousColor);
+      
+      console.log(`✨ Applied harmonious color: ${harmoniousColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)})`);
+    } else {
+      console.log(`✅ Object color is sufficiently different from logo (ΔE: ${deltaE.toFixed(2)} >= ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - no change needed`);
+      
+      // Restore original color if it was changed before
+      if (obj.colorState.currentColor !== obj.colorState.originalColor) {
+        applyColorToObject(obj, obj.colorState.originalColor);
+        colorState.currentColor = obj.colorState.originalColor;
+        console.log(`🔄 Restored original color: ${obj.colorState.originalColor}`);
+      }
+    }
 
     obj.colorState = colorState;
     results.push({
