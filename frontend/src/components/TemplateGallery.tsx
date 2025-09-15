@@ -517,33 +517,33 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
   );
 });
 
-// Function to get template background image based on template type
-const getTemplateBackgroundImage = (template: Template): string => {
+// Function to get template thumbnail image from backend uploads
+const getTemplateThumbnailImage = (template: Template): string => {
   const templateType = template.category?.toLowerCase() || 'default';
   
-  // Map template types to multiple background images for variety
-  const backgroundMap: { [key: string]: string[] } = {
-    'badge': ['/assets/templatebackgrounds/badge 1.png', '/assets/templatebackgrounds/badge2.png'],
-    'badges': ['/assets/templatebackgrounds/badge 1.png', '/assets/templatebackgrounds/badge2.png'],
-    'banner': ['/assets/templatebackgrounds/banner 1.png', '/assets/templatebackgrounds/banner 2.png'],
-    'banners': ['/assets/templatebackgrounds/banner 1.png', '/assets/templatebackgrounds/banner 2.png'],
-    'document': ['/assets/templatebackgrounds/document 1.png', '/assets/templatebackgrounds/document 2.png'],
-    'documents': ['/assets/templatebackgrounds/document 1.png', '/assets/templatebackgrounds/document 2.png'],
-    'flyer': ['/assets/templatebackgrounds/flyer 1.png', '/assets/templatebackgrounds/flyer 2.png'],
-    'flyers': ['/assets/templatebackgrounds/flyer 1.png', '/assets/templatebackgrounds/flyer 2.png'],
-    'post': ['/assets/templatebackgrounds/post 1.png', '/assets/templatebackgrounds/post 2.png'],
-    'posts': ['/assets/templatebackgrounds/post 1.png', '/assets/templatebackgrounds/post 2.png'],
-    'social': ['/assets/templatebackgrounds/post 1.png', '/assets/templatebackgrounds/post 2.png'],
-    'story': ['/assets/templatebackgrounds/story 1.png', '/assets/templatebackgrounds/story 2.png'],
-    'stories': ['/assets/templatebackgrounds/story 1.png', '/assets/templatebackgrounds/story 2.png'],
-    'square-post': ['/assets/templatebackgrounds/post 2.png', '/assets/templatebackgrounds/post 1.png'],
-    'marketplace-flyer': ['/assets/templatebackgrounds/flyer 2.png', '/assets/templatebackgrounds/flyer 1.png'],
-    'fb-feed-banner': ['/assets/templatebackgrounds/banner 2.png', '/assets/templatebackgrounds/banner 1.png'],
-    'digital-badge': ['/assets/templatebackgrounds/badge2.png', '/assets/templatebackgrounds/badge 1.png']
+  // Map template types to backend thumbnail images
+  const thumbnailMap: { [key: string]: string[] } = {
+    'badge': ['badge 1.png', 'badge2.png'],
+    'badges': ['badge 1.png', 'badge2.png'],
+    'banner': ['banner 1.png', 'banner 2.png'],
+    'banners': ['banner 1.png', 'banner 2.png'],
+    'document': ['document 1.png', 'document 2.png'],
+    'documents': ['document 1.png', 'document 2.png'],
+    'flyer': ['flyer 1.png', 'flyer 2.png'],
+    'flyers': ['flyer 1.png', 'flyer 2.png'],
+    'post': ['post 1.png', 'post 2.png'],
+    'posts': ['post 1.png', 'post 2.png'],
+    'social': ['post 1.png', 'post 2.png'],
+    'story': ['story 1.png', 'story 2.png'],
+    'stories': ['story 1.png', 'story 2.png'],
+    'square-post': ['post 2.png', 'post 1.png'],
+    'marketplace-flyer': ['flyer 2.png', 'flyer 1.png'],
+    'fb-feed-banner': ['banner 2.png', 'banner 1.png'],
+    'digital-badge': ['badge2.png', 'badge 1.png']
   };
 
-  // Try to find matching background images
-  for (const [key, imagePaths] of Object.entries(backgroundMap)) {
+  // Try to find matching thumbnail images
+  for (const [key, imageFilenames] of Object.entries(thumbnailMap)) {
     if (templateType.includes(key)) {
       // Use template ID to consistently select the same image for the same template
       const templateId = template.id || template.name || 'default';
@@ -551,16 +551,17 @@ const getTemplateBackgroundImage = (template: Template): string => {
         a = ((a << 5) - a) + b.charCodeAt(0);
         return a & a;
       }, 0);
-      const imageIndex = Math.abs(hash) % imagePaths.length;
-      return imagePaths[imageIndex];
+      const imageIndex = Math.abs(hash) % imageFilenames.length;
+      const filename = imageFilenames[imageIndex];
+      return API_ENDPOINTS.GET_THUMBNAIL(filename);
     }
   }
 
   // Default fallback
-  return '/assets/templatebackgrounds/flyer 1.png';
+  return API_ENDPOINTS.GET_THUMBNAIL('flyer 1.png');
 };
 
-// Component for displaying template background images
+// Component for displaying template thumbnail images from backend
 const TemplateDesignImage = React.memo<{ template: Template }>(({ template }) => {
   const [designImage, setDesignImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -568,10 +569,10 @@ const TemplateDesignImage = React.memo<{ template: Template }>(({ template }) =>
   const designManager = useTemplateDesignManager();
 
   useEffect(() => {
-    // Get the appropriate background image for this template
-    const backgroundImage = getTemplateBackgroundImage(template);
-    setDesignImage(backgroundImage);
-    console.log(`🎨 Using background image for template ${template.id}: ${backgroundImage}`);
+    // Get the appropriate thumbnail image for this template from backend
+    const thumbnailImage = getTemplateThumbnailImage(template);
+    setDesignImage(thumbnailImage);
+    console.log(`🎨 Using thumbnail image for template ${template.id}: ${thumbnailImage}`);
   }, [template.id, template.category]);
 
   // Show template background image
@@ -584,14 +585,14 @@ const TemplateDesignImage = React.memo<{ template: Template }>(({ template }) =>
           className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
           loading="lazy"
           onError={() => {
-            console.warn(`⚠️ Failed to load background image: ${designImage}`);
+            console.warn(`⚠️ Failed to load thumbnail image: ${designImage}`);
             setHasError(true);
           }}
         />
         <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="text-white text-xs bg-blue-600 bg-opacity-80 px-2 py-1 rounded flex items-center">
-            <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-            {template.category || 'Plantilla'}
+          <div className="text-white text-xs bg-green-600 bg-opacity-80 px-2 py-1 rounded flex items-center">
+            <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+            {template.category || 'Plantilla'} - Miniatura
           </div>
         </div>
       </div>
