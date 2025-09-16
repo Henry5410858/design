@@ -185,13 +185,16 @@ export function initializeObjectColorState(fabricObject: any, originalData?: any
   
   if (originalData) {
     // Use color from saved JSON data (most accurate)
-    originalColor = originalData.fill || originalData.color || originalData.stroke || '#000000';
+    const savedColor = originalData.fill || originalData.color || originalData.stroke;
+    if (savedColor && typeof savedColor === 'string') {
+      originalColor = normalizeColor(savedColor);
+    }
   } else {
     // Fallback to current object color
     const colorProperties = ['fill', 'color', 'stroke'];
     for (const prop of colorProperties) {
       const color = fabricObject[prop];
-      if (color && color !== 'transparent' && color !== 'rgba(0,0,0,0)') {
+      if (color && typeof color === 'string' && color !== 'transparent' && color !== 'rgba(0,0,0,0)') {
         originalColor = normalizeColor(color);
         break;
       }
@@ -219,7 +222,7 @@ export function extractObjectColor(fabricObject: any): string {
   
   for (const prop of colorProperties) {
     const color = fabricObject[prop];
-    if (color && color !== 'transparent' && color !== 'rgba(0,0,0,0)') {
+    if (color && typeof color === 'string' && color !== 'transparent' && color !== 'rgba(0,0,0,0)') {
       const normalizedColor = normalizeColor(color);
       // Skip very dark or very light colors that might not be the main color
       const rgb = hexToRgb(normalizedColor);
@@ -240,7 +243,13 @@ export function extractObjectColor(fabricObject: any): string {
 /**
  * Normalize color to hex format
  */
-function normalizeColor(color: string): string {
+function normalizeColor(color: any): string {
+  // Handle null, undefined, or non-string values
+  if (!color || typeof color !== 'string') {
+    console.warn('⚠️ normalizeColor: Invalid color value:', color, typeof color);
+    return '#000000';
+  }
+  
   // If already hex, return as is
   if (color.startsWith('#')) {
     return color;
@@ -281,7 +290,7 @@ export async function extractLogoColor(logoObject: any): Promise<string> {
   // For text objects (like "LupaProp"), try to extract the text color
   if (logoObject.type === 'text' || logoObject.type === 'i-text') {
     const textColor = logoObject.fill || logoObject.color;
-    if (textColor && textColor !== 'transparent') {
+    if (textColor && typeof textColor === 'string' && textColor !== 'transparent') {
       console.log(`📝 Extracted text color from logo: ${normalizeColor(textColor)}`);
       return normalizeColor(textColor);
     }
@@ -293,7 +302,7 @@ export async function extractLogoColor(logoObject: any): Promise<string> {
     for (const obj of objects) {
       if (obj.type === 'text' || obj.type === 'i-text') {
         const textColor = obj.fill || obj.color;
-        if (textColor && textColor !== 'transparent') {
+        if (textColor && typeof textColor === 'string' && textColor !== 'transparent') {
           console.log(`📝 Extracted text color from grouped logo: ${normalizeColor(textColor)}`);
           return normalizeColor(textColor);
         }
@@ -736,8 +745,23 @@ export class ColorHarmonyManager {
       // Ensure all objects have color states initialized
       allObjects.forEach((obj: any) => {
         if (!obj.colorState) {
-          console.log('🎨 Initializing missing color state for object:', obj.type, obj.id);
-          initializeObjectColorState(obj);
+          try {
+            console.log('🎨 Initializing missing color state for object:', obj.type, obj.id);
+            initializeObjectColorState(obj);
+          } catch (error) {
+            console.error('❌ Error initializing color state for object:', obj.type, obj.id, error);
+            // Initialize with default color state
+            obj.colorState = {
+              originalColor: '#000000',
+              currentColor: '#000000',
+              isOverlapping: false,
+              deltaE: 0,
+              harmonyType: null,
+              isColorLocked: false,
+              lastChangeTime: 0,
+              hasBeenChanged: false
+            };
+          }
         }
       });
       

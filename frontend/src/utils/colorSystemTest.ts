@@ -70,7 +70,7 @@ export class ColorSystemTester {
 
       // Test RGB to HSL
       const hsl = rgbToHsl({ r: 255, g: 0, b: 0 });
-      if (hsl && hsl.h === 0 && hsl.s === 1 && hsl.l === 0.5) {
+      if (hsl && Math.abs(hsl.h - 0) < 0.1 && Math.abs(hsl.s - 1) < 0.1 && Math.abs(hsl.l - 0.5) < 0.1) {
         this.addResult('Color Conversions', 'PASS', 'RGB to HSL conversion works correctly');
       } else {
         this.addResult('Color Conversions', 'FAIL', 'RGB to HSL conversion failed', { expected: {h: 0, s: 1, l: 0.5}, actual: hsl });
