@@ -4442,6 +4442,64 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     return color;
   };
 
+  // Replace any existing logo with a new one (for manual logo replacement)
+  const replaceExistingLogo = (newLogoData: string) => {
+    if (!canvas) return;
+    
+    const existingObjects = canvas.getObjects();
+    const existingLogos = existingObjects.filter(obj => 
+      obj.type === 'image' && 
+      ((obj as any).isBrandKitLogo || 
+       (obj as any).src?.toLowerCase().includes('logo') || 
+       (obj as any).src?.toLowerCase().includes('placeholder'))
+    );
+    
+    if (existingLogos.length > 0) {
+      console.log('🔄 Replacing existing logo with new one...');
+      
+      // Replace the first existing logo
+      const logoToReplace = existingLogos[0];
+      const existingLeft = logoToReplace.left || 20;
+      const existingTop = logoToReplace.top || 20;
+      const existingScaleX = logoToReplace.scaleX || 1;
+      const existingScaleY = logoToReplace.scaleY || 1;
+      
+      const imgElement = new Image();
+      imgElement.crossOrigin = 'anonymous';
+      imgElement.onload = () => {
+        logoToReplace.set({
+          src: newLogoData,
+          selectable: true,
+          evented: true,
+          lockMovementX: false,
+          lockMovementY: false,
+          lockRotation: false,
+          lockScalingX: false,
+          lockScalingY: false,
+          stroke: null,
+          strokeWidth: 0,
+          isBrandKitLogo: true,
+          left: existingLeft,
+          top: existingTop,
+          scaleX: existingScaleX,
+          scaleY: existingScaleY
+        });
+        
+        canvas.renderAll();
+        saveCanvasToHistory();
+        console.log('✅ Logo replaced successfully');
+      };
+      imgElement.src = newLogoData;
+      
+      // Remove other existing logos
+      existingLogos.slice(1).forEach(logo => {
+        canvas.remove(logo);
+      });
+    } else {
+      console.log('ℹ️ No existing logo found to replace');
+    }
+  };
+
   // Adjust colors of objects that overlap with the logo for better contrast
   const adjustOverlappingObjectColors = (logoObject: fabric.Object) => {
     if (!canvas || !logoObject) {
@@ -4600,39 +4658,52 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           return;
         }
 
-      // Check if logo already exists on canvas
+      // Check if ANY logo already exists on canvas (not just brand kit logo)
       const existingObjects = canvas.getObjects();
       console.log('🔍 Existing objects on canvas:', existingObjects.length);
       existingObjects.forEach((obj, index) => {
         console.log(`🔍 Object ${index + 1}:`, {
           type: obj.type,
-          src: (obj as any).src || 'N/A'
+          src: (obj as any).src || 'N/A',
+          isBrandKitLogo: (obj as any).isBrandKitLogo || false
         });
       });
       
-      const logoExists = existingObjects.some(obj => 
+      // Check for ANY existing logo (brand kit or template logo)
+      const existingLogos = existingObjects.filter(obj => 
         obj.type === 'image' && 
-        (obj as any).src === brandKitLogo // Check if any image object already has the brand kit logo
-      );
-
-      // First, check if we should replace any template logo placeholders
-      const logoPlaceholders = existingObjects.filter(obj => 
-        obj.type === 'image' && 
-        (obj as any).src && 
-        ((obj as any).src.toLowerCase().includes('logo') || (obj as any).src.toLowerCase().includes('placeholder'))
+        ((obj as any).isBrandKitLogo || // Brand kit logo
+         (obj as any).src?.toLowerCase().includes('logo') || // Template logo
+         (obj as any).src?.toLowerCase().includes('placeholder')) // Logo placeholder
       );
       
-      if (logoPlaceholders.length > 0) {
-        console.log('🎨 Found template logo placeholders, replacing with brand kit logo...');
+      const logoExists = existingLogos.length > 0;
+      console.log('🔍 Existing logos found:', existingLogos.length);
+
+      // If ANY logo exists, replace it with the brand kit logo
+      if (logoExists) {
+        console.log('🎨 Found existing logo(s), replacing with brand kit logo...');
+        console.log('🔍 Replacing', existingLogos.length, 'existing logo(s)');
         
-        // Replace the first logo placeholder with the brand kit logo
-        const logoPlaceholder = logoPlaceholders[0];
+        // Replace the first existing logo with the brand kit logo
+        const logoToReplace = existingLogos[0];
+        console.log('🔍 Replacing logo:', {
+          type: logoToReplace.type,
+          src: (logoToReplace as any).src?.substring(0, 50) + '...',
+          isBrandKitLogo: (logoToReplace as any).isBrandKitLogo
+        });
         
-        // Load the brand kit logo image and replace the placeholder
+        // Load the brand kit logo image and replace the existing logo
         const imgElement = new Image();
         imgElement.crossOrigin = 'anonymous';
         imgElement.onload = () => {
-          logoPlaceholder.set({
+          // Preserve the position and size of the existing logo
+          const existingLeft = logoToReplace.left || 20;
+          const existingTop = logoToReplace.top || 20;
+          const existingScaleX = logoToReplace.scaleX || 1;
+          const existingScaleY = logoToReplace.scaleY || 1;
+          
+          logoToReplace.set({
             src: brandKitLogo,
             selectable: true,
             evented: true,
@@ -4641,60 +4712,37 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             lockRotation: false,
             lockScalingX: false,
             lockScalingY: false,
-          stroke: null,
-          strokeWidth: 0,
-            isBrandKitLogo: true
+            stroke: null,
+            strokeWidth: 0,
+            isBrandKitLogo: true,
+            // Preserve position and size
+            left: existingLeft,
+            top: existingTop,
+            scaleX: existingScaleX,
+            scaleY: existingScaleY
           });
           
           canvas.renderAll();
           
           // Trigger overlap detection for the replaced logo
           setTimeout(() => {
-            adjustOverlappingObjectColors(logoPlaceholder);
+            adjustOverlappingObjectColors(logoToReplace);
           }, 100);
         };
         imgElement.src = brandKitLogo;
         
-        // Remove other logo placeholders to avoid duplicates
-        logoPlaceholders.slice(1).forEach(placeholder => {
-          canvas.remove(placeholder);
+        // Remove other existing logos to avoid duplicates
+        existingLogos.slice(1).forEach(logo => {
+          console.log('🗑️ Removing duplicate logo:', (logo as any).src?.substring(0, 50) + '...');
+          canvas.remove(logo);
         });
         
         saveCanvasToHistory();
-        console.log('✅ Template logo placeholders replaced with brand kit logo');
+        console.log('✅ Existing logo(s) replaced with brand kit logo');
         return;
       }
 
-      if (logoExists) {
-        console.log('ℹ️ Brand kit logo already exists on canvas - making existing logo interactive...');
-        
-        // Find and update existing logo to make it movable and resizable
-        const existingLogo = existingObjects.find(obj => 
-          obj.type === 'image' && 
-          (obj as any).src === brandKitLogo
-        );
-        
-        if (existingLogo) {
-          // Make the existing logo movable and resizable
-          existingLogo.set({
-            selectable: true,
-            evented: true,
-            lockMovementX: false,
-            lockMovementY: false,
-            lockRotation: false,
-            lockScalingX: false,
-            lockScalingY: false,
-          stroke: null,
-          strokeWidth: 0,
-            isBrandKitLogo: true
-          });
-          
-          canvas.renderAll();
-          saveCanvasToHistory();
-          console.log('✅ Existing logo is now movable and resizable');
-        }
-        return;
-      }
+      // If we reach here, no logos exist, so we can add a new one
 
       // Add brand kit logo to canvas
       console.log('🎨 Adding brand kit logo to existing template...');
