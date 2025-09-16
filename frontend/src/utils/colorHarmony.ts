@@ -360,9 +360,9 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
     
     console.log(`🎯 Logo color: ${logoColor}, Object color: ${objectColor} (ΔE: ${deltaE.toFixed(2)}, Too similar: ${isTooSimilar}, Locked: ${colorState.isColorLocked}, Changed: ${colorState.hasBeenChanged})`);
     
-    // Only change color if it's too similar to the logo AND not already locked/changed
-    if (isTooSimilar && !colorState.isColorLocked && !colorState.hasBeenChanged) {
-      console.log(`🎨 Object color too similar to logo (ΔE: ${deltaE.toFixed(2)} < ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - generating harmonious color`);
+    // Change color for ALL overlapping objects, not just similar ones
+    if (!colorState.isColorLocked && !colorState.hasBeenChanged) {
+      console.log(`🎨 Object overlapping with logo (ΔE: ${deltaE.toFixed(2)}) - generating harmonious color`);
       
       // Generate harmonious color based on the original object color with object ID for uniqueness
       const harmoniousColor = generateHarmoniousColorFromOriginal(logoColor, obj.colorState.originalColor, obj.id);
@@ -380,21 +380,10 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
       applyColorToObject(obj, harmoniousColor);
       
       console.log(`✨ Applied harmonious color: ${harmoniousColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)}) - COLOR LOCKED`);
-    } else if (!isTooSimilar && colorState.hasBeenChanged) {
-      console.log(`✅ Object color is now sufficiently different from logo (ΔE: ${deltaE.toFixed(2)} >= ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - restoring original color`);
-      
-      // Restore original color and unlock
-      applyColorToObject(obj, obj.colorState.originalColor);
-      colorState.currentColor = obj.colorState.originalColor;
-      colorState.isColorLocked = false;
-      colorState.hasBeenChanged = false;
-      colorState.harmonyType = null;
-      
-      console.log(`🔄 Restored original color: ${obj.colorState.originalColor} - COLOR UNLOCKED`);
-    } else if (isTooSimilar && colorState.isColorLocked) {
+    } else if (colorState.isColorLocked) {
       console.log(`🔒 Color is locked - keeping current harmonious color: ${colorState.currentColor}`);
     } else {
-      console.log(`✅ Object color is sufficiently different from logo (ΔE: ${deltaE.toFixed(2)} >= ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - no change needed`);
+      console.log(`✅ Object color is already set - no change needed`);
     }
 
     obj.colorState = colorState;

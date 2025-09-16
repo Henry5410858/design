@@ -4508,83 +4508,21 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
 
     try {
-      // Convert logo object to our CanvasObject interface
-      const logoCanvasObject: CanvasObject = {
-        id: logoObject.get('id') || 'logo',
-        type: logoObject.type || 'image',
-        left: logoObject.left || 0,
-        top: logoObject.top || 0,
-        width: logoObject.width || 0,
-        height: logoObject.height || 0,
-        scaleX: logoObject.scaleX || 1,
-        scaleY: logoObject.scaleY || 1
-      };
-
-      // Get all canvas objects and convert them to our interface
-      const allCanvasObjects: CanvasObject[] = canvas.getObjects().map(obj => ({
-        id: obj.get('id') || Math.random().toString(36).slice(2),
-        type: obj.type || 'unknown',
-        left: obj.left || 0,
-        top: obj.top || 0,
-        width: obj.width || 0,
-        height: obj.height || 0,
-        scaleX: obj.scaleX || 1,
-        scaleY: obj.scaleY || 1,
-        color: obj.fill || (obj as any).color || '#000000',
-        fill: obj.fill || (obj as any).color || '#000000'
-      }));
-
-      // Find overlapping objects
-      const overlappingObjects = findOverlappingObjects(logoCanvasObject, allCanvasObjects);
+      console.log('🎨 Starting color adjustment using ColorHarmonyManager');
       
-      console.log(`🎨 Found ${overlappingObjects.length} overlapping objects with logo`);
-
-      // Adjust colors for overlapping objects
-      overlappingObjects.forEach((overlapInfo, index) => {
-        const { object, overlapPercentage } = overlapInfo;
-        
-        // Only adjust objects with significant overlap (more than 10%)
-        if (overlapPercentage > 10) {
-          console.log(`🎨 Adjusting color for object ${index + 1} (${overlapPercentage.toFixed(1)}% overlap)`);
-          
-          // Find the corresponding fabric object on the canvas
-          const fabricObject = canvas.getObjects().find(obj => 
-            (obj.get('id') === object.id) || 
-            (obj.left === object.left && obj.top === object.top && obj.type === object.type) ||
-            (obj as any).isBrandKitLogo === true // Also check for brand kit logo identifier
-          );
-
-          if (fabricObject && (fabricObject.type === 'text' || fabricObject.type === 'i-text' || fabricObject.type === 'rect' || fabricObject.type === 'circle' || fabricObject.type === 'triangle')) {
-            // Get the current color
-            const currentColor = fabricObject.fill || (fabricObject as any).color || '#000000';
-            
-            // Generate a beautiful contrasting color based on the logo's background
-            // For simplicity, we'll use the gradient background color as reference
-            const logoBackgroundColor = brandKit.colors?.primary || '#000000';
-            const contrastingColor = generateHarmoniousColorFromOriginal(logoBackgroundColor, currentColor, fabricObject.get('id'));
-            
-            console.log(`🎨 Changing color from ${currentColor} to ${contrastingColor} for better contrast`);
-            
-            // Apply the new color
-            fabricObject.set('fill', contrastingColor);
-            if (fabricObject.type === 'text' || fabricObject.type === 'i-text') {
-              fabricObject.set('fill', contrastingColor);
-            }
-            
-            // Mark that this object was auto-adjusted
-            fabricObject.set('autoAdjustedForLogo', true);
-            fabricObject.set('originalColor', currentColor);
-          }
-        }
-      });
-
-      // Render the canvas to show the changes
-      canvas.renderAll();
-      
-      if (overlappingObjects.length > 0) {
-        console.log(`✅ Adjusted colors for ${overlappingObjects.filter(o => o.overlapPercentage > 10).length} overlapping objects`);
+      // Use the ColorHarmonyManager for consistent color handling
+      if (!colorHarmonyManager) {
+        console.log('🎨 Initializing ColorHarmonyManager');
+        setColorHarmonyManager(new ColorHarmonyManager(canvas));
       }
       
+      // Set the logo object and start monitoring
+      if (colorHarmonyManager) {
+        colorHarmonyManager.setLogoObject(logoObject);
+        colorHarmonyManager.startMonitoring();
+      }
+      
+      console.log('✅ ColorHarmonyManager started for overlapping objects');
     } catch (error) {
       console.error('❌ Error adjusting overlapping object colors:', error);
     }
