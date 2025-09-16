@@ -39,6 +39,7 @@ export class ColorSystemTester {
     await this.testUniqueness();
     await this.testContrastQuality();
     await this.testEdgeCases();
+    await this.testVariousLogoColors();
 
     // Print summary
     this.printSummary();
@@ -277,6 +278,56 @@ export class ColorSystemTester {
 
     } catch (error) {
       this.addResult('Edge Cases', 'FAIL', 'Edge cases test failed with error', { error: error.message });
+    }
+  }
+
+  /**
+   * Test various logo colors
+   */
+  private async testVariousLogoColors(): Promise<void> {
+    console.log('\n🔍 Testing Various Logo Colors...');
+    
+    try {
+      const logoColors = [
+        '#FF0000', // Red
+        '#00FF00', // Green
+        '#0000FF', // Blue
+        '#FFFF00', // Yellow
+        '#FF00FF', // Magenta
+        '#00FFFF', // Cyan
+        '#800080', // Purple
+        '#FFA500', // Orange
+        '#000000', // Black
+        '#FFFFFF', // White
+        '#808080', // Gray
+        '#8B4513', // Brown
+      ];
+
+      const originalColor = '#F59E0B';
+      let goodContrastCount = 0;
+
+      for (const logoColor of logoColors) {
+        const generatedColor = generateHarmoniousColorFromOriginal(logoColor, originalColor, 'test');
+        const contrast = calculateDeltaE(logoColor, generatedColor);
+        
+        console.log(`🎨 Logo: ${logoColor} → Generated: ${generatedColor} (ΔE: ${contrast.toFixed(2)})`);
+        
+        if (contrast > 8) {
+          goodContrastCount++;
+        }
+      }
+
+      const contrastRatio = goodContrastCount / logoColors.length;
+      if (contrastRatio >= 0.8) {
+        this.addResult('Various Logo Colors', 'PASS', `Good contrast with ${goodContrastCount}/${logoColors.length} logo colors`);
+      } else if (contrastRatio >= 0.5) {
+        this.addResult('Various Logo Colors', 'WARNING', `Moderate contrast with ${goodContrastCount}/${logoColors.length} logo colors`);
+      } else {
+        this.addResult('Various Logo Colors', 'FAIL', `Poor contrast with ${goodContrastCount}/${logoColors.length} logo colors`);
+      }
+
+    } catch (error) {
+      this.addResult('Various Logo Colors', 'FAIL', 'Various logo colors test failed with error', { error: error.message });
     }
   }
 

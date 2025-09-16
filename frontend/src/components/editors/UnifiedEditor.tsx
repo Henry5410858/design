@@ -5962,7 +5962,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       color: (obj as any).color
     })));
     
-    // Look for any object that could be a logo (more flexible detection)
+    // Look for any object that could be a logo (enhanced detection for any color)
     const logoObject = allObjects.find(obj => {
       const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
       const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
@@ -5976,13 +5976,27 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                            (subObj as any).isLogo || 
                            subObj.get('id')?.includes('logo'));
       
-      // Check for purple objects (like in your image)
-      const isPurple = (obj as any).fill === '#8B5CF6' || 
-                      (obj as any).fill === '#7C3AED' || 
-                      (obj as any).fill === '#6D28D9' ||
-                      (obj as any).color === '#8B5CF6' || 
-                      (obj as any).color === '#7C3AED' || 
-                      (obj as any).color === '#6D28D9';
+      // Check for any colored object that could be a logo (not just purple)
+      const hasColor = (obj as any).fill && (obj as any).fill !== 'transparent' && (obj as any).fill !== 'rgba(0,0,0,0)';
+      const hasStrokeColor = (obj as any).stroke && (obj as any).stroke !== 'transparent' && (obj as any).stroke !== 'rgba(0,0,0,0)';
+      const hasTextColor = (obj as any).color && (obj as any).color !== 'transparent' && (obj as any).color !== 'rgba(0,0,0,0)';
+      
+      // Check if object has a distinct color that could be a logo
+      const hasDistinctColor = hasColor || hasStrokeColor || hasTextColor;
+      
+      // Check for specific logo patterns (company names, brand text, etc.)
+      const isCompanyText = (obj.type === 'text' || obj.type === 'i-text') && 
+                           (obj as any).text && 
+                           ((obj as any).text.length <= 20) && // Short text likely to be company name
+                           !(obj as any).text.includes(' ') && // Single word or short phrase
+                           (obj as any).text.length >= 2; // At least 2 characters
+      
+      // Check for objects that are likely logos based on size and position
+      const bounds = obj.getBoundingRect ? obj.getBoundingRect() : null;
+      const isLikelyLogo = bounds && 
+                          bounds.width > 50 && bounds.width < 300 && // Reasonable logo size
+                          bounds.height > 20 && bounds.height < 200 &&
+                          (bounds.left < 100 || bounds.top < 100); // Often positioned in corners
       
       console.log('🔍 Checking object for logo criteria:', {
         type: obj.type,
@@ -5991,6 +6005,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         text: (obj as any).text,
         fill: (obj as any).fill,
         color: (obj as any).color,
+        stroke: (obj as any).stroke,
         isLogo,
         isBrandKitLogo: (obj as any).isBrandKitLogo,
         hasLogoId,
@@ -5998,11 +6013,14 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         hasLogoName,
         isTextLogo,
         isGroupLogo,
-        isPurple,
-        matches: isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo || isGroupLogo || isPurple
+        hasDistinctColor,
+        isCompanyText,
+        isLikelyLogo,
+        bounds: bounds ? { width: bounds.width, height: bounds.height, left: bounds.left, top: bounds.top } : null,
+        matches: isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo || isGroupLogo || (hasDistinctColor && (isCompanyText || isLikelyLogo))
       });
       
-      return isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo || isGroupLogo || isPurple;
+      return isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo || isGroupLogo || (hasDistinctColor && (isCompanyText || isLikelyLogo));
     });
     
     if (logoObject) {

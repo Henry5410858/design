@@ -270,6 +270,28 @@ export function generateHarmoniousColor(logoColor: string, originalColor: string
     }
   }
   
+  // If all options have low contrast, generate a high-contrast color
+  if (bestContrast < 15) {
+    console.log(`🎨 Low contrast detected (${bestContrast.toFixed(2)}), generating high-contrast color`);
+    
+    // Generate a high-contrast color based on logo lightness
+    const logoLightness = logoHsl.l;
+    const highContrastHsl = {
+      h: (logoHsl.h + 180) % 360, // Opposite hue
+      s: Math.min(logoHsl.s * 1.5, 1), // Higher saturation
+      l: logoLightness > 0.5 ? 0.2 : 0.8 // Invert lightness for maximum contrast
+    };
+    
+    const highContrastRgb = hslToRgb(highContrastHsl);
+    const highContrastColor = rgbToHex(highContrastRgb);
+    const highContrastDeltaE = calculateDeltaE(logoColor, highContrastColor);
+    
+    if (highContrastDeltaE > bestContrast) {
+      bestOption = { color: highContrastColor, name: 'high-contrast' };
+      bestContrast = highContrastDeltaE;
+    }
+  }
+  
   console.log(`🎨 Generated ${bestOption.name} color: ${bestOption.color} (ΔE: ${bestContrast.toFixed(2)})`);
   return bestOption.color;
 }

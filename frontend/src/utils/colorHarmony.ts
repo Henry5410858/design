@@ -704,7 +704,7 @@ export class ColorHarmonyManager {
       console.log("🔍 No logo object set - trying to find one");
       const allObjects = this.canvas.getObjects();
       
-      // Look for potential logo objects
+      // Look for potential logo objects (enhanced for any color)
       const potentialLogo = allObjects.find((obj: any) => {
         const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
         const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
@@ -714,7 +714,27 @@ export class ColorHarmonyManager {
                           (obj.text?.toLowerCase().includes('logo') || 
                            obj.get('id')?.toLowerCase().includes('logo'));
         
-        return isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo;
+        // Check for any colored object that could be a logo
+        const hasColor = (obj as any).fill && (obj as any).fill !== 'transparent' && (obj as any).fill !== 'rgba(0,0,0,0)';
+        const hasStrokeColor = (obj as any).stroke && (obj as any).stroke !== 'transparent' && (obj as any).stroke !== 'rgba(0,0,0,0)';
+        const hasTextColor = (obj as any).color && (obj as any).color !== 'transparent' && (obj as any).color !== 'rgba(0,0,0,0)';
+        const hasDistinctColor = hasColor || hasStrokeColor || hasTextColor;
+        
+        // Check for company text patterns
+        const isCompanyText = (obj.type === 'text' || obj.type === 'i-text') && 
+                             (obj as any).text && 
+                             ((obj as any).text.length <= 20) && 
+                             !(obj as any).text.includes(' ') && 
+                             (obj as any).text.length >= 2;
+        
+        // Check for likely logo based on size and position
+        const bounds = obj.getBoundingRect ? obj.getBoundingRect() : null;
+        const isLikelyLogo = bounds && 
+                            bounds.width > 50 && bounds.width < 300 && 
+                            bounds.height > 20 && bounds.height < 200 &&
+                            (bounds.left < 100 || bounds.top < 100);
+        
+        return isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo || (hasDistinctColor && (isCompanyText || isLikelyLogo));
       });
       
       if (potentialLogo) {
