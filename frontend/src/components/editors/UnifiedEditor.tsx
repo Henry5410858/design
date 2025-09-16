@@ -4509,6 +4509,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
 
     try {
       console.log('🎨 Starting color adjustment using ColorHarmonyManager');
+      console.log('🎨 Logo object details:', {
+        type: logoObject.type,
+        id: logoObject.get('id'),
+        isLogo: (logoObject as any).isLogo,
+        isBrandKitLogo: (logoObject as any).isBrandKitLogo,
+        bounds: logoObject.getBoundingRect ? logoObject.getBoundingRect() : 'no bounds method',
+        fill: (logoObject as any).fill,
+        color: (logoObject as any).color
+      });
       
       // Use the ColorHarmonyManager for consistent color handling
       if (!colorHarmonyManager) {
@@ -4520,6 +4529,35 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       if (colorHarmonyManager) {
         colorHarmonyManager.setLogoObject(logoObject);
         colorHarmonyManager.startMonitoring();
+        
+        // Force immediate analysis
+        setTimeout(() => {
+          console.log('🎨 Forcing immediate color analysis...');
+          const allObjects = canvas.getObjects();
+          console.log('🎨 All objects on canvas:', allObjects.map((obj, index) => ({
+            index,
+            type: obj.type,
+            id: obj.get('id'),
+            isLogo: (obj as any).isLogo,
+            isBackground: (obj as any).isBackground,
+            bounds: obj.getBoundingRect ? obj.getBoundingRect() : 'no bounds method',
+            fill: (obj as any).fill,
+            color: (obj as any).color
+          })));
+          
+          const overlappingObjects = detectOverlappingObjects(logoObject, allObjects);
+          console.log(`🎨 Found ${overlappingObjects.length} overlapping objects`);
+          
+          if (overlappingObjects.length > 0) {
+            console.log('🎨 Overlapping objects details:', overlappingObjects.map(obj => ({
+              type: obj.type,
+              id: obj.get('id'),
+              fill: (obj as any).fill,
+              color: (obj as any).color,
+              bounds: obj.getBoundingRect ? obj.getBoundingRect() : 'no bounds method'
+            })));
+          }
+        }, 500);
       }
       
       console.log('✅ ColorHarmonyManager started for overlapping objects');
@@ -5918,35 +5956,61 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       isLogo: (obj as any).isLogo,
       isBrandKitLogo: (obj as any).isBrandKitLogo,
       hasGetBoundingRect: typeof obj.getBoundingRect === 'function',
-      bounds: obj.getBoundingRect ? obj.getBoundingRect() : 'no bounds method'
+      bounds: obj.getBoundingRect ? obj.getBoundingRect() : 'no bounds method',
+      fill: (obj as any).fill,
+      color: (obj as any).color
     })));
     
+    // Look for any object that could be a logo (more flexible detection)
     const logoObject = allObjects.find(obj => {
       const isLogo = (obj as any).isLogo || (obj as any).isBrandKitLogo;
       const hasLogoId = obj.get('id')?.includes('logo') || obj.get('id')?.includes('brand');
       const isLogoType = obj.type === 'image' && (obj as any).src?.includes('logo');
       const hasLogoName = (obj as any).name?.toLowerCase().includes('logo');
+      const isTextLogo = (obj.type === 'text' || obj.type === 'i-text') && 
+                        ((obj as any).text?.toLowerCase().includes('logo') || 
+                         obj.get('id')?.toLowerCase().includes('logo'));
+      const isGroupLogo = obj.type === 'group' && 
+                         (obj as any).getObjects?.()?.some((subObj: any) => 
+                           (subObj as any).isLogo || 
+                           subObj.get('id')?.includes('logo'));
+      
+      // Check for purple objects (like in your image)
+      const isPurple = (obj as any).fill === '#8B5CF6' || 
+                      (obj as any).fill === '#7C3AED' || 
+                      (obj as any).fill === '#6D28D9' ||
+                      (obj as any).color === '#8B5CF6' || 
+                      (obj as any).color === '#7C3AED' || 
+                      (obj as any).color === '#6D28D9';
       
       console.log('🔍 Checking object for logo criteria:', {
         type: obj.type,
         id: obj.get('id'),
         name: (obj as any).name,
+        text: (obj as any).text,
+        fill: (obj as any).fill,
+        color: (obj as any).color,
         isLogo,
         isBrandKitLogo: (obj as any).isBrandKitLogo,
         hasLogoId,
         isLogoType,
         hasLogoName,
-        matches: isLogo || hasLogoId || isLogoType || hasLogoName
+        isTextLogo,
+        isGroupLogo,
+        isPurple,
+        matches: isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo || isGroupLogo || isPurple
       });
       
-      return isLogo || hasLogoId || isLogoType || hasLogoName;
+      return isLogo || hasLogoId || isLogoType || hasLogoName || isTextLogo || isGroupLogo || isPurple;
     });
     
     if (logoObject) {
       console.log('🎨 Found logo for manual trigger:', {
         type: logoObject.type,
         id: logoObject.get('id'),
-        bounds: logoObject.getBoundingRect ? logoObject.getBoundingRect() : 'no bounds method'
+        bounds: logoObject.getBoundingRect ? logoObject.getBoundingRect() : 'no bounds method',
+        fill: (logoObject as any).fill,
+        color: (logoObject as any).color
       });
       colorHarmonyManager.setLogoObject(logoObject);
       startColorHarmony();
@@ -5959,7 +6023,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log('🧪 Using first object as test logo:', {
           type: testLogo.type,
           id: testLogo.get('id'),
-          bounds: testLogo.getBoundingRect ? testLogo.getBoundingRect() : 'no bounds method'
+          bounds: testLogo.getBoundingRect ? testLogo.getBoundingRect() : 'no bounds method',
+          fill: (testLogo as any).fill,
+          color: (testLogo as any).color
         });
         colorHarmonyManager.setLogoObject(testLogo);
         startColorHarmony();
@@ -9308,6 +9374,17 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   
                   {/* Canvas Boundary Indicator */}
                   <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-400 opacity-60 rounded-lg"></div>
+                  
+                  {/* Debug Color Harmony Button */}
+                  <div className="absolute top-4 right-4 z-10">
+                    <button
+                      onClick={manualTriggerColorHarmony}
+                      className="px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors shadow-lg"
+                      title="Debug Color Harmony System"
+                    >
+                      🎨 Debug Colors
+                    </button>
+                  </div>
                   
                   {/* Drag and drop overlay */}
                   {isDragOver && (
