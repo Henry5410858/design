@@ -344,6 +344,17 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
       };
     }
 
+    // Debug: Log the current state of the object
+    console.log(`🔍 Object ${obj.id} state:`, {
+      hasColorState: !!obj.colorState,
+      originalColor: obj.colorState?.originalColor,
+      currentColor: obj.colorState?.currentColor,
+      isOverlapping: obj.colorState?.isOverlapping,
+      isColorLocked: obj.colorState?.isColorLocked,
+      hasBeenChanged: obj.colorState?.hasBeenChanged,
+      objectColor: objectColor
+    });
+
     const colorState: ColorState = {
       originalColor: obj.colorState.originalColor, // Use original color from saved JSON
       currentColor: obj.colorState.currentColor,
@@ -382,6 +393,8 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
       console.log(`✨ Applied harmonious color: ${harmoniousColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)}) - COLOR LOCKED`);
     } else if (colorState.isColorLocked) {
       console.log(`🔒 Color is locked - keeping current harmonious color: ${colorState.currentColor}`);
+    } else if (colorState.hasBeenChanged) {
+      console.log(`✅ Object color was already changed - keeping current color: ${colorState.currentColor}`);
     } else {
       console.log(`✅ Object color is already set - no change needed`);
     }
@@ -507,6 +520,54 @@ export function restoreAllOriginalColors(allObjects: any[]): void {
   });
   
   console.log(`✅ All original colors restored`);
+}
+
+/**
+ * Test function to verify color system is working
+ */
+export function testColorSystem(): void {
+  console.log('🧪 Testing Color System...');
+  
+  // Test the color generation function
+  const testCases = [
+    { logoColor: '#1D4ED8', originalColor: '#F59E0B', objectId: 'test1' },
+    { logoColor: '#10B981', originalColor: '#EF4444', objectId: 'test2' },
+    { logoColor: '#8B5CF6', originalColor: '#F97316', objectId: 'test3' },
+    { logoColor: '#000000', originalColor: '#000000', objectId: 'test4' }, // Same color test
+    { logoColor: '#FFFFFF', originalColor: '#FFFFFF', objectId: 'test5' }, // Same color test
+  ];
+  
+  testCases.forEach((testCase, index) => {
+    console.log(`\n🧪 Test Case ${index + 1}:`);
+    console.log(`  Logo Color: ${testCase.logoColor}`);
+    console.log(`  Original Color: ${testCase.originalColor}`);
+    console.log(`  Object ID: ${testCase.objectId}`);
+    
+    const harmoniousColor = generateHarmoniousColorFromOriginal(
+      testCase.logoColor, 
+      testCase.originalColor, 
+      testCase.objectId
+    );
+    
+    const contrast = calculateDeltaE(testCase.logoColor, harmoniousColor);
+    const isGoodContrast = contrast > 8;
+    
+    console.log(`  Generated Color: ${harmoniousColor}`);
+    console.log(`  Contrast (ΔE): ${contrast.toFixed(2)}`);
+    console.log(`  Good Contrast: ${isGoodContrast ? '✅' : '❌'}`);
+    
+    // Test uniqueness - same object ID should generate same color
+    const harmoniousColor2 = generateHarmoniousColorFromOriginal(
+      testCase.logoColor, 
+      testCase.originalColor, 
+      testCase.objectId
+    );
+    
+    const isConsistent = harmoniousColor === harmoniousColor2;
+    console.log(`  Consistent: ${isConsistent ? '✅' : '❌'}`);
+  });
+  
+  console.log('\n✅ Color System Test Complete!');
 }
 
 /**
