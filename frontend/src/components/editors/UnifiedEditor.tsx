@@ -24,6 +24,7 @@ import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground
 import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
 import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject, extractLogoColor } from '@/utils/colorHarmony';
 import { generateBeautifulColor, calculateDeltaE, generateHarmoniousColorFromOriginal } from '@/utils/colorScience';
+import { runColorSystemTest } from '@/utils/colorSystemTest';
 import AIImageEnhancement from '@/components/AIImageEnhancement';
 import ProposalGenerator from '@/components/ProposalGenerator';
 import SmartCampaignCalendar from '@/components/SmartCampaignCalendar';
@@ -6033,6 +6034,22 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   }, [canvas, colorHarmonyManager, startColorHarmony]);
 
+  // Test color system
+  const testColorSystem = useCallback(async () => {
+    console.log('🧪 Running comprehensive color system test...');
+    try {
+      const results = await runColorSystemTest();
+      const passCount = results.filter(r => r.status === 'PASS').length;
+      const failCount = results.filter(r => r.status === 'FAIL').length;
+      const warningCount = results.filter(r => r.status === 'WARNING').length;
+      
+      alert(`🧪 Color System Test Results:\n\n✅ Passed: ${passCount}\n❌ Failed: ${failCount}\n⚠️ Warnings: ${warningCount}\n\nCheck console for detailed results.`);
+    } catch (error) {
+      console.error('❌ Color system test failed:', error);
+      alert('❌ Color system test failed. Check console for details.');
+    }
+  }, []);
+
   // Force all overlapping objects to appropriate contrasting colors
   const forceOverlappingObjectsContrast = useCallback(async () => {
     console.log('🎨 Force overlapping objects to contrasting colors');
@@ -9375,14 +9392,21 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   {/* Canvas Boundary Indicator */}
                   <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-400 opacity-60 rounded-lg"></div>
                   
-                  {/* Debug Color Harmony Button */}
-                  <div className="absolute top-4 right-4 z-10">
+                  {/* Debug Color Harmony Buttons */}
+                  <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
                     <button
                       onClick={manualTriggerColorHarmony}
                       className="px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors shadow-lg"
                       title="Debug Color Harmony System"
                     >
                       🎨 Debug Colors
+                    </button>
+                    <button
+                      onClick={testColorSystem}
+                      className="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors shadow-lg"
+                      title="Test Color System"
+                    >
+                      🧪 Test System
                     </button>
                   </div>
                   
