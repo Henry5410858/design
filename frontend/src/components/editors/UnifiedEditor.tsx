@@ -23,7 +23,7 @@ import { AI_SERVICES_CONFIG, AI_FEATURES } from '@/config/aiServices';
 import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, canvasToBase64, getImageTypeFromDataUrl } from '@/utils/templateBackgrounds';
 import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
 import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject, extractLogoColor } from '@/utils/colorHarmony';
-import { generateBeautifulColor, calculateDeltaE } from '@/utils/colorScience';
+import { generateBeautifulColor, calculateDeltaE, generateHarmoniousColorFromOriginal } from '@/utils/colorScience';
 import AIImageEnhancement from '@/components/AIImageEnhancement';
 import ProposalGenerator from '@/components/ProposalGenerator';
 import SmartCampaignCalendar from '@/components/SmartCampaignCalendar';
@@ -4558,10 +4558,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             // Get the current color
             const currentColor = fabricObject.fill || (fabricObject as any).color || '#000000';
             
-            // Generate a contrasting color based on the logo's background
+            // Generate a beautiful contrasting color based on the logo's background
             // For simplicity, we'll use the gradient background color as reference
             const logoBackgroundColor = brandKit.colors?.primary || '#000000';
-            const contrastingColor = getHighContrastColor(logoBackgroundColor);
+            const contrastingColor = generateHarmoniousColorFromOriginal(logoBackgroundColor, currentColor, fabricObject.get('id'));
             
             console.log(`🎨 Changing color from ${currentColor} to ${contrastingColor} for better contrast`);
             

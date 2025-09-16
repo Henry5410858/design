@@ -276,8 +276,9 @@ export function generateHarmoniousColor(logoColor: string, originalColor: string
 
 /**
  * Generate harmonious color based on original object color that contrasts with logo
+ * Enhanced to create unique, beautiful colors for each overlapping object
  */
-export function generateHarmoniousColorFromOriginal(logoColor: string, originalObjectColor: string): string {
+export function generateHarmoniousColorFromOriginal(logoColor: string, originalObjectColor: string, objectId?: string): string {
   const logoRgb = hexToRgb(logoColor);
   const originalRgb = hexToRgb(originalObjectColor);
   
@@ -291,105 +292,256 @@ export function generateHarmoniousColorFromOriginal(logoColor: string, originalO
   console.log(`🎨 Generating harmonious color from original:`, {
     logoColor,
     originalObjectColor,
+    objectId,
     logoHsl,
     originalHsl
   });
   
-  // Strategy: Use the specific color palette from the user's image
-  const userColorPalette = [
+  // Enhanced beautiful color palette with more variety and uniqueness
+  const beautifulColorPalette = [
+    // Vibrant and energetic colors
     {
-      name: 'bright_cyan',
-      color: '#00D4FF', // Bright Cyan/Turquoise
-      beauty: 9
+      name: 'electric_blue',
+      color: '#00BFFF', // Electric Blue
+      beauty: 9,
+      category: 'vibrant'
     },
     {
-      name: 'dark_teal',
-      color: '#006B7D', // Dark Teal/Deep Cyan
-      beauty: 8
+      name: 'coral_pink',
+      color: '#FF6B6B', // Coral Pink
+      beauty: 9,
+      category: 'vibrant'
     },
     {
-      name: 'vibrant_aqua',
-      color: '#00FFFF', // Vibrant Aqua/Light Turquoise
-      beauty: 9
+      name: 'lime_green',
+      color: '#32CD32', // Lime Green
+      beauty: 8,
+      category: 'vibrant'
     },
     {
-      name: 'deep_indigo',
-      color: '#4B0082', // Deep Indigo/Dark Purple
-      beauty: 8
+      name: 'golden_yellow',
+      color: '#FFD700', // Golden Yellow
+      beauty: 8,
+      category: 'vibrant'
     },
     {
-      name: 'white',
+      name: 'hot_pink',
+      color: '#FF1493', // Hot Pink
+      beauty: 9,
+      category: 'vibrant'
+    },
+    {
+      name: 'turquoise',
+      color: '#40E0D0', // Turquoise
+      beauty: 9,
+      category: 'vibrant'
+    },
+    {
+      name: 'orange_red',
+      color: '#FF4500', // Orange Red
+      beauty: 8,
+      category: 'vibrant'
+    },
+    {
+      name: 'purple',
+      color: '#8A2BE2', // Blue Violet
+      beauty: 8,
+      category: 'vibrant'
+    },
+    
+    // Sophisticated and elegant colors
+    {
+      name: 'deep_teal',
+      color: '#008B8B', // Dark Cyan
+      beauty: 8,
+      category: 'sophisticated'
+    },
+    {
+      name: 'burgundy',
+      color: '#800020', // Burgundy
+      beauty: 7,
+      category: 'sophisticated'
+    },
+    {
+      name: 'navy_blue',
+      color: '#000080', // Navy Blue
+      beauty: 7,
+      category: 'sophisticated'
+    },
+    {
+      name: 'forest_green',
+      color: '#228B22', // Forest Green
+      beauty: 8,
+      category: 'sophisticated'
+    },
+    {
+      name: 'maroon',
+      color: '#800000', // Maroon
+      beauty: 7,
+      category: 'sophisticated'
+    },
+    {
+      name: 'olive_green',
+      color: '#808000', // Olive
+      beauty: 7,
+      category: 'sophisticated'
+    },
+    
+    // Soft and pleasant colors
+    {
+      name: 'lavender',
+      color: '#E6E6FA', // Lavender
+      beauty: 8,
+      category: 'soft'
+    },
+    {
+      name: 'mint_cream',
+      color: '#F5FFFA', // Mint Cream
+      beauty: 7,
+      category: 'soft'
+    },
+    {
+      name: 'peach',
+      color: '#FFDAB9', // Peach Puff
+      beauty: 8,
+      category: 'soft'
+    },
+    {
+      name: 'sky_blue',
+      color: '#87CEEB', // Sky Blue
+      beauty: 8,
+      category: 'soft'
+    },
+    {
+      name: 'light_coral',
+      color: '#F08080', // Light Coral
+      beauty: 8,
+      category: 'soft'
+    },
+    {
+      name: 'light_green',
+      color: '#90EE90', // Light Green
+      beauty: 7,
+      category: 'soft'
+    },
+    
+    // High contrast colors for maximum visibility
+    {
+      name: 'bright_white',
       color: '#FFFFFF', // Pure White
-      beauty: 7
+      beauty: 6,
+      category: 'contrast'
     },
     {
-      name: 'black',
-      color: '#000000', // Solid Black
-      beauty: 6
+      name: 'pure_black',
+      color: '#000000', // Pure Black
+      beauty: 6,
+      category: 'contrast'
+    },
+    {
+      name: 'bright_red',
+      color: '#FF0000', // Pure Red
+      beauty: 7,
+      category: 'contrast'
+    },
+    {
+      name: 'bright_green',
+      color: '#00FF00', // Pure Green
+      beauty: 7,
+      category: 'contrast'
+    },
+    {
+      name: 'bright_blue',
+      color: '#0000FF', // Pure Blue
+      beauty: 7,
+      category: 'contrast'
     }
   ];
 
-  // Convert palette colors to HSL for analysis
-  const harmoniousOptions = userColorPalette.map(paletteColor => {
-    const colorRgb = hexToRgb(paletteColor.color);
-    if (!colorRgb) return null;
-    
-    const colorHsl = rgbToHsl(colorRgb);
-    
-    return {
-      name: paletteColor.name,
-      h: colorHsl.h,
-      s: colorHsl.s,
-      l: colorHsl.l,
-      beauty: paletteColor.beauty,
-      originalColor: paletteColor.color
-    };
-  }).filter(option => option !== null);
-  
-  // Generate colors and evaluate them
-  const colorOptions = harmoniousOptions.map(option => {
-    // Use the original color from the palette
-    const color = option.originalColor;
+  // Generate unique colors based on object ID for variety
+  let colorOptions = beautifulColorPalette.map(paletteColor => {
+    const color = paletteColor.color;
     const contrast = calculateDeltaE(logoColor, color);
     
     // Check if color is too dark or light
     const colorRgb = hexToRgb(color);
-    const isTooDark = colorRgb && (colorRgb.r < 50 && colorRgb.g < 50 && colorRgb.b < 50);
-    const isTooLight = colorRgb && (colorRgb.r > 200 && colorRgb.g > 200 && colorRgb.b > 200);
+    const isTooDark = colorRgb && (colorRgb.r < 30 && colorRgb.g < 30 && colorRgb.b < 30);
+    const isTooLight = colorRgb && (colorRgb.r > 240 && colorRgb.g > 240 && colorRgb.b > 240);
     
-    // Don't penalize the specific palette colors
-    const adjustedBeauty = option.beauty;
+    // Calculate uniqueness score based on object ID
+    let uniquenessScore = 1;
+    if (objectId) {
+      // Use object ID to create consistent but unique color selection
+      const hash = objectId.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+      }, 0);
+      uniquenessScore = Math.abs(hash) % 10 + 1;
+    }
+    
+    // Adjust beauty score based on uniqueness and contrast
+    const adjustedBeauty = paletteColor.beauty + (uniquenessScore * 0.5);
     
     return {
       color,
-      name: option.name,
+      name: paletteColor.name,
+      category: paletteColor.category,
       contrast,
       beauty: adjustedBeauty,
+      uniqueness: uniquenessScore,
       isTooDark,
       isTooLight
     };
   });
   
-  // Filter colors - prioritize contrast with logo
+  // Filter out problematic colors
   const goodColors = colorOptions.filter(option => 
-    option.contrast > 5 // Minimum contrast with logo (lowered to allow more colors)
+    !option.isTooDark && 
+    !option.isTooLight && 
+    option.contrast > 8 // Good contrast with logo
   );
   
   // If we have good colors, pick the best one
   if (goodColors.length > 0) {
+    // Sort by a combination of beauty, contrast, and uniqueness
     const bestColor = goodColors.reduce((best, current) => {
-      const bestScore = (best.beauty * 0.6) + (Math.min(best.contrast / 15, 10) * 0.4);
-      const currentScore = (current.beauty * 0.6) + (Math.min(current.contrast / 15, 10) * 0.4);
+      const bestScore = (best.beauty * 0.4) + (Math.min(best.contrast / 20, 10) * 0.4) + (best.uniqueness * 0.2);
+      const currentScore = (current.beauty * 0.4) + (Math.min(current.contrast / 20, 10) * 0.4) + (current.uniqueness * 0.2);
       return currentScore > bestScore ? current : best;
     });
     
-    console.log(`✨ Harmonious ${bestColor.name} color: ${bestColor.color} (ΔE: ${bestColor.contrast.toFixed(2)}, Beauty: ${bestColor.beauty})`);
+    console.log(`✨ Beautiful ${bestColor.name} color: ${bestColor.color} (ΔE: ${bestColor.contrast.toFixed(2)}, Beauty: ${bestColor.beauty.toFixed(1)}, Uniqueness: ${bestColor.uniqueness})`);
     return bestColor.color;
   }
   
-  // Fallback to beautiful color generation
-  console.log(`⚠️ No good harmonious colors found, using fallback from user palette`);
-  return userColorPalette[0].color;
+  // Fallback: generate a color based on the original object color
+  console.log(`⚠️ No good colors found, generating based on original color`);
+  return generateColorFromOriginal(logoColor, originalObjectColor);
+}
+
+/**
+ * Generate a color based on the original object color with better contrast
+ */
+function generateColorFromOriginal(logoColor: string, originalColor: string): string {
+  const logoRgb = hexToRgb(logoColor);
+  const originalRgb = hexToRgb(originalColor);
+  
+  if (!logoRgb || !originalRgb) {
+    return '#FF6B6B'; // Fallback to coral
+  }
+  
+  const logoHsl = rgbToHsl(logoRgb);
+  const originalHsl = rgbToHsl(originalRgb);
+  
+  // Create a complementary color with good contrast
+  const complementaryHue = (logoHsl.h + 180) % 360;
+  const newColor = hslToRgb({
+    h: complementaryHue,
+    s: Math.min(originalHsl.s * 1.3, 100), // Increase saturation
+    l: originalHsl.l > 50 ? 30 : 70 // Invert lightness for contrast
+  });
+  
+  return rgbToHex(newColor);
 }
 
 /**
@@ -620,3 +772,51 @@ export const COLOR_THRESHOLDS = {
   CLEARLY_VISIBLE: 20, // ΔE > 20: Clearly visible difference
   VERY_DIFFERENT: 30   // ΔE > 30: Very different colors
 } as const;
+
+/**
+ * Test function to verify the color system is working properly
+ */
+export function testColorSystem(): void {
+  console.log('🧪 Testing Color System...');
+  
+  // Test with different logo colors
+  const testCases = [
+    { logoColor: '#1D4ED8', originalColor: '#F59E0B', objectId: 'test1' },
+    { logoColor: '#10B981', originalColor: '#EF4444', objectId: 'test2' },
+    { logoColor: '#8B5CF6', originalColor: '#F97316', objectId: 'test3' },
+    { logoColor: '#000000', originalColor: '#000000', objectId: 'test4' }, // Same color test
+    { logoColor: '#FFFFFF', originalColor: '#FFFFFF', objectId: 'test5' }, // Same color test
+  ];
+  
+  testCases.forEach((testCase, index) => {
+    console.log(`\n🧪 Test Case ${index + 1}:`);
+    console.log(`  Logo Color: ${testCase.logoColor}`);
+    console.log(`  Original Color: ${testCase.originalColor}`);
+    console.log(`  Object ID: ${testCase.objectId}`);
+    
+    const harmoniousColor = generateHarmoniousColorFromOriginal(
+      testCase.logoColor, 
+      testCase.originalColor, 
+      testCase.objectId
+    );
+    
+    const contrast = calculateDeltaE(testCase.logoColor, harmoniousColor);
+    const isGoodContrast = contrast > 8;
+    
+    console.log(`  Generated Color: ${harmoniousColor}`);
+    console.log(`  Contrast (ΔE): ${contrast.toFixed(2)}`);
+    console.log(`  Good Contrast: ${isGoodContrast ? '✅' : '❌'}`);
+    
+    // Test uniqueness - same object ID should generate same color
+    const harmoniousColor2 = generateHarmoniousColorFromOriginal(
+      testCase.logoColor, 
+      testCase.originalColor, 
+      testCase.objectId
+    );
+    
+    const isConsistent = harmoniousColor === harmoniousColor2;
+    console.log(`  Consistent: ${isConsistent ? '✅' : '❌'}`);
+  });
+  
+  console.log('\n✅ Color System Test Complete!');
+}

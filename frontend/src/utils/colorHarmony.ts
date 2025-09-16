@@ -364,8 +364,8 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
     if (isTooSimilar && !colorState.isColorLocked && !colorState.hasBeenChanged) {
       console.log(`🎨 Object color too similar to logo (ΔE: ${deltaE.toFixed(2)} < ${COLOR_THRESHOLDS.JUST_NOTICEABLE}) - generating harmonious color`);
       
-      // Generate harmonious color based on the original object color
-      const harmoniousColor = generateHarmoniousColorFromOriginal(logoColor, obj.colorState.originalColor);
+      // Generate harmonious color based on the original object color with object ID for uniqueness
+      const harmoniousColor = generateHarmoniousColorFromOriginal(logoColor, obj.colorState.originalColor, obj.id);
       const newDeltaE = calculateDeltaE(logoColor, harmoniousColor);
       
       console.log(`🎨 Generated harmonious color: ${harmoniousColor} (ΔE: ${newDeltaE.toFixed(2)})`);
@@ -464,25 +464,60 @@ export function applyColorToObject(fabricObject: any, color: string): void {
 
 /**
  * Restore original colors for objects that are no longer overlapping
+ * Enhanced to better track and restore object states
  */
 export function restoreOriginalColors(allObjects: any[], currentlyOverlapping: any[]): void {
   const overlappingIds = new Set(currentlyOverlapping.map(obj => obj.id || obj));
 
   allObjects.forEach(obj => {
     if (obj.colorState && obj.colorState.isOverlapping && !overlappingIds.has(obj.id || obj)) {
-      // Restore original color
+      // Object was overlapping but is no longer - restore original color
+      console.log(`🔄 Object ${obj.id} no longer overlapping - restoring original color`);
+      
+      // Restore original color state
       obj.colorState.isOverlapping = false;
       obj.colorState.currentColor = obj.colorState.originalColor;
       obj.colorState.harmonyType = null;
       obj.colorState.isColorLocked = false; // Unlock color
       obj.colorState.hasBeenChanged = false; // Reset change flag
+      obj.colorState.lastChangeTime = 0; // Reset change time
       
       // Apply original color
       applyColorToObject(obj, obj.colorState.originalColor);
       
-      console.log(`🔄 Restored original color for object: ${obj.colorState.originalColor} - COLOR UNLOCKED`);
+      console.log(`✅ Restored original color for object ${obj.id}: ${obj.colorState.originalColor} - COLOR UNLOCKED`);
+    } else if (obj.colorState && !obj.colorState.isOverlapping && overlappingIds.has(obj.id || obj)) {
+      // Object is now overlapping - mark as overlapping
+      console.log(`🎯 Object ${obj.id} is now overlapping with logo`);
+      obj.colorState.isOverlapping = true;
     }
   });
+}
+
+/**
+ * Enhanced function to restore all original colors when logo is removed or system stops
+ */
+export function restoreAllOriginalColors(allObjects: any[]): void {
+  console.log(`🔄 Restoring all original colors for ${allObjects.length} objects`);
+  
+  allObjects.forEach(obj => {
+    if (obj.colorState && obj.colorState.hasBeenChanged) {
+      console.log(`🔄 Restoring original color for object ${obj.id}: ${obj.colorState.originalColor}`);
+      
+      // Reset all color state
+      obj.colorState.isOverlapping = false;
+      obj.colorState.currentColor = obj.colorState.originalColor;
+      obj.colorState.harmonyType = null;
+      obj.colorState.isColorLocked = false;
+      obj.colorState.hasBeenChanged = false;
+      obj.colorState.lastChangeTime = 0;
+      
+      // Apply original color
+      applyColorToObject(obj, obj.colorState.originalColor);
+    }
+  });
+  
+  console.log(`✅ All original colors restored`);
 }
 
 /**
@@ -707,14 +742,8 @@ export class ColorHarmonyManager {
    * Restore all objects to their original colors
    */
   private restoreAllOriginalColors(): void {
-    this.canvas.getObjects().forEach((obj: any) => {
-      if (obj.colorState && obj.colorState.isOverlapping) {
-        obj.colorState.isOverlapping = false;
-        obj.colorState.currentColor = obj.colorState.originalColor;
-        obj.colorState.harmonyType = null;
-        applyColorToObject(obj, obj.colorState.originalColor);
-      }
-    });
+    const allObjects = this.canvas.getObjects();
+    restoreAllOriginalColors(allObjects);
     this.canvas.renderAll();
   }
 
