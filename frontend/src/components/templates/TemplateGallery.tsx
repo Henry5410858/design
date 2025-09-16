@@ -132,8 +132,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   }, []);
 
   // Fetch templates from API with pagination and caching
-  useEffect(() => {
-    const fetchTemplates = async (page = 1, append = false) => {
+  const fetchTemplates = async (page = 1, append = false) => {
       try {
         if (!append) {
           setLoading(true);
@@ -250,6 +249,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       }
     };
 
+  useEffect(() => {
     fetchTemplates();
   }, [selectedCategory]);
 
