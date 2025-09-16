@@ -4,11 +4,34 @@
  */
 
 export interface EnhancementOptions {
+  // Legacy options for backward compatibility
   lighting?: 'enhance' | 'brighten' | 'dim';
   sharpness?: 'enhance' | 'soften' | 'none';
   colorCorrection?: 'enhance' | 'vibrant' | 'natural';
   upscale?: boolean;
   service?: 'cloudinary' | 'clipdrop' | 'letsenhance';
+  
+  // Detailed Cloudinary AI controls
+  brightness?: number;        // -100 to 100
+  contrast?: number;          // -100 to 100
+  exposure?: number;          // -100 to 100
+  saturation?: number;        // -100 to 200
+  vibrance?: number;          // -100 to 200
+  hue?: number;              // -180 to 180
+  gamma?: number;            // 0.1 to 3.0
+  sharpen?: number;          // 0 to 2000
+  unsharpMask?: string;      // "radius,amount,threshold"
+  clarity?: number;          // -100 to 100
+  noiseReduction?: number;   // 0 to 100
+  whiteBalance?: 'auto' | 'as_shot' | 'daylight' | 'cloudy' | 'shade' | 'tungsten' | 'fluorescent' | 'flash';
+  dynamicRange?: 'auto' | 'high' | 'normal';
+  faceDetection?: boolean;
+  autoColor?: boolean;
+  autoContrast?: boolean;
+  autoBrightness?: boolean;
+  autoLevel?: boolean;
+  improve?: boolean;
+  enhance?: boolean;
 }
 
 export interface EnhancementResult {
@@ -33,11 +56,28 @@ export class CloudinaryAIEnhancer {
 
   async enhanceImage(imageUrl: string, options: EnhancementOptions): Promise<EnhancementResult> {
     try {
+      console.log('🔧 CloudinaryAIEnhancer.enhanceImage called with:');
+      console.log('  - imageUrl:', imageUrl);
+      console.log('  - options:', options);
+      console.log('  - cloudName:', this.cloudName);
+      console.log('  - apiKey:', this.apiKey ? '***' : 'MISSING');
+      
       const startTime = Date.now();
       
       // Build Cloudinary transformation URL
       const transformations = this.buildCloudinaryTransformations(options);
       const enhancedUrl = `https://res.cloudinary.com/${this.cloudName}/image/fetch/${transformations}/${imageUrl}`;
+      
+      console.log('🔧 Cloudinary transformations:', transformations);
+      console.log('🌐 Enhanced URL:', enhancedUrl);
+      
+      // Test if the URL is accessible
+      try {
+        const testResponse = await fetch(enhancedUrl, { method: 'HEAD' });
+        console.log('🔍 URL accessibility test:', testResponse.status, testResponse.statusText);
+      } catch (urlError) {
+        console.warn('⚠️ URL accessibility test failed:', urlError);
+      }
       
       const processingTime = Date.now() - startTime;
       
@@ -48,6 +88,7 @@ export class CloudinaryAIEnhancer {
         processingTime
       };
     } catch (error) {
+      console.error('❌ Cloudinary enhancement error:', error);
       return {
         success: false,
         error: `Cloudinary enhancement failed: ${error}`,
@@ -59,28 +100,126 @@ export class CloudinaryAIEnhancer {
   private buildCloudinaryTransformations(options: EnhancementOptions): string {
     const transforms: string[] = [];
     
-    // Lighting adjustments
-    if (options.lighting === 'enhance') {
-      transforms.push('e_auto_brightness');
-    } else if (options.lighting === 'brighten') {
-      transforms.push('e_brightness:20');
-    } else if (options.lighting === 'dim') {
-      transforms.push('e_brightness:-20');
+    // Legacy support - if detailed options are not provided, use legacy logic
+    if (options.brightness === undefined && options.lighting) {
+      // DRAMATIC lighting adjustments - very aggressive brightness
+      if (options.lighting === 'enhance') {
+        transforms.push('e_auto_brightness');
+        transforms.push('e_brightness:60');
+        transforms.push('e_contrast:40');
+        transforms.push('e_gamma:1.2');
+      } else if (options.lighting === 'brighten') {
+        transforms.push('e_brightness:80');
+        transforms.push('e_contrast:30');
+        transforms.push('e_gamma:1.3');
+      } else if (options.lighting === 'dim') {
+        transforms.push('e_brightness:-20');
+      }
+    } else {
+      // Detailed controls
+      if (options.brightness !== undefined) {
+        transforms.push(`e_brightness:${options.brightness}`);
+      }
+      if (options.contrast !== undefined) {
+        transforms.push(`e_contrast:${options.contrast}`);
+      }
+      if (options.exposure !== undefined) {
+        transforms.push(`e_exposure:${options.exposure}`);
+      }
+      if (options.gamma !== undefined) {
+        transforms.push(`e_gamma:${options.gamma}`);
+      }
     }
     
-    // Sharpness adjustments
-    if (options.sharpness === 'enhance') {
-      transforms.push('e_sharpen:100');
-    } else if (options.sharpness === 'soften') {
-      transforms.push('e_blur:300');
+    // Legacy sharpness support
+    if (options.sharpen === undefined && options.sharpness) {
+      if (options.sharpness === 'enhance') {
+        transforms.push('e_sharpen:400');
+        transforms.push('e_unsharp_mask:1.0,2.0,1.0');
+        transforms.push('e_improve');
+        transforms.push('e_enhance');
+      } else if (options.sharpness === 'soften') {
+        transforms.push('e_blur:300');
+      }
+    } else {
+      // Detailed sharpness controls
+      if (options.sharpen !== undefined) {
+        transforms.push(`e_sharpen:${options.sharpen}`);
+      }
+      if (options.unsharpMask !== undefined) {
+        transforms.push(`e_unsharp_mask:${options.unsharpMask}`);
+      }
+      if (options.clarity !== undefined) {
+        transforms.push(`e_clarity:${options.clarity}`);
+      }
+      if (options.noiseReduction !== undefined) {
+        transforms.push(`e_noise_reduction:${options.noiseReduction}`);
+      }
     }
     
-    // Color correction
-    if (options.colorCorrection === 'enhance') {
+    // Legacy color correction support
+    if (options.saturation === undefined && options.colorCorrection) {
+      if (options.colorCorrection === 'enhance') {
+        transforms.push('e_auto_color');
+        transforms.push('e_saturation:150');
+        transforms.push('e_vibrance:80');
+        transforms.push('e_auto_contrast');
+        transforms.push('e_auto_color');
+      } else if (options.colorCorrection === 'vibrant') {
+        transforms.push('e_saturation:200');
+        transforms.push('e_vibrance:120');
+      }
+    } else {
+      // Detailed color controls
+      if (options.saturation !== undefined) {
+        transforms.push(`e_saturation:${options.saturation}`);
+      }
+      if (options.vibrance !== undefined) {
+        transforms.push(`e_vibrance:${options.vibrance}`);
+      }
+      if (options.hue !== undefined) {
+        transforms.push(`e_hue:${options.hue}`);
+      }
+    }
+    
+    // White balance
+    if (options.whiteBalance) {
+      transforms.push(`e_white_balance:${options.whiteBalance}`);
+    }
+    
+    // Dynamic range
+    if (options.dynamicRange) {
+      transforms.push(`e_dynamic_range:${options.dynamicRange}`);
+    }
+    
+    // Face detection
+    if (options.faceDetection) {
+      transforms.push('e_face_detection:true');
+    }
+    
+    // Auto corrections
+    if (options.autoColor) {
       transforms.push('e_auto_color');
-    } else if (options.colorCorrection === 'vibrant') {
-      transforms.push('e_saturation:50');
     }
+    if (options.autoContrast) {
+      transforms.push('e_auto_contrast');
+    }
+    if (options.autoBrightness) {
+      transforms.push('e_auto_brightness');
+    }
+    if (options.autoLevel) {
+      transforms.push('e_auto_level');
+    }
+    if (options.improve) {
+      transforms.push('e_improve');
+    }
+    if (options.enhance) {
+      transforms.push('e_enhance');
+    }
+    
+    // Quality improvements
+    transforms.push('q_auto:best');
+    transforms.push('f_auto');
     
     // Upscaling
     if (options.upscale) {

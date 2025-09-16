@@ -71,13 +71,19 @@ BrandKitSchema.virtual('logoUrl').get(function() {
   return null;
 });
 
-// Method to get brand kit for a user
+// Method to get brand kit for a user - SECURE
 BrandKitSchema.statics.getByUserId = function(userId) {
+  if (!userId) {
+    throw new Error('User ID is required for security');
+  }
   return this.findOne({ userId }).populate('userId', 'username email');
 };
 
-// Method to update brand kit
+// Method to update brand kit - SECURE
 BrandKitSchema.statics.updateByUserId = function(userId, updateData) {
+  if (!userId) {
+    throw new Error('User ID is required for security');
+  }
   return this.findOneAndUpdate(
     { userId }, 
     updateData, 

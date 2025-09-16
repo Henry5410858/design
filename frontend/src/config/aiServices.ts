@@ -67,6 +67,17 @@ export const ENHANCEMENT_PRESETS = {
       upscale: true
     },
     icon: '✨'
+  },
+  // New aggressive enhancement preset
+  aggressive: {
+    name: 'Mejora Agresiva',
+    options: {
+      lighting: 'brighten' as const,
+      sharpness: 'enhance' as const,
+      colorCorrection: 'vibrant' as const,
+      upscale: false
+    },
+    icon: '🔥'
   }
 };
 

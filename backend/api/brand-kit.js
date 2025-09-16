@@ -79,7 +79,7 @@ app.get('/', auth, async (req, res) => {
   try {
     await connectDB();
     
-    const brandKit = await BrandKit.getByUserId(req.user.userId);
+    const brandKit = await BrandKit.getByUserId(req.user.userId || req.user.id);
     
     if (!brandKit) {
       // Return default brand kit if none exists
@@ -139,7 +139,7 @@ app.put('/', auth, async (req, res) => {
     if (fonts !== undefined) updateData.fonts = fonts;
     if (customElements !== undefined) updateData.customElements = customElements;
 
-    const brandKit = await BrandKit.updateByUserId(req.user.userId, updateData);
+    const brandKit = await BrandKit.updateByUserId(req.user.userId || req.user.id, updateData);
 
     res.json({
       success: true,
@@ -183,7 +183,7 @@ app.patch('/', auth, async (req, res) => {
       }
     });
 
-    const brandKit = await BrandKit.updateByUserId(req.user.userId, updateData);
+    const brandKit = await BrandKit.updateByUserId(req.user.userId || req.user.id, updateData);
 
     res.json({
       success: true,
@@ -218,7 +218,7 @@ app.delete('/', auth, async (req, res) => {
   try {
     await connectDB();
     
-    await BrandKit.findOneAndDelete({ userId: req.user.userId });
+    await BrandKit.findOneAndDelete({ userId: req.user.userId || req.user.id });
     
     res.json({
       success: true,
@@ -239,7 +239,7 @@ app.get('/logo', auth, async (req, res) => {
   try {
     await connectDB();
     
-    const brandKit = await BrandKit.getByUserId(req.user.userId);
+    const brandKit = await BrandKit.getByUserId(req.user.userId || req.user.id);
     
     if (!brandKit || !brandKit.logo) {
       return res.json({
@@ -282,7 +282,7 @@ app.post('/logo', auth, async (req, res) => {
     }
 
     const updateData = { logo };
-    const brandKit = await BrandKit.updateByUserId(req.user.userId, updateData);
+    const brandKit = await BrandKit.updateByUserId(req.user.userId || req.user.id, updateData);
 
     res.json({
       success: true,
@@ -316,7 +316,7 @@ app.post('/colors', auth, async (req, res) => {
     if (secondaryColor !== undefined) updateData.secondaryColor = secondaryColor;
     if (accentColor !== undefined) updateData.accentColor = accentColor;
 
-    const brandKit = await BrandKit.updateByUserId(req.user.userId, updateData);
+    const brandKit = await BrandKit.updateByUserId(req.user.userId || req.user.id, updateData);
 
     res.json({
       success: true,
@@ -352,7 +352,7 @@ app.post('/fonts', auth, async (req, res) => {
     }
 
     const updateData = { fonts };
-    const brandKit = await BrandKit.updateByUserId(req.user.userId, updateData);
+    const brandKit = await BrandKit.updateByUserId(req.user.userId || req.user.id, updateData);
 
     res.json({
       success: true,
@@ -384,7 +384,7 @@ app.post('/elements', auth, async (req, res) => {
     }
 
     const updateData = { customElements };
-    const brandKit = await BrandKit.updateByUserId(req.user.userId, updateData);
+    const brandKit = await BrandKit.updateByUserId(req.user.userId || req.user.id, updateData);
 
     res.json({
       success: true,

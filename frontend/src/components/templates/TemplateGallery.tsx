@@ -174,6 +174,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         
         const url = `${API_ENDPOINTS.TEMPLATES}?${params.toString()}`;
         console.log('🌐 Making fetch request to:', url);
+        console.log('🔗 API_ENDPOINTS.TEMPLATES:', API_ENDPOINTS.TEMPLATES);
         
         const response = await fetch(url, {
           method: 'GET',
@@ -184,10 +185,14 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         
         if (response.ok) {
           const data = await response.json();
-          console.log('✅ Templates fetched from API:', data.templates?.length || 0);
+          console.log('✅ Templates fetched from API:', data);
+          
+          // Handle both old format (array) and new format (paginated object)
+          const templatesArray = Array.isArray(data) ? data : (data.templates || []);
+          console.log('📋 Templates array length:', templatesArray.length);
           
           // Convert API templates to TemplateItem format
-          const convertedTemplates: TemplateItem[] = (data.templates || []).map((template: any) => ({
+          const convertedTemplates: TemplateItem[] = templatesArray.map((template: any) => ({
             id: template._id || template.id,
             name: template.name,
             category: template.category,
@@ -197,12 +202,20 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             type: template.type as TemplateItem['type'],
             editorType: template.type as TemplateItem['editorType'],
             templateKey: template.templateKey
-          }));
+          }));  
+          
+          // Handle pagination data (fallback for old format)
+          const paginationData = data.pagination || {
+            page: 1,
+            limit: 20,
+            total: templatesArray.length,
+            pages: 1
+          };
           
           // Cache the response
           const cacheData = {
             templates: convertedTemplates,
-            pagination: data.pagination
+            pagination: paginationData
           };
           localStorage.setItem(cacheKey, JSON.stringify(cacheData));
           localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
@@ -212,8 +225,8 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           } else {
             setTemplates(convertedTemplates);
           }
-          setPagination(data.pagination);
-          setHasMore(data.pagination.page < data.pagination.pages);
+          setPagination(paginationData);
+          setHasMore(paginationData.page < paginationData.pages);
           console.log('✅ Templates converted and set:', convertedTemplates.length);
         } else {
           const errorText = await response.text();

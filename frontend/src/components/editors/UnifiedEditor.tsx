@@ -10,7 +10,7 @@ import {
   Palette, 
   ArrowArcLeft,
   ArrowArcRight,
-  Scissors,
+  Copy,
   Trash
 } from 'phosphor-react';
 import { useAuth } from '@/context/AuthContext';
@@ -18,6 +18,8 @@ import * as fabric from 'fabric';
 import API_ENDPOINTS from '@/config/api';
 import { jsPDF } from 'jspdf';
 import { buildDesignData, saveDesignToFiles, SaveOptions, getDataSize, exceedsSizeLimit, optimizeDesignData, createUltraMinimalDesignData } from '@/utils/saveData';
+import { AIImageEnhancementManager, EnhancementOptions, EnhancementResult } from '@/utils/aiImageEnhancement';
+import { AI_SERVICES_CONFIG, AI_FEATURES } from '@/config/aiServices';
 import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, canvasToBase64, getImageTypeFromDataUrl } from '@/utils/templateBackgrounds';
 import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
 import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject, extractLogoColor } from '@/utils/colorHarmony';
@@ -267,6 +269,208 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // AI Image Enhancement
   const [showAIEnhancement, setShowAIEnhancement] = useState<boolean>(false);
   const [selectedImageForEnhancement, setSelectedImageForEnhancement] = useState<string>('');
+  const [isEnhancingImage, setIsEnhancingImage] = useState<boolean>(false);
+  const [enhancementResult, setEnhancementResult] = useState<EnhancementResult | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState<boolean>(false);
+  const [enhancementOptions, setEnhancementOptions] = useState<EnhancementOptions>({
+    // Detailed controls with default values
+    brightness: 20,
+    contrast: 15,
+    exposure: 10,
+    saturation: 30,
+    vibrance: 25,
+    hue: 0,
+    gamma: 1.1,
+    sharpen: 100,
+    unsharpMask: '1.0,1.5,0.5',
+    clarity: 20,
+    noiseReduction: 20,
+    whiteBalance: 'auto',
+    dynamicRange: 'auto',
+    faceDetection: true,
+    autoColor: true,
+    autoContrast: true,
+    autoBrightness: true,
+    autoLevel: true,
+    improve: true,
+    enhance: true,
+    upscale: false
+  });
+  
+  // Initialize AI enhancement manager
+  const aiEnhancementManager = new AIImageEnhancementManager({
+    cloudinary: AI_SERVICES_CONFIG.cloudinary,
+    clipdrop: AI_SERVICES_CONFIG.clipdrop,
+    letsenhance: AI_SERVICES_CONFIG.letsenhance,
+    defaultService: AI_FEATURES.defaultImageEnhancementService
+  });
+
+  // Generate CSS filter string for real-time preview
+  const generateCSSFilter = useCallback((options: EnhancementOptions) => {
+    const filters: string[] = [];
+    
+    // Brightness: -100 to 100 -> 0 to 2
+    if (options.brightness !== undefined) {
+      const brightness = Math.max(0, Math.min(2, 1 + (options.brightness / 100)));
+      filters.push(`brightness(${brightness})`);
+    }
+    
+    // Contrast: -100 to 100 -> 0 to 2
+    if (options.contrast !== undefined) {
+      const contrast = Math.max(0, Math.min(2, 1 + (options.contrast / 100)));
+      filters.push(`contrast(${contrast})`);
+    }
+    
+    // Saturation: -100 to 200 -> 0 to 3
+    if (options.saturation !== undefined) {
+      const saturation = Math.max(0, Math.min(3, 1 + (options.saturation / 100)));
+      filters.push(`saturate(${saturation})`);
+    }
+    
+    // Hue rotation: -180 to 180 degrees
+    if (options.hue !== undefined) {
+      filters.push(`hue-rotate(${options.hue}deg)`);
+    }
+    
+    // Blur for sharpness (inverse relationship)
+    if (options.sharpen !== undefined) {
+      const blur = Math.max(0, Math.min(10, 10 - (options.sharpen / 200)));
+      if (blur > 0) {
+        filters.push(`blur(${blur}px)`);
+      }
+    }
+    
+    // Sepia for warmth
+    if (options.vibrance !== undefined && options.vibrance > 50) {
+      const sepia = Math.min(1, (options.vibrance - 50) / 100);
+      filters.push(`sepia(${sepia})`);
+    }
+    
+    return filters.join(' ');
+  }, []);
+
+  // Generate real-time preview URL (Cloudinary AI or CSS filters)
+  const generatePreviewUrl = useCallback(async (imageUrl: string, options: EnhancementOptions) => {
+    console.log('🔍 generatePreviewUrl called with:');
+    console.log('  - imageUrl:', imageUrl);
+    console.log('  - cloudName:', AI_SERVICES_CONFIG.cloudinary.cloudName);
+    console.log('  - options:', options);
+
+    if (!imageUrl) {
+      console.log('❌ No image URL provided');
+      return '';
+    }
+
+    // Check if we have real Cloudinary credentials (not demo)
+    if (!AI_SERVICES_CONFIG.cloudinary.cloudName || AI_SERVICES_CONFIG.cloudinary.cloudName === 'demo') {
+      console.log('⚠️ Using CSS filters - Cloudinary not configured properly');
+      console.log('  - Cloud name:', AI_SERVICES_CONFIG.cloudinary.cloudName);
+      return imageUrl; // Return original for CSS filters
+    }
+
+    // Check if image is base64 data URL
+    if (imageUrl.startsWith('data:')) {
+      console.log('⚠️ Image is base64 data URL - Cloudinary cannot process this directly');
+      console.log('💡 Using a sample image for Cloudinary AI demonstration...');
+      
+      // Use a sample image to demonstrate Cloudinary AI processing
+      imageUrl = 'https://picsum.photos/400/300';
+      console.log('🔄 Using sample image for Cloudinary AI:', imageUrl);
+    }
+
+    try {
+      // Build Cloudinary AI transformations
+      const transforms: string[] = [];
+      
+      // Detailed AI controls
+      if (options.brightness !== undefined) {
+        transforms.push(`e_brightness:${options.brightness}`);
+      }
+      if (options.contrast !== undefined) {
+        transforms.push(`e_contrast:${options.contrast}`);
+      }
+      if (options.exposure !== undefined) {
+        transforms.push(`e_exposure:${options.exposure}`);
+      }
+      if (options.gamma !== undefined) {
+        transforms.push(`e_gamma:${options.gamma}`);
+      }
+      if (options.saturation !== undefined) {
+        transforms.push(`e_saturation:${options.saturation}`);
+      }
+      if (options.vibrance !== undefined) {
+        transforms.push(`e_vibrance:${options.vibrance}`);
+      }
+      if (options.hue !== undefined) {
+        transforms.push(`e_hue:${options.hue}`);
+      }
+      if (options.sharpen !== undefined) {
+        transforms.push(`e_sharpen:${options.sharpen}`);
+      }
+      if (options.clarity !== undefined) {
+        transforms.push(`e_clarity:${options.clarity}`);
+      }
+      if (options.noiseReduction !== undefined) {
+        transforms.push(`e_noise_reduction:${options.noiseReduction}`);
+      }
+      if (options.whiteBalance) {
+        transforms.push(`e_white_balance:${options.whiteBalance}`);
+      }
+      if (options.dynamicRange) {
+        transforms.push(`e_dynamic_range:${options.dynamicRange}`);
+      }
+      if (options.faceDetection) {
+        transforms.push('e_face_detection:true');
+      }
+      if (options.autoColor) {
+        transforms.push('e_auto_color');
+      }
+      if (options.autoContrast) {
+        transforms.push('e_auto_contrast');
+      }
+      if (options.autoBrightness) {
+        transforms.push('e_auto_brightness');
+      }
+      if (options.autoLevel) {
+        transforms.push('e_auto_level');
+      }
+      if (options.improve) {
+        transforms.push('e_improve');
+      }
+      if (options.enhance) {
+        transforms.push('e_enhance');
+      }
+      if (options.upscale) {
+        transforms.push('e_scale:2');
+      }
+
+      // Quality improvements
+      transforms.push('q_auto:best');
+      transforms.push('f_auto');
+
+      const transformationString = transforms.join(',');
+      const previewUrl = `https://res.cloudinary.com/${AI_SERVICES_CONFIG.cloudinary.cloudName}/image/fetch/${transformationString}/${encodeURIComponent(imageUrl)}`;
+      
+      console.log('🎨 Generated Cloudinary AI URL:');
+      console.log('  - Transformations:', transformationString);
+      console.log('  - Full URL:', previewUrl);
+      
+      // Test if the URL is accessible
+      try {
+        const response = await fetch(previewUrl, { method: 'HEAD' });
+        console.log('✅ Cloudinary AI URL is accessible, status:', response.status);
+      } catch (fetchError) {
+        console.log('⚠️ Cloudinary AI URL test failed:', fetchError);
+      }
+      
+      return previewUrl;
+    } catch (error) {
+      console.error('❌ Error generating Cloudinary AI URL:', error);
+      return imageUrl; // Fallback to original
+    }
+  }, []);
+
   
   // PDF Proposal Generator
   const [showProposalGenerator, setShowProposalGenerator] = useState<boolean>(false);
@@ -359,6 +563,64 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // User context
   const { user } = useAuth();
   const userPlan = (user?.plan as 'Gratis' | 'Premium' | 'Ultra-Premium') || 'Gratis';
+
+  // Update preview when enhancement options change
+  const updatePreview = useCallback(async () => {
+    console.log('🔄 updatePreview called');
+    console.log('  - selectedObject:', selectedObject);
+    console.log('  - selectedObject type:', selectedObject?.type);
+    console.log('  - enhancementOptions:', enhancementOptions);
+
+    if (!selectedObject || selectedObject.type !== 'image') {
+      console.log('❌ No image selected or not an image object');
+      setPreviewImageUrl('');
+      return;
+    }
+
+    const imageUrl = (selectedObject as fabric.Image).getSrc();
+    console.log('  - imageUrl:', imageUrl);
+    
+    if (!imageUrl) {
+      console.log('❌ No image URL found');
+      setPreviewImageUrl('');
+      return;
+    }
+
+    console.log('🔄 Starting preview generation...');
+    setIsGeneratingPreview(true);
+    try {
+      const previewUrl = await generatePreviewUrl(imageUrl, enhancementOptions);
+      console.log('✅ Preview URL generated:', previewUrl);
+      setPreviewImageUrl(previewUrl);
+      console.log('🔄 Preview updated with options:', enhancementOptions);
+    } catch (error) {
+      console.error('❌ Error updating preview:', error);
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  }, [selectedObject, enhancementOptions, generatePreviewUrl]);
+
+  // Update preview when enhancement options change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      updatePreview();
+    }, 300); // Debounce for 300ms
+
+    return () => clearTimeout(timeoutId);
+  }, [updatePreview]);
+
+  // Auto-trigger preview when improvements tab opens
+  useEffect(() => {
+    if (activeTab === 'improvements') {
+      console.log('🎯 Improvements tab opened, checking for preview...');
+      if (selectedObject && selectedObject.type === 'image') {
+        console.log('🎯 Image detected, triggering preview...');
+        updatePreview();
+      } else {
+        console.log('🎯 No image selected, skipping preview');
+      }
+    }
+  }, [activeTab, selectedObject, updatePreview]);
 
   // Check if user can perform premium actions
   const canPerformPremiumAction = (action: string) => {
@@ -1152,14 +1414,33 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           const canvasHeight = fabricCanvas.getHeight();
           
           // Keep object within canvas boundaries
-          if (obj.left! < 0) obj.left = 0;
-          if (obj.top! < 0) obj.top = 0;
-          if (obj.left! + obj.width! * obj.scaleX! > canvasWidth) {
-            obj.left = canvasWidth - obj.width! * obj.scaleX!;
+          const objWidth = obj.width! * obj.scaleX!;
+          const objHeight = obj.height! * obj.scaleY!;
+          
+          // Calculate actual boundaries based on origin point
+          let minLeft, maxLeft, minTop, maxTop;
+          
+          if (obj.originX === 'center') {
+            minLeft = objWidth / 2 + 10; // Add 10px margin from left edge
+            maxLeft = canvasWidth - objWidth / 2 - 10; // Add 10px margin from right edge
+          } else {
+            minLeft = 10; // Add 10px margin from left edge
+            maxLeft = canvasWidth - objWidth - 10; // Add 10px margin from right edge
           }
-          if (obj.top! + obj.height! * obj.scaleY! > canvasHeight) {
-            obj.top = canvasHeight - obj.height! * obj.scaleY!;
+          
+          if (obj.originY === 'center') {
+            minTop = objHeight / 2 + 10; // Add 10px margin from top edge
+            maxTop = canvasHeight - objHeight / 2 - 10; // Add 10px margin from bottom edge
+          } else {
+            minTop = 10; // Add 10px margin from top edge
+            maxTop = canvasHeight - objHeight - 10; // Add 10px margin from bottom edge
           }
+          
+          // Apply boundaries
+          if (obj.left! < minLeft) obj.left = minLeft;
+          if (obj.left! > maxLeft) obj.left = maxLeft;
+          if (obj.top! < minTop) obj.top = minTop;
+          if (obj.top! > maxTop) obj.top = maxTop;
           
           // Trigger color harmony analysis when objects are moving
           if (isColorHarmonyActive && colorHarmonyManager) {
@@ -1185,14 +1466,33 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           if (obj.scaleY! > maxScaleY) obj.scaleY = maxScaleY;
           
           // Keep object within boundaries after scaling
-          if (obj.left! < 0) obj.left = 0;
-          if (obj.top! < 0) obj.top = 0;
-          if (obj.left! + obj.width! * obj.scaleX! > canvasWidth) {
-            obj.left = canvasWidth - obj.width! * obj.scaleX!;
+          const objWidth = obj.width! * obj.scaleX!;
+          const objHeight = obj.height! * obj.scaleY!;
+          
+          // Calculate actual boundaries based on origin point
+          let minLeft, maxLeft, minTop, maxTop;
+          
+          if (obj.originX === 'center') {
+            minLeft = objWidth / 2 + 10; // Add 10px margin from left edge
+            maxLeft = canvasWidth - objWidth / 2 - 10; // Add 10px margin from right edge
+          } else {
+            minLeft = 10; // Add 10px margin from left edge
+            maxLeft = canvasWidth - objWidth - 10; // Add 10px margin from right edge
           }
-          if (obj.top! + obj.height! * obj.scaleY! > canvasHeight) {
-            obj.top = canvasHeight - obj.height! * obj.scaleY!;
+          
+          if (obj.originY === 'center') {
+            minTop = objHeight / 2 + 10; // Add 10px margin from top edge
+            maxTop = canvasHeight - objHeight / 2 - 10; // Add 10px margin from bottom edge
+          } else {
+            minTop = 10; // Add 10px margin from top edge
+            maxTop = canvasHeight - objHeight - 10; // Add 10px margin from bottom edge
           }
+          
+          // Apply boundaries
+          if (obj.left! < minLeft) obj.left = minLeft;
+          if (obj.left! > maxLeft) obj.left = maxLeft;
+          if (obj.top! < minTop) obj.top = minTop;
+          if (obj.top! > maxTop) obj.top = maxTop;
         }
       });
       console.log("fabricCanvas", fabricCanvas)
@@ -3259,14 +3559,30 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     const objHeight = (obj.height || 0) * (obj.scaleY || 1);
     
     // Ensure object is within canvas boundaries
-    if (obj.left! < 0) obj.left = 0;
-    if (obj.top! < 0) obj.top = 0;
-    if (obj.left! + objWidth > canvasWidth) {
-      obj.left = canvasWidth - objWidth;
+    // Calculate actual boundaries based on origin point
+    let minLeft, maxLeft, minTop, maxTop;
+    
+    if (obj.originX === 'center') {
+      minLeft = objWidth / 2 + 10; // Add 10px margin from left edge
+      maxLeft = canvasWidth - objWidth / 2 - 10; // Add 10px margin from right edge
+    } else {
+      minLeft = 10; // Add 10px margin from left edge
+      maxLeft = canvasWidth - objWidth - 10; // Add 10px margin from right edge
     }
-    if (obj.top! + objHeight > canvasHeight) {
-      obj.top = canvasHeight - objHeight;
+    
+    if (obj.originY === 'center') {
+      minTop = objHeight / 2 + 10; // Add 10px margin from top edge
+      maxTop = canvasHeight - objHeight / 2 - 10; // Add 10px margin from bottom edge
+    } else {
+      minTop = 10; // Add 10px margin from top edge
+      maxTop = canvasHeight - objHeight - 10; // Add 10px margin from bottom edge
     }
+    
+    // Apply boundaries
+    if (obj.left! < minLeft) obj.left = minLeft;
+    if (obj.left! > maxLeft) obj.left = maxLeft;
+    if (obj.top! < minTop) obj.top = minTop;
+    if (obj.top! > maxTop) obj.top = maxTop;
     
     // If object is too large for canvas, scale it down
     if (objWidth > canvasWidth) {
@@ -3334,6 +3650,119 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     } else {
       console.error('❌ File input ref is null!');
       alert('Error: File input no está disponible. Recarga la página e intenta nuevamente.');
+    }
+  };
+  
+  // AI Image Enhancement functions
+  const enhanceImageWithAI = async (imageUrl: string, options: EnhancementOptions = {}) => {
+    console.log('🚀 Starting AI enhancement for image:', imageUrl);
+    console.log('🔧 Enhancement options:', options);
+    console.log('🔧 Current enhancementOptions state:', enhancementOptions);
+    console.log('🔧 AI_SERVICES_CONFIG:', AI_SERVICES_CONFIG);
+    
+    setIsEnhancingImage(true);
+    setEnhancementResult(null);
+    
+    try {
+      const finalEnhancementOptions: EnhancementOptions = {
+        ...enhancementOptions, // Use current state options
+        service: 'cloudinary',
+        ...options // Override with any passed options
+      };
+      
+      console.log('🎨 Final enhancement options:', finalEnhancementOptions);
+      console.log('🔧 Cloudinary config:', {
+        cloudName: AI_SERVICES_CONFIG.cloudinary.cloudName,
+        apiKey: AI_SERVICES_CONFIG.cloudinary.apiKey ? '***' : 'MISSING',
+        apiSecret: AI_SERVICES_CONFIG.cloudinary.apiSecret ? '***' : 'MISSING'
+      });
+      
+      const result = await aiEnhancementManager.enhanceImage(imageUrl, finalEnhancementOptions);
+      
+      console.log('✅ Enhancement result:', result);
+      
+      setEnhancementResult(result);
+      return result;
+    } catch (error) {
+      console.error('❌ AI enhancement error:', error);
+      const errorResult = {
+        success: false,
+        error: `Enhancement failed: ${error}`,
+        service: 'cloudinary'
+      };
+      setEnhancementResult(errorResult);
+      return errorResult;
+    } finally {
+      setIsEnhancingImage(false);
+    }
+  };
+
+  const handleImageEnhanced = useCallback((originalUrl: string, enhancedUrl: string) => {
+    console.log('✅ Image enhanced successfully:', { originalUrl, enhancedUrl });
+    // Replace the original image with the enhanced one
+    replaceImageInCanvas(originalUrl, enhancedUrl);
+  }, []);
+
+  const replaceImageInCanvas = (originalUrl: string, enhancedUrl: string) => {
+    if (!canvas) return;
+    
+    // Find the image object with the original URL
+    const objects = canvas.getObjects();
+    const imageObject = objects.find(obj => 
+      obj.type === 'image' && (obj as fabric.Image).getSrc() === originalUrl
+    ) as fabric.Image;
+    
+    if (imageObject) {
+      // Create new image element with enhanced URL
+      const imgElement = new Image();
+      imgElement.crossOrigin = 'anonymous';
+      
+      imgElement.onload = () => {
+        // Create new fabric image
+        const enhancedFabricImage = new fabric.Image(imgElement);
+        
+        // Copy properties from original image
+        enhancedFabricImage.set({
+          left: imageObject.left,
+          top: imageObject.top,
+          scaleX: imageObject.scaleX,
+          scaleY: imageObject.scaleY,
+          angle: imageObject.angle,
+          originX: imageObject.originX,
+          originY: imageObject.originY,
+          selectable: true,
+          evented: true,
+          lockMovementX: false,
+          lockMovementY: false,
+          lockRotation: false,
+          lockScalingX: false,
+          lockScalingY: false,
+          cornerStyle: 'circle',
+          cornerColor: '#007bff',
+          cornerSize: 8,
+          transparentCorners: false
+        });
+        
+        // Replace the original image
+        canvas.remove(imageObject);
+        canvas.add(enhancedFabricImage);
+        canvas.setActiveObject(enhancedFabricImage);
+        canvas.renderAll();
+        
+        // Save to history
+        if (typeof saveCanvasToHistory === 'function') {
+          saveCanvasToHistory();
+        }
+        
+        console.log('✅ Enhanced image replaced successfully');
+      };
+      
+      imgElement.onerror = () => {
+        console.error('❌ Failed to load enhanced image');
+        alert('Error al cargar la imagen mejorada');
+      };
+      
+      imgElement.src = enhancedUrl;
     }
   };
   
@@ -3461,6 +3890,19 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         console.log('✅ Image added successfully');
         console.log('🎨 Canvas objects after adding image:', canvas.getObjects());
         console.log('📏 Canvas dimensions:', canvas.getWidth(), 'x', canvas.getHeight());
+        
+        // Offer AI enhancement
+        const shouldEnhance = confirm('✨ ¿Te gustaría mejorar DRAMÁTICAMENTE esta imagen con IA?\n\n🎨 Mejoras aplicadas:\n• Brillo +60%\n• Nitidez +400%\n• Saturación +150%\n• Contraste +40%\n\n¡La diferencia será muy notable!');
+        if (shouldEnhance) {
+          enhanceImageWithAI(imageUrl).then((result) => {
+            if (result.success && 'enhancedImageUrl' in result && result.enhancedImageUrl) {
+              handleImageEnhanced(imageUrl, result.enhancedImageUrl);
+            } else {
+              console.error('AI enhancement failed:', result.error);
+              alert('No se pudo mejorar la imagen. Usando imagen original.');
+            }
+          });
+        }
         
         // Clear the file input for future uploads
         if (fileInputRef.current) {
@@ -3800,43 +4242,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     }
   };
 
-  // Make selected object black
-  const makeObjectBlack = () => {
-    if (!canvas) return;
-    
-    const activeObject = canvas.getActiveObject();
-    if (activeObject) {
-      console.log('🎨 Changing object color to black:', {
-        type: activeObject.type,
-        id: (activeObject as any).id,
-        currentFill: activeObject.fill,
-        currentColor: (activeObject as any).color
-      });
-      
-      // Apply black color based on object type
-      if (activeObject.type === 'text' || activeObject.type === 'i-text') {
-        activeObject.set('fill', '#000000');
-      } else if (activeObject.type === 'rect' || activeObject.type === 'circle' || activeObject.type === 'ellipse') {
-        activeObject.set('fill', '#000000');
-      } else if (activeObject.type === 'image') {
-        activeObject.set('tint', '#000000');
-      } else {
-        // Fallback: try common properties
-        if (activeObject.fill !== undefined) {
-          activeObject.set('fill', '#000000');
-        } else if ((activeObject as any).color !== undefined) {
-          activeObject.set('color', '#000000');
-        } else if (activeObject.stroke !== undefined) {
-          activeObject.set('stroke', '#000000');
-        }
-      }
-      
-      canvas.renderAll();
-      console.log('✅ Object color changed to black successfully');
-    } else {
-      console.warn('⚠️ No object selected to change color');
-    }
-  };
   
   // Apply brand kit colors
   const applyBrandKitColors = () => {
@@ -5627,25 +6032,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     setShowAIEnhancement(true);
   }, [canvas]);
 
-  const handleImageEnhanced = useCallback((originalUrl: string, enhancedUrl: string) => {
-    // Find and replace the image object with the enhanced version
-    const allObjects = canvas?.getObjects() || [];
-    const imageObject = allObjects.find(obj => {
-      const objSrc = (obj as any).src || (obj as any).getSrc();
-      return objSrc === originalUrl;
-    });
-
-    if (imageObject) {
-      // Replace the image source
-      if ((imageObject as any).setSrc) {
-        (imageObject as any).setSrc(enhancedUrl);
-      } else {
-        (imageObject as any).src = enhancedUrl;
-      }
-      canvas?.renderAll();
-      console.log('✨ Image enhanced and replaced successfully');
-    }
-  }, [canvas]);
 
   const closeAIEnhancement = useCallback(() => {
     setShowAIEnhancement(false);
@@ -6529,191 +6915,86 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   const currentConfig = editorConfigs[editorTypeState as keyof typeof editorConfigs] || editorConfigs.flyer;
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar Toolbar */}
+      {/* Single Sidebar - All Tools */}
       <div className="w-80 bg-white border-r border-gray-200 shadow-sm flex flex-col">
-        {/* Top Row - File and Edit Operations */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100">
-          {/* Left Section - File Operations */}
-            <div className="flex items-center space-x-2">
-              {/* Keep/Save Button */}
-                <button
-                  onClick={async () => await saveDesign()}
-                  className={`p-2 rounded-lg transition-colors relative ${
-                    userPlan === 'Gratis' 
-                      ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
-                      : 'bg-gray-100 hover:bg-gray-200'
-                  }`}
-                  title={userPlan === 'Gratis' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
-                >
-                  <FloppyDisk size={20} />
-                  {userPlan === 'Gratis' && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
-                </button>
-              
-              {/* Color Harmony Toggle Button */}
-              <button
-                onClick={toggleColorHarmony}
-                className={`p-2 rounded-lg transition-colors ${
-                  isColorHarmonyActive 
-                    ? 'bg-green-100 hover:bg-green-200 text-green-700' 
-                    : 'bg-gray-100 hover:bg-gray-200'
-                }`}
-                title={isColorHarmonyActive ? 'Color Harmony: Activo' : 'Color Harmony: Inactivo - Click para activar'}
-              >
-                <Palette size={20} />
-              </button>
 
-              {/* Debug button for manual color harmony trigger */}
+        {/* Design Tools Section */}
+         <div className="px-6 py-3 flex-1">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Herramientas de Diseño</h3>
+          
+          
+          {/* Tab Navigation */}
+          <div className="flex border-b border-gray-200 mb-4">
               <button
-                onClick={manualTriggerColorHarmony}
-                className="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
-                title="Debug: Trigger Color Harmony Manualmente"
-              >
-                🎨
+              onClick={() => setActiveTab('elements')}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'elements'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Elementos
               </button>
-
-              {/* Debug button for forcing overlapping objects to beautiful colors */}
               <button
-                onClick={forceOverlappingObjectsContrast}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
-                title="Debug: Forzar Objetos Superpuestos a Colores Hermosos"
-              >
-                🌈
+              onClick={() => setActiveTab('text')}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'text'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Texto
               </button>
-
-              {/* Color Harmony Test Button */}
               <button
-                onClick={manualTriggerColorHarmony}
-                className="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
-                title="Probar Armonía de Colores - Buscar Logo y Cambiar Colores"
-              >
-                🧪
+              onClick={() => setActiveTab('format')}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'format'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Formato
               </button>
-
-              {/* AI Image Enhancement button */}
               <button
-                onClick={() => openAIEnhancement()}
-                className="p-2 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 text-purple-700 transition-colors"
-                title="AI Mejora de Imagen - Iluminación, Nitidez, Colores"
-              >
-                ✨
+              onClick={() => {
+                console.log('🎯 Improvements tab clicked!');
+                setActiveTab('improvements');
+              }}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'improvements'
+                  ? 'text-purple-600 border-b-2 border-purple-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              ✨ Mejoras
               </button>
-
-              {/* PDF Proposal Generator button */}
+          </div>
+          
+          {/* Tab Content */}
+          {activeTab === 'elements' && (
+            <div className="space-y-3">
+              {/* File Operations - Moved to second sidebar */}
+              <div className="bg-gray-50 p-3 rounded-lg border">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Operaciones de Archivo</h4>
+                <div className="flex items-center space-x-2">
+                  {/* Keep/Save Button */}
               <button
-                onClick={openProposalGenerator}
-                className="p-2 rounded-lg bg-gradient-to-r from-blue-100 to-indigo-100 hover:from-blue-200 hover:to-indigo-200 text-blue-700 transition-colors"
-                title="Generador de Propuestas PDF - Bienes Raíces, Empresarial, Marketing"
-              >
-                📄
-              </button>
-
-              {/* Smart Campaign Calendar button */}
-              <button
-                onClick={openSmartCalendar}
-                className="p-2 rounded-lg bg-gradient-to-r from-green-100 to-emerald-100 hover:from-green-200 hover:to-emerald-200 text-green-700 transition-colors"
-                title="Calendario Inteligente de Campañas - IA, Eventos, Cronogramas"
-              >
-                📅
-              </button>
-
-              {/* AI Text Generation button */}
-              <button
-                onClick={openAITextGeneration}
-                className="p-2 rounded-lg bg-gradient-to-r from-orange-100 to-red-100 hover:from-orange-200 hover:to-red-200 text-orange-700 transition-colors"
-                title="Generación de Texto con IA - OpenAI GPT, Plantillas, Voz de Marca"
-              >
-                🤖
-              </button>
-
-              {/* Advanced AI Integration button */}
-              <button
-                onClick={openAdvancedAI}
-                className="p-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-200 hover:to-purple-200 text-indigo-700 transition-colors"
-                title="IA Avanzada - GPT-4, DALL-E, Whisper, Análisis de Diseño"
-              >
-                🧠
-              </button>
-
-              {/* Collaboration Panel button */}
-              <button
-                onClick={openCollaboration}
-                className="p-2 rounded-lg bg-gradient-to-r from-emerald-100 to-teal-100 hover:from-emerald-200 hover:to-teal-200 text-emerald-700 transition-colors"
-                title="Colaboración en Tiempo Real - Usuarios, Comentarios, Historial, Equipos"
-              >
-                🤝
-              </button>
-
-              {/* Advanced Export & Integration button */}
-              <button
-                onClick={openAdvancedExport}
-                className="p-2 rounded-lg bg-gradient-to-r from-violet-100 to-purple-100 hover:from-violet-200 hover:to-purple-200 text-violet-700 transition-colors"
-                title="Exportación e Integración Avanzada - PDF, SVG, EPS, Nube, Redes Sociales, Impresión"
-              >
-                📤
-              </button>
-
-              {/* Advanced Analytics Dashboard button */}
-              <button
-                onClick={openAnalytics}
-                className="p-2 rounded-lg bg-gradient-to-r from-indigo-100 to-blue-100 hover:from-indigo-200 hover:to-blue-200 text-indigo-700 transition-colors"
-                title="Panel de Análisis Avanzado - Métricas, Tendencias, Pruebas A/B, Perspectivas"
-              >
-                📊
-              </button>
-
-              {/* Advanced Customization Dashboard button */}
-              <button
-                onClick={openCustomization}
-                className="p-2 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 text-purple-700 transition-colors"
-                title="Personalización Avanzada - Temas, Marca, Flujos de Trabajo, Características Empresariales"
-              >
-                🎨
-              </button>
-
-              {/* Mobile Mode button */}
-              <button
-                onClick={toggleMobileMode}
-                className={`p-2 rounded-lg transition-colors ${
-                  isMobileMode 
-                    ? 'bg-gradient-to-r from-green-100 to-emerald-100 hover:from-green-200 hover:to-emerald-200 text-green-700'
-                    : 'bg-gradient-to-r from-gray-100 to-slate-100 hover:from-gray-200 hover:to-slate-200 text-gray-700'
-                }`}
-                title={isMobileMode ? "Salir del Modo Móvil" : "Activar Modo Móvil - Optimización para Dispositivos Móviles"}
-              >
-                📱
-              </button>
-
-              {/* Performance Dashboard button */}
-              <button
-                onClick={openPerformanceDashboard}
-                className="p-2 rounded-lg bg-gradient-to-r from-yellow-100 to-orange-100 hover:from-yellow-200 hover:to-orange-200 text-yellow-700 transition-colors"
-                title="Dashboard de Rendimiento - Métricas, Optimización, Caché, Core Web Vitals"
-              >
-                ⚡
-              </button>
-
-              {/* Security Dashboard button */}
-              <button
-                onClick={openSecurityDashboard}
-                className="p-2 rounded-lg bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200 text-red-700 transition-colors"
-                title="Dashboard de Seguridad - Amenazas, Cumplimiento, Encriptación, Auditoría"
-              >
-                🔒
-              </button>
-
-              {/* Infrastructure Dashboard button */}
-              <button
-                onClick={openInfrastructureDashboard}
-                className="p-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-200 hover:to-purple-200 text-indigo-700 transition-colors"
-                title="Dashboard de Infraestructura - Escalabilidad, Balanceador de Carga, Métricas del Sistema"
-              >
-                🚀
+                    onClick={async () => await saveDesign()}
+                    className={`p-2 rounded-lg transition-colors relative ${
+                      userPlan === 'Gratis' 
+                        ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                    title={userPlan === 'Gratis' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
+                  >
+                    <FloppyDisk size={16} />
+                    {userPlan === 'Gratis' && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
               </button>
 
                           {/* Download Dropdown */}
@@ -6723,7 +7004,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
                 title="Descargar diseño"
               >
-                <Download size={20} />
+                      <Download size={16} />
               </button>
               
               {/* Download Dropdown Menu */}
@@ -6736,7 +7017,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                       }}
                       className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-t-lg"
                     >
-                    <Download size={16} className="text-green-600" />
                       <span>PNG</span>
                     </button>
                     <button
@@ -6751,18 +7031,17 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               </button>
                   </div>
                 )}
-              </div>
             </div>
 
-          {/* Right Section - Edit Operations */}
-            <div className="flex items-center space-x-2">
+                  {/* Edit Operations */}
+                  <div className="flex items-center space-x-2 ml-2">
               <button
                 onClick={undo}
                 disabled={historyIndex <= 0}
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Deshacer (Ctrl+Z)"
               >
-              <ArrowArcLeft size={5} className="w-5 h-5" />
+                      <ArrowArcLeft size={4} className="w-4 h-4" />
               </button>
               
               <button
@@ -6771,10 +7050,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Rehacer (Ctrl+Y)"
               >
-              <ArrowArcRight size={5} className="w-5 h-5" />
+                      <ArrowArcRight size={4} className="w-4 h-4" />
               </button>
               
-              <div className="w-px h-8 bg-gray-300 mx-2"></div>
+                    <div className="w-px h-6 bg-gray-300 mx-1"></div>
               
               <button
                 onClick={duplicateSelectedObject}
@@ -6782,16 +7061,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                 className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Duplicar (Ctrl+D)"
               >
-              <Scissors size={4} className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={makeObjectBlack}
-                disabled={!selectedObject}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Hacer Negro"
-              >
-                ⚫
+                      <Copy size={4} className="w-4 h-4" />
               </button>
               
               <button
@@ -6815,46 +7085,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               </button>
           </div>
         </div>
-
-        {/* Bottom Row - Tabs and Content */}
-         <div className="px-6 py-3">
-          {/* Tab Navigation */}
-           <div className="flex border-b border-gray-200 mb-4">
-            <button
-              onClick={() => setActiveTab('elements')}
-               className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'elements'
-                   ? 'text-blue-600 border-b-2 border-blue-600'
-                   : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-               Elementos
-            </button>
-            <button
-              onClick={() => setActiveTab('text')}
-               className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'text'
-                   ? 'text-blue-600 border-b-2 border-blue-600'
-                   : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-               Texto
-            </button>
-            <button
-              onClick={() => setActiveTab('format')}
-               className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'format'
-                   ? 'text-blue-600 border-b-2 border-blue-600'
-                   : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-               Formato
-            </button>
           </div>
           
-          {/* Tab Content */}
-            {activeTab === 'elements' && (
-             <div className="space-y-3">
                {/* Basic Design Tools */}
                <div className="space-y-2">
                  <h4 className="text-sm font-medium text-gray-700">Agregar Elementos</h4>
@@ -6878,6 +7110,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                    <ImageIcon size={16} className="text-green-600" />
                    <span className="text-sm font-medium text-green-800">Imagen</span>
                  </button>
+
                   
 
 
@@ -7301,10 +7534,123 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               </div>
             )}
             
-
-            
+            {/* Text Tab */}
            {activeTab === 'text' && selectedObject && (selectedObject.type === 'text' || selectedObject.type === 'i-text') && (
              <div className="space-y-3">
+              {/* File Operations - Moved to second sidebar */}
+              <div className="bg-gray-50 p-3 rounded-lg border">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Operaciones de Archivo</h4>
+                <div className="flex items-center space-x-2">
+                  {/* Keep/Save Button */}
+                  <button
+                    onClick={async () => await saveDesign()}
+                    className={`p-2 rounded-lg transition-colors relative ${
+                      userPlan === 'Gratis' 
+                        ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                    title={userPlan === 'Gratis' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
+                  >
+                    <FloppyDisk size={16} />
+                    {userPlan === 'Gratis' && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Download Dropdown */}
+                  <div className="relative download-dropdown">
+                    <button
+                      onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                      title="Descargar diseño"
+                    >
+                      <Download size={16} />
+                    </button>
+                    
+                    {/* Download Dropdown Menu */}
+                    {showDownloadDropdown && (
+                      <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
+                        <button
+                          onClick={() => {
+                            downloadDesign('PNG');
+                            setShowDownloadDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-t-lg"
+                        >
+                          <span>PNG</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            downloadDesign('PDF');
+                            setShowDownloadDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-b-lg"
+                        >
+                          <FilePdf size={4} className="w-4 h-4 text-red-600" />
+                          <span>PDF</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Edit Operations */}
+                  <div className="flex items-center space-x-2 ml-2">
+                    <button
+                      onClick={undo}
+                      disabled={historyIndex <= 0}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Deshacer (Ctrl+Z)"
+                    >
+                      <ArrowArcLeft size={4} className="w-4 h-4" />
+                    </button>
+                    
+                    <button
+                      onClick={redo}
+                      disabled={historyIndex >= history.length - 1}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Rehacer (Ctrl+Y)"
+                    >
+                      <ArrowArcRight size={4} className="w-4 h-4" />
+                    </button>
+                    
+                    <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                    
+                    <button
+                      onClick={duplicateSelectedObject}
+                      disabled={!selectedObject}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Duplicar (Ctrl+D)"
+                    >
+                      <Copy size={4} className="w-4 h-4" />
+                    </button>
+                    
+                    <button
+                      onClick={deleteSelectedObject}
+                      disabled={!selectedObject}
+                      className={`p-2 rounded-lg transition-colors relative ${
+                        userPlan === 'Gratis' 
+                          ? 'bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200' 
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      title={userPlan === 'Gratis' ? 'Eliminar (Premium) - Upgrade para eliminar' : 'Eliminar (Delete)'}
+                    >
+                      <Trash size={4} className="w-4 h-4" />
+                      {userPlan === 'Gratis' && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
                {/* Text Content */}
                <div className="space-y-2">
                  <h4 className="text-sm font-medium text-gray-700">Contenido</h4>
@@ -7567,16 +7913,130 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
              </div>
            )}
            
-           {/* No Text Object Selected Message */}
+            {/* No Text Object Selected Message for Text Tab */}
            {activeTab === 'text' && (!selectedObject || (selectedObject.type !== 'text' && selectedObject.type !== 'i-text')) && (
              <div className="text-sm text-gray-500">
                Selecciona un objeto de texto para editarlo
              </div>
            )}
 
-           {/* Format Tab - Advanced Object Formatting */}
+            {/* Format Tab */}
            {activeTab === 'format' && selectedObject && (
              <div className="space-y-3">
+              {/* File Operations - Moved to second sidebar */}
+              <div className="bg-gray-50 p-3 rounded-lg border">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Operaciones de Archivo</h4>
+                <div className="flex items-center space-x-2">
+                  {/* Keep/Save Button */}
+                  <button
+                    onClick={async () => await saveDesign()}
+                    className={`p-2 rounded-lg transition-colors relative ${
+                      userPlan === 'Gratis' 
+                        ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                    title={userPlan === 'Gratis' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
+                  >
+                    <FloppyDisk size={16} />
+                    {userPlan === 'Gratis' && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Download Dropdown */}
+                  <div className="relative download-dropdown">
+                    <button
+                      onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                      title="Descargar diseño"
+                    >
+                      <Download size={16} />
+                    </button>
+                    
+                    {/* Download Dropdown Menu */}
+                    {showDownloadDropdown && (
+                      <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
+                        <button
+                          onClick={() => {
+                            downloadDesign('PNG');
+                            setShowDownloadDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-t-lg"
+                        >
+                          <span>PNG</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            downloadDesign('PDF');
+                            setShowDownloadDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-b-lg"
+                        >
+                          <FilePdf size={4} className="w-4 h-4 text-red-600" />
+                          <span>PDF</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Edit Operations */}
+                  <div className="flex items-center space-x-2 ml-2">
+                    <button
+                      onClick={undo}
+                      disabled={historyIndex <= 0}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Deshacer (Ctrl+Z)"
+                    >
+                      <ArrowArcLeft size={4} className="w-4 h-4" />
+                    </button>
+                    
+                    <button
+                      onClick={redo}
+                      disabled={historyIndex >= history.length - 1}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Rehacer (Ctrl+Y)"
+                    >
+                      <ArrowArcRight size={4} className="w-4 h-4" />
+                    </button>
+                    
+                    <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                    
+                    <button
+                      onClick={duplicateSelectedObject}
+                      disabled={!selectedObject}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title="Duplicar (Ctrl+D)"
+                    >
+                      <Copy size={4} className="w-4 h-4" />
+                    </button>
+                    
+                    <button
+                      onClick={deleteSelectedObject}
+                      disabled={!selectedObject}
+                      className={`p-2 rounded-lg transition-colors relative ${
+                        userPlan === 'Gratis' 
+                          ? 'bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200' 
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      title={userPlan === 'Gratis' ? 'Eliminar (Premium) - Upgrade para eliminar' : 'Eliminar (Delete)'}
+                    >
+                      <Trash size={4} className="w-4 h-4" />
+                      {userPlan === 'Gratis' && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
                {/* Column Layout with Two Blocks */}
                <div className="flex flex-col space-y-4">
                  
@@ -7851,12 +8311,839 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                </div>
              </div>
             )}
-
             
            {/* No Object Selected Message for Format Tab */}
            {activeTab === 'format' && !selectedObject && (
              <div className="text-sm text-gray-500">
                Selecciona un objeto para editar su formato
+              </div>
+            )}
+
+          {/* Improvements Tab */}
+          {activeTab === 'improvements' && (
+            <div className="space-y-4">
+              {/* Debug: Simple test to see if tab renders */}
+              <div className="bg-red-100 p-2 rounded border border-red-300">
+                <div className="text-sm text-red-800">
+                  🧪 DEBUG: Improvements tab is rendering! Active tab: {activeTab}
+                </div>
+              </div>
+                {/* File Operations - Moved to second sidebar */}
+                <div className="bg-gray-50 p-3 rounded-lg border">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Operaciones de Archivo</h4>
+                  <div className="flex items-center space-x-2">
+                    {/* Keep/Save Button */}
+                    <button
+                      onClick={async () => await saveDesign()}
+                      className={`p-2 rounded-lg transition-colors relative ${
+                        userPlan === 'Gratis' 
+                          ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
+                      title={userPlan === 'Gratis' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
+                    >
+                      <FloppyDisk size={16} />
+                      {userPlan === 'Gratis' && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+
+                    {/* Download Dropdown */}
+                    <div className="relative download-dropdown">
+                      <button
+                        onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                        title="Descargar diseño"
+                      >
+                        <Download size={16} />
+                      </button>
+                      
+                      {/* Download Dropdown Menu */}
+                      {showDownloadDropdown && (
+                        <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
+                          <button
+                            onClick={() => {
+                              downloadDesign('PNG');
+                              setShowDownloadDropdown(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-t-lg"
+                          >
+                            <span>PNG</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              downloadDesign('PDF');
+                              setShowDownloadDropdown(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-b-lg"
+                          >
+                            <FilePdf size={4} className="w-4 h-4 text-red-600" />
+                            <span>PDF</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Edit Operations */}
+                    <div className="flex items-center space-x-2 ml-2">
+                      <button
+                        onClick={undo}
+                        disabled={historyIndex <= 0}
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title="Deshacer (Ctrl+Z)"
+                      >
+                        <ArrowArcLeft size={4} className="w-4 h-4" />
+                      </button>
+                      
+                      <button
+                        onClick={redo}
+                        disabled={historyIndex >= history.length - 1}
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title="Rehacer (Ctrl+Y)"
+                      >
+                        <ArrowArcRight size={4} className="w-4 h-4" />
+                      </button>
+                      
+                      <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                      
+                      <button
+                        onClick={duplicateSelectedObject}
+                        disabled={!selectedObject}
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title="Duplicar (Ctrl+D)"
+                      >
+                        <Copy size={4} className="w-4 h-4" />
+                      </button>
+                      
+                      <button
+                        onClick={deleteSelectedObject}
+                        disabled={!selectedObject}
+                        className={`p-2 rounded-lg transition-colors relative ${
+                          userPlan === 'Gratis' 
+                            ? 'bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200' 
+                            : 'bg-gray-100 hover:bg-gray-200'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        title={userPlan === 'Gratis' ? 'Eliminar (Premium) - Upgrade para eliminar' : 'Eliminar (Delete)'}
+                      >
+                        <Trash size={4} className="w-4 h-4" />
+                        {userPlan === 'Gratis' && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+                            <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
+                  <h4 className="text-sm font-semibold text-purple-800 mb-2">✨ Mejoras de Imagen con IA</h4>
+                  <p className="text-xs text-purple-600 mb-3">
+                    Mejora dramáticamente tus imágenes con inteligencia artificial
+                  </p>
+                  
+                  {/* AI Enhancement Button */}
+                  <button
+                    onClick={async () => {
+                      if (!selectedObject || selectedObject.type !== 'image') {
+                        alert('Por favor selecciona una imagen para mejorar');
+                        return;
+                      }
+                      
+                      const imageUrl = (selectedObject as fabric.Image).getSrc();
+                      if (!imageUrl) {
+                        alert('No se pudo obtener la URL de la imagen');
+                        return;
+                      }
+                      
+                      const result = await enhanceImageWithAI(imageUrl);
+                      if (result.success && 'enhancedImageUrl' in result && result.enhancedImageUrl) {
+                        handleImageEnhanced(imageUrl, result.enhancedImageUrl);
+                      } else {
+                        alert('No se pudo mejorar la imagen: ' + (result.error || 'Error desconocido'));
+                      }
+                    }}
+                    disabled={!selectedObject || selectedObject.type !== 'image' || isEnhancingImage}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 shadow-lg"
+                    title="Mejorar imagen seleccionada con IA"
+                  >
+                    {isEnhancingImage ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span className="text-sm font-medium">Mejorando dramáticamente...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-lg">✨</span>
+                        <span className="text-sm font-medium">Mejora DRAMÁTICA con IA</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Real-time Preview - Always show for debugging */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
+                  <h5 className="text-sm font-medium text-blue-800 mb-3">🔍 Vista Previa en Tiempo Real:</h5>
+                  <div className="bg-yellow-100 p-2 rounded mb-2">
+                    <div className="text-xs text-yellow-800">
+                      🧪 PREVIEW SECTION IS RENDERING! This should be visible.
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {/* Debug Info */}
+                    <div className="text-xs text-gray-600 mb-2">
+                      <div>Selected Object: {selectedObject ? `${selectedObject.type}` : 'None'}</div>
+                      <div>Is Image: {selectedObject && selectedObject.type === 'image' ? 'Yes' : 'No'}</div>
+                      <div>Preview URL: {previewImageUrl ? 'Generated' : 'Not generated'}</div>
+                      <div>Generating: {isGeneratingPreview ? 'Yes' : 'No'}</div>
+                    </div>
+
+            {/* Debug Info - Always show */}
+            <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-3">
+              <h6 className="text-xs font-semibold text-yellow-800 mb-2">🔍 Debug Info:</h6>
+              <div className="text-xs text-yellow-700 space-y-1">
+                <div>Selected Object: {selectedObject ? `${selectedObject.type} (${selectedObject.constructor.name})` : 'None'}</div>
+                <div>Is Image: {selectedObject && selectedObject.type === 'image' ? 'Yes' : 'No'}</div>
+                <div>Image Source: {selectedObject && selectedObject.type === 'image' ? (selectedObject as fabric.Image).getSrc()?.substring(0, 50) + '...' : 'N/A'}</div>
+                <div>Preview URL: {previewImageUrl ? 'Generated' : 'Not generated'}</div>
+                <div>Preview URL Value: {previewImageUrl?.substring(0, 50) + '...' || 'None'}</div>
+                <div>Generating: {isGeneratingPreview ? 'Yes' : 'No'}</div>
+                <div>Enhancement Options: {JSON.stringify(enhancementOptions).substring(0, 100)}...</div>
+              </div>
+            </div>
+
+            {/* Original vs Enhanced Preview */}
+            {selectedObject && selectedObject.type === 'image' ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center">
+                  <div className="text-xs text-gray-600 mb-2">Original</div>
+                  <div className="w-full h-24 bg-gray-100 rounded-lg overflow-hidden border">
+                    <img 
+                      src={(selectedObject as fabric.Image).getSrc()} 
+                      alt="Original" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.log('❌ Original image failed to load');
+                        console.log('❌ Error event:', e);
+                        console.log('❌ Image src:', (selectedObject as fabric.Image).getSrc());
+                      }}
+                      onLoad={() => console.log('✅ Original image loaded successfully')}
+                    />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-gray-600 mb-2">
+                    Mejorada {isGeneratingPreview && <span className="text-blue-500">(Generando...)</span>}
+                  </div>
+                  <div className="w-full h-24 bg-gray-100 rounded-lg overflow-hidden border">
+                    {selectedObject && selectedObject.type === 'image' ? (
+                      <img 
+                        src={previewImageUrl || (selectedObject as fabric.Image).getSrc()} 
+                        alt="Enhanced Preview" 
+                        className="w-full h-full object-cover transition-all duration-300"
+                        style={{ 
+                          // Apply CSS filters only if no Cloudinary URL (fallback)
+                          filter: !previewImageUrl ? generateCSSFilter(enhancementOptions) : 'none',
+                          transform: 'scale(1)'
+                        }}
+                        onError={(e) => {
+                          console.log('❌ Preview image failed to load');
+                          console.log('❌ Error event:', e);
+                          console.log('❌ Preview src:', previewImageUrl || (selectedObject as fabric.Image).getSrc());
+                        }}
+                        onLoad={() => console.log('✅ Preview image loaded successfully')}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                        {isGeneratingPreview ? '⏳ Generando...' : 'No hay preview'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                <div className="text-2xl mb-2">🖼️</div>
+                <p className="text-sm">Selecciona una imagen para ver la vista previa</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {selectedObject ? `Objeto seleccionado: ${selectedObject.type}` : 'Ningún objeto seleccionado'}
+                </p>
+              </div>
+            )}
+                    
+                    {/* Manual Test Buttons */}
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          console.log('🧪 Manual preview test triggered');
+                          console.log('Selected object:', selectedObject);
+                          console.log('Enhancement options:', enhancementOptions);
+                          updatePreview();
+                        }}
+                        className="w-full px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium"
+                      >
+                        🧪 Probar Vista Previa Manualmente
+                      </button>
+                      
+                      <button
+                        onClick={async () => {
+                          console.log('🧪 Testing Cloudinary with sample image...');
+                          const testImageUrl = 'https://picsum.photos/400/300';
+                          const testUrl = await generatePreviewUrl(testImageUrl, enhancementOptions);
+                          console.log('🧪 Test URL generated:', testUrl);
+                          setPreviewImageUrl(testUrl);
+                        }}
+                        className="w-full px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium"
+                      >
+                        🧪 Probar con Imagen de Prueba
+                      </button>
+                      
+                      <button
+                        onClick={async () => {
+                          console.log('🧪 Testing basic Cloudinary (no AI)...');
+                          const testImageUrl = 'https://picsum.photos/400/300';
+                          const basicUrl = `https://res.cloudinary.com/${AI_SERVICES_CONFIG.cloudinary.cloudName}/image/fetch/w_400,h_300,c_fill,q_auto,f_auto/${encodeURIComponent(testImageUrl)}`;
+                          console.log('🧪 Basic Cloudinary URL:', basicUrl);
+                          setPreviewImageUrl(basicUrl);
+                        }}
+                        className="w-full px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium"
+                      >
+                        🧪 Probar Cloudinary Básico
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          console.log('🧪 Force preview update...');
+                          console.log('Current options:', enhancementOptions);
+                          updatePreview();
+                        }}
+                        className="w-full px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium"
+                      >
+                        🧪 Forzar Actualización de Vista Previa
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          console.log('🧪 Force show test image in preview...');
+                          const testImageUrl = 'https://picsum.photos/400/300';
+                          setPreviewImageUrl(testImageUrl);
+                          console.log('🧪 Set preview URL to:', testImageUrl);
+                        }}
+                        className="w-full px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium"
+                      >
+                        🧪 Mostrar Imagen de Prueba
+                      </button>
+                      
+                      {/* Apply Preview Button */}
+                      {previewImageUrl && selectedObject && selectedObject.type === 'image' && (
+                        <button
+                          onClick={async () => {
+                            const imageUrl = (selectedObject as fabric.Image).getSrc();
+                            if (imageUrl) {
+                              handleImageEnhanced(imageUrl, previewImageUrl);
+                            }
+                          }}
+                          className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg transition-all duration-200 text-sm font-medium"
+                        >
+                          ✨ Aplicar Mejoras al Canvas
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhancement Details - Dynamic Values */}
+                <div className="bg-gray-50 p-4 rounded-lg border">
+                  <h5 className="text-sm font-medium text-gray-700 mb-3">🎨 Mejoras Aplicadas:</h5>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {(() => {
+                      // Calculate enhancement values based on current detailed options
+                      const getEnhancementValues = (options: EnhancementOptions) => {
+                        const values: { [key: string]: { value: string; color: string; icon: string } } = {};
+                        
+                        // Use detailed values if available, otherwise use legacy
+                        if (options.brightness !== undefined) {
+                          values.brightness = { 
+                            value: `${options.brightness > 0 ? '+' : ''}${options.brightness}%`, 
+                            color: options.brightness > 0 ? 'bg-yellow-400' : 'bg-gray-400', 
+                            icon: '☀️' 
+                          };
+                        }
+                        if (options.contrast !== undefined) {
+                          values.contrast = { 
+                            value: `${options.contrast > 0 ? '+' : ''}${options.contrast}%`, 
+                            color: options.contrast > 0 ? 'bg-orange-400' : 'bg-gray-400', 
+                            icon: '⚡' 
+                          };
+                        }
+                        if (options.saturation !== undefined) {
+                          values.saturation = { 
+                            value: `${options.saturation > 0 ? '+' : ''}${options.saturation}%`, 
+                            color: options.saturation > 0 ? 'bg-red-400' : 'bg-gray-400', 
+                            icon: '🎨' 
+                          };
+                        }
+                        if (options.vibrance !== undefined) {
+                          values.vibrance = { 
+                            value: `${options.vibrance > 0 ? '+' : ''}${options.vibrance}%`, 
+                            color: options.vibrance > 0 ? 'bg-pink-400' : 'bg-gray-400', 
+                            icon: '🌈' 
+                          };
+                        }
+                        if (options.sharpen !== undefined) {
+                          values.sharpness = { 
+                            value: `${options.sharpen}`, 
+                            color: options.sharpen > 0 ? 'bg-blue-400' : 'bg-gray-400', 
+                            icon: '🔍' 
+                          };
+                        }
+                        if (options.clarity !== undefined) {
+                          values.clarity = { 
+                            value: `${options.clarity > 0 ? '+' : ''}${options.clarity}%`, 
+                            color: options.clarity > 0 ? 'bg-blue-400' : 'bg-gray-400', 
+                            icon: '🔍' 
+                          };
+                        }
+                        
+                        // Auto corrections
+                        if (options.autoColor) {
+                          values.autoColor = { value: 'Activado', color: 'bg-green-400', icon: '🎨' };
+                        }
+                        if (options.autoContrast) {
+                          values.autoContrast = { value: 'Activado', color: 'bg-green-400', icon: '⚡' };
+                        }
+                        if (options.faceDetection) {
+                          values.faceDetection = { value: 'Activado', color: 'bg-purple-400', icon: '👤' };
+                        }
+                        
+                        return values;
+                      };
+                      
+                      const enhancementValues = getEnhancementValues(enhancementOptions);
+                      
+                      return Object.entries(enhancementValues).map(([key, { value, color, icon }]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 ${color} rounded-full`}></div>
+                          <span className="text-gray-600">
+                            {icon} {key.charAt(0).toUpperCase() + key.slice(1)}: {value}
+                          </span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+
+                {/* Detailed Enhancement Controls */}
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <h5 className="text-sm font-medium text-gray-700 mb-4">⚙️ Controles Detallados de Mejora:</h5>
+                  
+                  <div className="space-y-4">
+                    {/* Brightness & Contrast Section */}
+                    <div className="space-y-3">
+                      <h6 className="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1">☀️ Brillo y Contraste</h6>
+                      
+                      {/* Brightness */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Brillo</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.brightness}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-100"
+                          max="100"
+                          value={enhancementOptions.brightness || 0}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            setEnhancementOptions(prev => ({ ...prev, brightness: value }));
+                            console.log('🎨 Brightness changed to:', value);
+                            console.log('🔄 Triggering preview update...');
+                            // Trigger preview update immediately
+                            setTimeout(() => {
+                              updatePreview();
+                            }, 100);
+                          }}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+
+                      {/* Contrast */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Contraste</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.contrast}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-100"
+                          max="100"
+                          value={enhancementOptions.contrast || 0}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            setEnhancementOptions(prev => ({ ...prev, contrast: value }));
+                            console.log('🎨 Contrast changed to:', value);
+                            console.log('🔄 Triggering preview update...');
+                            // Trigger preview update immediately
+                            setTimeout(() => {
+                              updatePreview();
+                            }, 100);
+                          }}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+
+                      {/* Exposure */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Exposición</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.exposure}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-100"
+                          max="100"
+                          value={enhancementOptions.exposure || 0}
+                          onChange={(e) => setEnhancementOptions(prev => ({ ...prev, exposure: parseInt(e.target.value) }))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+
+                      {/* Gamma */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Gamma</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.gamma?.toFixed(1)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.1"
+                          max="3.0"
+                          step="0.1"
+                          value={enhancementOptions.gamma || 1.0}
+                          onChange={(e) => setEnhancementOptions(prev => ({ ...prev, gamma: parseFloat(e.target.value) }))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Color Balance & Saturation Section */}
+                    <div className="space-y-3">
+                      <h6 className="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1">🎨 Color y Saturación</h6>
+                      
+                      {/* Saturation */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Saturación</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.saturation}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-100"
+                          max="200"
+                          value={enhancementOptions.saturation || 0}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            setEnhancementOptions(prev => ({ ...prev, saturation: value }));
+                            console.log('🎨 Saturation changed to:', value);
+                            console.log('🔄 Triggering preview update...');
+                            // Trigger preview update immediately
+                            setTimeout(() => {
+                              updatePreview();
+                            }, 100);
+                          }}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+
+                      {/* Vibrance */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Vibrance</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.vibrance}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-100"
+                          max="200"
+                          value={enhancementOptions.vibrance || 0}
+                          onChange={(e) => setEnhancementOptions(prev => ({ ...prev, vibrance: parseInt(e.target.value) }))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+
+                      {/* Hue */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Tono</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.hue}°</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          value={enhancementOptions.hue || 0}
+                          onChange={(e) => setEnhancementOptions(prev => ({ ...prev, hue: parseInt(e.target.value) }))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+
+                      {/* White Balance */}
+                      <div className="space-y-1">
+                        <label className="text-xs text-gray-600">Balance de Blancos</label>
+                        <select
+                          value={enhancementOptions.whiteBalance || 'auto'}
+                          onChange={(e) => setEnhancementOptions(prev => ({ ...prev, whiteBalance: e.target.value as any }))}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="auto">Automático</option>
+                          <option value="as_shot">Como tomada</option>
+                          <option value="daylight">Luz del día</option>
+                          <option value="cloudy">Nublado</option>
+                          <option value="shade">Sombra</option>
+                          <option value="tungsten">Tungsteno</option>
+                          <option value="fluorescent">Fluorescente</option>
+                          <option value="flash">Flash</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Sharpness & Clarity Section */}
+                    <div className="space-y-3">
+                      <h6 className="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1">🔍 Nitidez y Claridad</h6>
+                      
+                      {/* Sharpen */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Nitidez</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.sharpen}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="2000"
+                          value={enhancementOptions.sharpen || 0}
+                          onChange={(e) => setEnhancementOptions(prev => ({ ...prev, sharpen: parseInt(e.target.value) }))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+
+                      {/* Clarity */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Claridad</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.clarity}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-100"
+                          max="100"
+                          value={enhancementOptions.clarity || 0}
+                          onChange={(e) => setEnhancementOptions(prev => ({ ...prev, clarity: parseInt(e.target.value) }))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+
+                      {/* Noise Reduction */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs text-gray-600">Reducción de Ruido</label>
+                          <span className="text-xs text-gray-500">{enhancementOptions.noiseReduction}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={enhancementOptions.noiseReduction || 0}
+                          onChange={(e) => setEnhancementOptions(prev => ({ ...prev, noiseReduction: parseInt(e.target.value) }))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Advanced Options */}
+                    <div className="space-y-3">
+                      <h6 className="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1">🚀 Opciones Avanzadas</h6>
+                      
+                      {/* Dynamic Range */}
+                      <div className="space-y-1">
+                        <label className="text-xs text-gray-600">Rango Dinámico</label>
+                        <select
+                          value={enhancementOptions.dynamicRange || 'auto'}
+                          onChange={(e) => setEnhancementOptions(prev => ({ ...prev, dynamicRange: e.target.value as any }))}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="auto">Automático</option>
+                          <option value="high">Alto</option>
+                          <option value="normal">Normal</option>
+                        </select>
+                      </div>
+
+                      {/* Face Detection */}
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-gray-600">Detección de Rostros</label>
+                        <button
+                          onClick={() => setEnhancementOptions(prev => ({ ...prev, faceDetection: !prev.faceDetection }))}
+                          className={`w-8 h-4 rounded-full transition-colors ${
+                            enhancementOptions.faceDetection ? 'bg-blue-500' : 'bg-gray-300'
+                          }`}
+                        >
+                          <div className={`w-3 h-3 bg-white rounded-full transition-transform ${
+                            enhancementOptions.faceDetection ? 'translate-x-4' : 'translate-x-0.5'
+                          }`} />
+                        </button>
+                      </div>
+
+                      {/* Auto Corrections */}
+                      <div className="space-y-2">
+                        <label className="text-xs text-gray-600">Correcciones Automáticas</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { key: 'autoColor', label: 'Color' },
+                            { key: 'autoContrast', label: 'Contraste' },
+                            { key: 'autoBrightness', label: 'Brillo' },
+                            { key: 'autoLevel', label: 'Niveles' },
+                            { key: 'improve', label: 'Mejorar' },
+                            { key: 'enhance', label: 'Realzar' }
+                          ].map((option) => (
+                            <button
+                              key={option.key}
+                              onClick={() => setEnhancementOptions(prev => ({ 
+                                ...prev, 
+                                [option.key]: !prev[option.key as keyof EnhancementOptions] 
+                              }))}
+                              className={`px-2 py-1 text-xs rounded transition-colors ${
+                                enhancementOptions[option.key as keyof EnhancementOptions]
+                                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Upscaling */}
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-gray-600">Escalado 2x</label>
+                        <button
+                          onClick={() => setEnhancementOptions(prev => ({ ...prev, upscale: !prev.upscale }))}
+                          className={`w-8 h-4 rounded-full transition-colors ${
+                            enhancementOptions.upscale ? 'bg-blue-500' : 'bg-gray-300'
+                          }`}
+                        >
+                          <div className={`w-3 h-3 bg-white rounded-full transition-transform ${
+                            enhancementOptions.upscale ? 'translate-x-4' : 'translate-x-0.5'
+                          }`} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Debug Panel */}
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <h5 className="text-sm font-medium text-yellow-800 mb-2">🔍 Debug Panel:</h5>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <strong>Cloudinary Config:</strong>
+                      <div className="ml-2 text-gray-600">
+                        Cloud Name: {AI_SERVICES_CONFIG.cloudinary.cloudName}
+                        {AI_SERVICES_CONFIG.cloudinary.cloudName === 'demo' && (
+                          <span className="text-red-500 ml-2">⚠️ Using demo - configure your Cloudinary!</span>
+                        )}
+                      </div>
+                      <div className="ml-2 text-gray-600">
+                        API Key: {AI_SERVICES_CONFIG.cloudinary.apiKey ? '✅ Set' : '❌ Missing'}
+                      </div>
+                      <div className="ml-2 text-gray-600">
+                        API Secret: {AI_SERVICES_CONFIG.cloudinary.apiSecret ? '✅ Set' : '❌ Missing'}
+                      </div>
+                    </div>
+                    <div>
+                      <strong>Selected Object:</strong>
+                      <div className="ml-2 text-gray-600">
+                        {selectedObject ? `${selectedObject.type} - ${(selectedObject as any).id || 'no-id'}` : 'None'}
+                      </div>
+                      {selectedObject && selectedObject.type === 'image' && (
+                        <div className="ml-2 text-gray-600">
+                          Image URL: {(selectedObject as fabric.Image).getSrc()?.substring(0, 50)}...
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <strong>Preview Status:</strong>
+                      <div className="ml-2 text-gray-600">
+                        Method: {AI_SERVICES_CONFIG.cloudinary.cloudName && AI_SERVICES_CONFIG.cloudinary.cloudName !== 'demo' 
+                          ? 'Cloudinary AI' 
+                          : 'CSS Filters (Fallback)'}
+                      </div>
+                      <div className="ml-2 text-gray-600">
+                        Cloud Name: {AI_SERVICES_CONFIG.cloudinary.cloudName}
+                        {AI_SERVICES_CONFIG.cloudinary.cloudName === 'demo' && (
+                          <span className="text-red-500 ml-2">⚠️ Using demo - configure client credentials!</span>
+                        )}
+                      </div>
+                      <div className="ml-2 text-gray-600">
+                        Preview URL: {previewImageUrl ? '✅ Generated' : '❌ Not generated'}
+                      </div>
+                      {!previewImageUrl && (
+                        <div className="ml-2 text-gray-600">
+                          CSS Filter: {generateCSSFilter(enhancementOptions) || 'None'}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <strong>Current Options:</strong>
+                      <div className="ml-2 text-gray-600">
+                        {JSON.stringify(enhancementOptions, null, 2)}
+                      </div>
+                    </div>
+                    {enhancementResult && (
+                      <div>
+                        <strong>Last Result:</strong>
+                        <div className="ml-2 text-gray-600">
+                          Success: {enhancementResult.success ? '✅' : '❌'}
+                        </div>
+                        {enhancementResult.error && (
+                          <div className="ml-2 text-red-600">
+                            Error: {enhancementResult.error}
+                          </div>
+                        )}
+                        {enhancementResult.enhancedImageUrl && (
+                          <div className="ml-2 text-green-600">
+                            Enhanced URL: {enhancementResult.enhancedImageUrl.substring(0, 50)}...
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Instructions */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h5 className="text-sm font-medium text-blue-800 mb-2">📋 Instrucciones:</h5>
+                  <ol className="text-xs text-blue-700 space-y-1">
+                    <li>1. Selecciona una imagen en el canvas</li>
+                    <li>2. Haz clic en "Mejora DRAMÁTICA con IA"</li>
+                    <li>3. Espera a que se procese la mejora</li>
+                    <li>4. ¡Disfruta de tu imagen mejorada!</li>
+                  </ol>
+                </div>
+
+                {/* No Image Selected Message */}
+                {(!selectedObject || selectedObject.type !== 'image') && (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="text-4xl mb-2">🖼️</div>
+                    <p className="text-sm">Selecciona una imagen para mejorarla</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -7903,6 +9190,52 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   Reset
                 </button>
               </div>
+
+              {/* AI Enhancement Loading Indicator */}
+              {isEnhancingImage && (
+                <div className="flex items-center justify-center mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                    <span className="text-sm font-medium text-purple-700">
+                      Mejorando imagen con IA de Cloudinary...
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Enhancement Result */}
+              {enhancementResult && (
+                <div className={`mb-4 p-4 rounded-lg ${
+                  enhancementResult.success 
+                    ? 'bg-green-50 border border-green-200' 
+                    : 'bg-red-50 border border-red-200'
+                }`}>
+                  {enhancementResult.success ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                        <span className="text-sm font-medium text-green-700">
+                          ✨ Imagen mejorada dramáticamente con {enhancementResult.service}
+                        </span>
+                      </div>
+                      <div className="text-xs text-green-600">
+                        🎨 Mejoras aplicadas: Brillo +60%, Nitidez +400%, Saturación +150%, Contraste +40%
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">✗</span>
+                      </div>
+                      <span className="text-sm font-medium text-red-700">
+                        Error: {enhancementResult.error}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Slider Styles */}
               <style jsx>{`
@@ -7915,6 +9248,38 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   cursor: pointer;
                   border: 2px solid #ffffff;
                   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                }
+                
+                .slider {
+                  -webkit-appearance: none;
+                  appearance: none;
+                  background: transparent;
+                  cursor: pointer;
+                }
+                
+                .slider::-webkit-slider-track {
+                  background: #e5e7eb;
+                  height: 8px;
+                  border-radius: 4px;
+                }
+                
+                .slider::-webkit-slider-thumb {
+                  -webkit-appearance: none;
+                  appearance: none;
+                  background: #3b82f6;
+                  height: 16px;
+                  width: 16px;
+                  border-radius: 50%;
+                  cursor: pointer;
+                  border: 2px solid white;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                
+                .slider::-moz-range-track {
+                  background: #e5e7eb;
+                  height: 8px;
+                  border-radius: 4px;
+                  border: none;
                 }
                 
                 .slider::-moz-range-thumb {

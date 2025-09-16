@@ -10,7 +10,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 let API_BASE_URL;
 if (isDevelopment) {
   // Development: use frontend API routes (same domain)
-  API_BASE_URL = '';
+  API_BASE_URL = 'http://localhost:4000';
 } else if (isProduction) {
   // Production: use Vercel API routes (same domain)
   API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
