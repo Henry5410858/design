@@ -481,7 +481,8 @@ export function restoreOriginalColors(allObjects: any[], currentlyOverlapping: a
   const overlappingIds = new Set(currentlyOverlapping.map(obj => obj.id || obj));
 
   allObjects.forEach(obj => {
-    if (obj.colorState && obj.colorState.isOverlapping && !overlappingIds.has(obj.id || obj)) {
+    // Check if object has color state and was previously overlapping
+    if (obj.colorState && obj.colorState.hasBeenChanged && !overlappingIds.has(obj.id || obj)) {
       // Object was overlapping but is no longer - restore original color
       console.log(`🔄 Object ${obj.id} no longer overlapping - restoring original color`);
       

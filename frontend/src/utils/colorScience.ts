@@ -357,14 +357,14 @@ export function generateHarmoniousColorFromOriginal(logoColor: string, originalO
   const tetradicHue = (logoHsl.h + 90) % 360;
   const originalTetradicHue = (tetradicHue + originalHue * 0.5) % 360;
   
-  // Create color options with strong original color influence
+  // Create color options with strong original color influence - avoid black
   const colorOptions = [
     {
       name: 'complementary_original',
       hsl: {
         h: originalInfluencedHue1,
         s: Math.min(originalSaturation * 1.3, 1),
-        l: originalLightness > 0.5 ? 0.3 : 0.7
+        l: Math.max(0.3, Math.min(0.8, originalLightness > 0.5 ? 0.3 : 0.7)) // Avoid black
       }
     },
     {
@@ -372,7 +372,7 @@ export function generateHarmoniousColorFromOriginal(logoColor: string, originalO
       hsl: {
         h: originalInfluencedHue2,
         s: Math.min(originalSaturation * 1.2, 1),
-        l: originalLightness > 0.5 ? 0.4 : 0.6
+        l: Math.max(0.3, Math.min(0.8, originalLightness > 0.5 ? 0.4 : 0.6)) // Avoid black
       }
     },
     {
@@ -380,7 +380,7 @@ export function generateHarmoniousColorFromOriginal(logoColor: string, originalO
       hsl: {
         h: logoContrastHue,
         s: Math.min(originalSaturation * 1.4, 1),
-        l: originalLightness > 0.5 ? 0.2 : 0.8
+        l: Math.max(0.3, Math.min(0.8, originalLightness > 0.5 ? 0.2 : 0.8)) // Avoid black
       }
     },
     {
@@ -388,7 +388,7 @@ export function generateHarmoniousColorFromOriginal(logoColor: string, originalO
       hsl: {
         h: originalSplitHue,
         s: Math.min(originalSaturation * 1.1, 1),
-        l: originalLightness > 0.5 ? 0.35 : 0.65
+        l: Math.max(0.3, Math.min(0.8, originalLightness > 0.5 ? 0.35 : 0.65)) // Avoid black
       }
     },
     {
@@ -396,7 +396,15 @@ export function generateHarmoniousColorFromOriginal(logoColor: string, originalO
       hsl: {
         h: originalTetradicHue,
         s: Math.min(originalSaturation * 1.25, 1),
-        l: originalLightness > 0.5 ? 0.25 : 0.75
+        l: Math.max(0.3, Math.min(0.8, originalLightness > 0.5 ? 0.25 : 0.75)) // Avoid black
+      }
+    },
+    {
+      name: 'original_based_vibrant',
+      hsl: {
+        h: originalHue,
+        s: Math.min(originalSaturation * 1.5, 1), // Higher saturation
+        l: Math.max(0.4, Math.min(0.8, originalLightness > 0.5 ? 0.4 : 0.6)) // Avoid black, stay close to original
       }
     }
   ];
@@ -455,14 +463,14 @@ export function generateBeautifulColor(logoColor: string, originalColor: string)
 
   const logoHsl = rgbToHsl(logoRgb);
   
-  // Define beautiful color palettes that avoid dark/ugly colors
+  // Define beautiful color palettes that avoid dark/ugly colors and black
   const beautifulPalettes = [
-    // Vibrant complementary colors
+    // Vibrant complementary colors - avoid black
     {
       name: 'vibrant_complementary',
       h: (logoHsl.h + 180) % 360,
       s: 0.8, // High saturation for vibrancy
-      l: 0.6, // Good lightness - not too dark, not too light
+      l: Math.max(0.4, Math.min(0.8, logoHsl.l > 0.5 ? 0.3 : 0.7)), // Avoid black, adjust based on logo lightness
       beauty: 9
     },
     // Triadic harmony - vibrant and balanced
@@ -470,7 +478,7 @@ export function generateBeautifulColor(logoColor: string, originalColor: string)
       name: 'triadic_vibrant',
       h: (logoHsl.h + 120) % 360,
       s: 0.75,
-      l: 0.65,
+      l: Math.max(0.4, Math.min(0.8, logoHsl.l > 0.5 ? 0.35 : 0.65)), // Avoid black
       beauty: 9
     },
     // Analogous harmony - smooth and pleasing
@@ -478,8 +486,24 @@ export function generateBeautifulColor(logoColor: string, originalColor: string)
       name: 'analogous_smooth',
       h: (logoHsl.h + 30) % 360,
       s: 0.7,
-      l: 0.6,
+      l: Math.max(0.4, Math.min(0.8, logoHsl.l > 0.5 ? 0.3 : 0.7)), // Avoid black
       beauty: 8
+    },
+    // Split complementary - more variety
+    {
+      name: 'split_complementary',
+      h: (logoHsl.h + 150) % 360,
+      s: 0.8,
+      l: Math.max(0.4, Math.min(0.8, logoHsl.l > 0.5 ? 0.25 : 0.75)), // Avoid black
+      beauty: 8
+    },
+    // Tetradic harmony - balanced and vibrant
+    {
+      name: 'tetradic_harmony',
+      h: (logoHsl.h + 90) % 360,
+      s: 0.75,
+      l: Math.max(0.4, Math.min(0.8, logoHsl.l > 0.5 ? 0.3 : 0.7)), // Avoid black
+      beauty: 7
     }
   ];
   
