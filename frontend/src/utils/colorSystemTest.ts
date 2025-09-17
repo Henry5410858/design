@@ -7,7 +7,7 @@ import {
   generateHarmoniousColorFromOriginal, 
   calculateDeltaE,
   testColorSystem 
-} from './colorHarmony';
+} from './colorScience';
 import { 
   hexToRgb, 
   rgbToHex, 
