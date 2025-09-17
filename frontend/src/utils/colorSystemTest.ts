@@ -86,7 +86,7 @@ export class ColorSystemTester {
       }
 
     } catch (error) {
-      this.addResult('Color Conversions', 'FAIL', 'Color conversion test failed with error', { error: error.message });
+      this.addResult('Color Conversions', 'FAIL', 'Color conversion test failed with error', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -122,7 +122,7 @@ export class ColorSystemTester {
       }
 
     } catch (error) {
-      this.addResult('Delta E Calculation', 'FAIL', 'Delta E calculation test failed with error', { error: error.message });
+      this.addResult('Delta E Calculation', 'FAIL', 'Delta E calculation test failed with error', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -166,7 +166,7 @@ export class ColorSystemTester {
       }
 
     } catch (error) {
-      this.addResult('Color Generation', 'FAIL', 'Color generation test failed with error', { error: error.message });
+      this.addResult('Color Generation', 'FAIL', 'Color generation test failed with error', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -198,7 +198,7 @@ export class ColorSystemTester {
       }
 
     } catch (error) {
-      this.addResult('Color Uniqueness', 'FAIL', 'Color uniqueness test failed with error', { error: error.message });
+      this.addResult('Color Uniqueness', 'FAIL', 'Color uniqueness test failed with error', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -241,7 +241,7 @@ export class ColorSystemTester {
       }
 
     } catch (error) {
-      this.addResult('Contrast Quality', 'FAIL', 'Contrast quality test failed with error', { error: error.message });
+      this.addResult('Contrast Quality', 'FAIL', 'Contrast quality test failed with error', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -277,7 +277,7 @@ export class ColorSystemTester {
       }
 
     } catch (error) {
-      this.addResult('Edge Cases', 'FAIL', 'Edge cases test failed with error', { error: error.message });
+      this.addResult('Edge Cases', 'FAIL', 'Edge cases test failed with error', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -327,7 +327,7 @@ export class ColorSystemTester {
       }
 
     } catch (error) {
-      this.addResult('Various Logo Colors', 'FAIL', 'Various logo colors test failed with error', { error: error.message });
+      this.addResult('Various Logo Colors', 'FAIL', 'Various logo colors test failed with error', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
