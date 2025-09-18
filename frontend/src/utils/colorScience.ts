@@ -532,6 +532,217 @@ export function generateBeautifulColor(logoColor: string, originalColor: string)
 }
 
 /**
+ * Seven predefined colors for random selection
+ * These are the brand colors defined in the BrandKit component
+ */
+export const PREDEFINED_COLORS = [
+  '#000000', // Black (represents no color/transparent)
+  '#00525b', // Dark teal/blue-green
+  '#01aac7', // Bright turquoise/aqua blue
+  '#32e0c5', // Light turquoise/mint green
+  '#ffffff', // Pure white
+  '#3f005f', // Rich deep purple
+  '#230038'  // Very dark purple/indigo
+];
+
+/**
+ * Generate a random gradient using two colors from the seven predefined colors
+ * @param logoColor - The logo color to avoid similar colors to
+ * @param similarityThreshold - Delta E threshold for considering colors too similar (default: 15)
+ * @param objectId - Optional object ID for consistent randomization
+ * @returns A gradient object with two randomly selected colors
+ */
+export function selectRandomGradient(
+  logoColor: string, 
+  similarityThreshold: number = 16,
+  objectId?: string,
+  objectWidth?: number,
+  objectScaleX?: number
+): any {
+  console.log(`🌈 Selecting random gradient, excluding colors similar to logo: ${logoColor}`);
+  
+  // Filter out colors that are too similar to the logo color
+  const availableColors = PREDEFINED_COLORS.filter(color => {
+    const deltaE = calculateDeltaE(logoColor, color);
+    const isTooSimilar = deltaE < similarityThreshold;
+    
+    console.log(`🎨 Color ${color}: ΔE = ${deltaE.toFixed(2)} (${isTooSimilar ? 'too similar' : 'acceptable'})`);
+    
+    return !isTooSimilar;
+  });
+  
+  // If no colors are available (all are too similar), use the most contrasting ones
+  if (availableColors.length === 0) {
+    console.warn('⚠️ All predefined colors are too similar to logo, selecting most contrasting colors');
+    
+    let mostContrastingColors = PREDEFINED_COLORS.slice(0, 2);
+    let maxContrast = 0;
+    
+    for (let i = 0; i < PREDEFINED_COLORS.length; i++) {
+      for (let j = i + 1; j < PREDEFINED_COLORS.length; j++) {
+        const contrast1 = calculateDeltaE(logoColor, PREDEFINED_COLORS[i]);
+        const contrast2 = calculateDeltaE(logoColor, PREDEFINED_COLORS[j]);
+        const totalContrast = contrast1 + contrast2;
+        
+        if (totalContrast > maxContrast) {
+          maxContrast = totalContrast;
+          mostContrastingColors = [PREDEFINED_COLORS[i], PREDEFINED_COLORS[j]];
+        }
+      }
+    }
+    
+    console.log(`🎨 Selected most contrasting colors: ${mostContrastingColors.join(', ')}`);
+    return createGradientObject(mostContrastingColors[0], mostContrastingColors[1]);
+  }
+  
+  // Select two random colors from available colors
+  let color1: string, color2: string;
+  
+  if (objectId) {
+    // Generate pseudo-random selection based on object ID for consistency
+    let hash1 = 0, hash2 = 0;
+    for (let i = 0; i < objectId.length; i++) {
+      const char = objectId.charCodeAt(i);
+      hash1 = ((hash1 << 5) - hash1) + char;
+      hash2 = ((hash2 << 7) - hash2) + char;
+      hash1 = hash1 & hash1;
+      hash2 = hash2 & hash2;
+    }
+    
+    const index1 = Math.abs(hash1) % availableColors.length;
+    let index2 = Math.abs(hash2) % availableColors.length;
+    
+    // Ensure we get two different colors
+    if (index1 === index2 && availableColors.length > 1) {
+      index2 = (index1 + 1) % availableColors.length;
+    }
+    
+    color1 = availableColors[index1];
+    color2 = availableColors[index2];
+  } else {
+    // Pure random selection
+    const index1 = Math.floor(Math.random() * availableColors.length);
+    let index2 = Math.floor(Math.random() * availableColors.length);
+    
+    // Ensure we get two different colors
+    if (index1 === index2 && availableColors.length > 1) {
+      index2 = (index1 + 1) % availableColors.length;
+    }
+    
+    color1 = availableColors[index1];
+    color2 = availableColors[index2];
+  }
+  
+  const finalContrast1 = calculateDeltaE(logoColor, color1);
+  const finalContrast2 = calculateDeltaE(logoColor, color2);
+  
+  console.log(`🌈 Randomly selected gradient colors: ${color1} and ${color2} (ΔE: ${finalContrast1.toFixed(2)}, ${finalContrast2.toFixed(2)})`);
+  
+  return createGradientObject(color1, color2, objectWidth, objectScaleX);
+}
+
+/**
+ * Create a gradient object compatible with Fabric.js
+ */
+function createGradientObject(color1: string, color2: string, objectWidth?: number, objectScaleX?: number): any {
+  // Calculate effective width: base width × scale factor
+  const effectiveWidth = objectWidth && objectScaleX ? objectWidth * objectScaleX : (objectWidth || 400);
+  
+  console.log(`🌈 Creating gradient with effective width: ${effectiveWidth} (base: ${objectWidth}, scale: ${objectScaleX})`);
+  
+  return {
+    type: 'linear',
+    gradientUnits: 'pixels',
+    coords: {
+      x1: 0,
+      y1: 0,
+      x2: effectiveWidth, // Use effective width (base width × scale)
+      y2: 0
+    },
+    colorStops: [
+      {
+        offset: 0,
+        color: color1
+      },
+      {
+        offset: 1,
+        color: color2
+      }
+    ],
+    offsetX: 0,
+    offsetY: 0,
+    id: 0
+  };
+}
+
+/**
+ * Randomly select a color from the seven predefined colors, excluding colors similar to the logo
+ * @param logoColor - The logo color to avoid similar colors to
+ * @param similarityThreshold - Delta E threshold for considering colors too similar (default: 15)
+ * @param objectId - Optional object ID for consistent randomization
+ * @returns A randomly selected color from the predefined palette
+ */
+export function selectRandomPredefinedColor(
+  logoColor: string, 
+  similarityThreshold: number = 16,
+  objectId?: string
+): string {
+  console.log(`🎲 Selecting random predefined color, excluding colors similar to logo: ${logoColor}`);
+  
+  // Filter out colors that are too similar to the logo color
+  const availableColors = PREDEFINED_COLORS.filter(color => {
+    const deltaE = calculateDeltaE(logoColor, color);
+    const isTooSimilar = deltaE < similarityThreshold;
+    
+    console.log(`🎨 Color ${color}: ΔE = ${deltaE.toFixed(2)} (${isTooSimilar ? 'too similar' : 'acceptable'})`);
+    
+    return !isTooSimilar;
+  });
+  
+  // If no colors are available (all are too similar), return the most contrasting one
+  if (availableColors.length === 0) {
+    console.warn('⚠️ All predefined colors are too similar to logo, selecting most contrasting color');
+    
+    let mostContrastingColor = PREDEFINED_COLORS[0];
+    let maxContrast = 0;
+    
+    for (const color of PREDEFINED_COLORS) {
+      const contrast = calculateDeltaE(logoColor, color);
+      if (contrast > maxContrast) {
+        maxContrast = contrast;
+        mostContrastingColor = color;
+      }
+    }
+    
+    console.log(`🎨 Selected most contrasting color: ${mostContrastingColor} (ΔE: ${maxContrast.toFixed(2)})`);
+    return mostContrastingColor;
+  }
+  
+  // Use object ID for consistent randomization if provided
+  let randomIndex: number;
+  if (objectId) {
+    // Generate a pseudo-random index based on object ID
+    let hash = 0;
+    for (let i = 0; i < objectId.length; i++) {
+      const char = objectId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    randomIndex = Math.abs(hash) % availableColors.length;
+  } else {
+    // Pure random selection
+    randomIndex = Math.floor(Math.random() * availableColors.length);
+  }
+  
+  const selectedColor = availableColors[randomIndex];
+  const finalContrast = calculateDeltaE(logoColor, selectedColor);
+  
+  console.log(`🎲 Randomly selected color: ${selectedColor} from ${availableColors.length} available colors (ΔE: ${finalContrast.toFixed(2)})`);
+  
+  return selectedColor;
+}
+
+/**
  * Test function to verify the color system is working properly
  */
 export function testColorSystem(): void {

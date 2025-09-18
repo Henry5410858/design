@@ -3,6 +3,7 @@
  * Manages real-time color adjustment for objects overlapping with logo
  */
 
+import * as fabric from 'fabric';
 import { 
   calculateDeltaE, 
   areColorsTooSimilar, 
@@ -11,6 +12,8 @@ import {
   generateBeautifulColor,
   generateContrastingColor,
   generateHarmoniousColorFromOriginal,
+  selectRandomPredefinedColor,
+  selectRandomGradient,
   COLOR_THRESHOLDS,
   type RGB,
   type HSL,
@@ -25,10 +28,11 @@ export interface ColorState {
   currentColor: string;
   isOverlapping: boolean;
   deltaE: number;
-  harmonyType: 'complementary' | 'triadic' | 'analogous' | 'contrast' | 'black_contrast' | 'beautiful' | null;
+  harmonyType: 'complementary' | 'triadic' | 'analogous' | 'contrast' | 'black_contrast' | 'beautiful' | 'random_predefined' | 'random_gradient' | null;
   isColorLocked: boolean; // Prevent further color changes
   lastChangeTime: number; // Timestamp of last color change
   hasBeenChanged: boolean; // Track if color was changed in this overlap session
+  originalData?: any; // Store original object data for gradient restoration
 }
 
 export interface OverlapObject {
@@ -185,7 +189,7 @@ export function initializeObjectColorState(fabricObject: any, originalData?: any
   
   if (originalData) {
     // Use color from saved JSON data (most accurate)
-    const savedColor = originalData.fill || originalData.color || originalData.stroke;
+    const savedColor = originalData?.fill || originalData?.color || originalData?.stroke;
     if (savedColor && typeof savedColor === 'string') {
       originalColor = normalizeColor(savedColor);
     }
@@ -207,9 +211,11 @@ export function initializeObjectColorState(fabricObject: any, originalData?: any
     currentColor: normalizeColor(originalColor),
     isOverlapping: false,
     deltaE: 0,
-    harmonyType: null
+    harmonyType: null,
+    originalData: originalData // Store the complete original data for gradient restoration
   };
-  
+  if (fabricObject.type === "path") 
+    alert(`${JSON.stringify(fabricObject.colorState)}`);
   console.log(`🎨 Initialized color state for object: original=${originalColor}, current=${fabricObject.colorState.currentColor}`);
 }
 
@@ -349,7 +355,8 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
         harmonyType: null,
         isColorLocked: false,
         lastChangeTime: 0,
-        hasBeenChanged: false
+        hasBeenChanged: false,
+        originalData: null
       };
     }
 
@@ -382,24 +389,43 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
     
     // Change color for ALL overlapping objects, not just similar ones
     if (!colorState.isColorLocked && !colorState.hasBeenChanged) {
-      console.log(`🎨 Object overlapping with logo (ΔE: ${deltaE.toFixed(2)}) - generating harmonious color`);
+      console.log(`🎨 Object overlapping with logo (ΔE: ${deltaE.toFixed(2)}) - selecting random color/gradient`);
       
-      // Generate harmonious color based on the original object color with object ID for uniqueness
-      const harmoniousColor = generateHarmoniousColorFromOriginal(logoColor, obj.colorState.originalColor, obj.id);
-      const newDeltaE = calculateDeltaE(logoColor, harmoniousColor);
-      
-      console.log(`🎨 Generated harmonious color: ${harmoniousColor} (ΔE: ${newDeltaE.toFixed(2)})`);
-      
-      colorState.currentColor = harmoniousColor;
-      colorState.harmonyType = 'beautiful';
-      colorState.isColorLocked = true; // Lock the color to prevent further changes
-      colorState.lastChangeTime = Date.now();
-      colorState.hasBeenChanged = true;
-      
-      // Apply the harmonious color to the object
-      applyColorToObject(obj, harmoniousColor);
-      
-      console.log(`✨ Applied harmonious color: ${harmoniousColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)}) - COLOR LOCKED`);
+      // For path objects (waves), use random gradient; for others, use random solid color
+      if (obj.type === 'path') {
+        console.log(`🌊 Path object detected - selecting random gradient`);
+        const randomGradient = selectRandomGradient(logoColor, 16, obj.id, obj.width, obj.scaleX);
+        
+        console.log(`🌈 Selected random gradient:`, randomGradient);
+        colorState.currentColor = `gradient_${randomGradient.colorStops[0].color}_${randomGradient.colorStops[1].color}`;
+        colorState.harmonyType = 'random_gradient';
+        colorState.isColorLocked = true;
+        colorState.lastChangeTime = Date.now();
+        colorState.hasBeenChanged = true;
+        
+        // Apply the random gradient to the path object
+        applyGradientToObject(obj, randomGradient);
+        
+        console.log(`✨ Applied random gradient to path object - COLOR LOCKED`);
+      } else {
+
+        console.log(`🎨 Non-path object - selecting random solid color`);
+        const randomColor = selectRandomPredefinedColor(logoColor, 16, obj.id);
+        const newDeltaE = calculateDeltaE(logoColor, randomColor);
+        
+        console.log(`🎨 Selected random predefined color: ${randomColor} (ΔE: ${newDeltaE.toFixed(2)})`);
+        
+        colorState.currentColor = randomColor;
+        colorState.harmonyType = 'random_predefined';
+        colorState.isColorLocked = true;
+        colorState.lastChangeTime = Date.now();
+        colorState.hasBeenChanged = true;
+        
+        // Apply the random color to the object
+        applyColorToObject(obj, randomColor);
+        
+        console.log(`✨ Applied random predefined color: ${randomColor} (improved ΔE from ${deltaE.toFixed(2)} to ${newDeltaE.toFixed(2)}) - COLOR LOCKED`);
+      }
     } else if (colorState.isColorLocked) {
       console.log(`🔒 Color is locked - keeping current harmonious color: ${colorState.currentColor}`);
     } else if (colorState.hasBeenChanged) {
@@ -420,7 +446,7 @@ export async function analyzeColorHarmony(logoObject: any, overlappingObjects: a
 }
 
 /**
- * Apply color to Fabric.js object
+ * Apply color to Fabric.js object, preserving original gradient data
  */
 export function applyColorToObject(fabricObject: any, color: string): void {
   console.log(`🚀 APPLYING COLOR TO OBJECT:`, {
@@ -429,8 +455,12 @@ export function applyColorToObject(fabricObject: any, color: string): void {
     currentFill: fabricObject.fill,
     currentColor: fabricObject.color,
     currentStroke: fabricObject.stroke,
-    newColor: color
+    newColor: color,
+    hasGradient: fabricObject.fill && typeof fabricObject.fill === 'object' && fabricObject.fill.type === 'linear'
   });
+  
+  // Add stack trace to see where this is being called from
+  console.log(`📍 applyColorToObject called from:`, new Error().stack);
   
   // Apply color based on object type
   if (fabricObject.type === 'text' || fabricObject.type === 'i-text') {
@@ -441,6 +471,19 @@ export function applyColorToObject(fabricObject: any, color: string): void {
     console.log(`🔷 Setting shape fill to: ${color}`);
     fabricObject.set('fill', color);
     console.log(`✅ Applied shape fill: ${color}`);
+  } else if (fabricObject.type === 'path' || fabricObject.type === 'polygon' || fabricObject.type === 'triangle') {
+    // For path-based objects (including waves), check if they have gradients
+    if (fabricObject._hasGradient || (fabricObject.fill && typeof fabricObject.fill === 'object' && fabricObject.fill.type === 'linear')) {
+      console.log(`🌊 Path object has gradient - skipping solid color override`);
+      console.log(`🌈 Current gradient:`, fabricObject.fill);
+      console.log(`🏷️ _hasGradient flag:`, fabricObject._hasGradient);
+    } else {
+      // Only apply solid color if no gradient exists
+      console.log(`🌊 Setting path/polygon fill to: ${color}`);
+      fabricObject.set('fill', color);
+      (fabricObject as any)._hasGradient = false; // Clear gradient flag
+      console.log(`✅ Applied path fill: ${color}`);
+    }
   } else if (fabricObject.type === 'image') {
     // For images, we might want to apply a tint or overlay
     console.log(`🖼️ Setting image tint to: ${color}`);
@@ -479,28 +522,47 @@ export function applyColorToObject(fabricObject: any, color: string): void {
  */
 export function restoreOriginalColors(allObjects: any[], currentlyOverlapping: any[]): void {
   const overlappingIds = new Set(currentlyOverlapping.map(obj => obj.id || obj));
+  
+  console.log(`🔄 restoreOriginalColors called with ${allObjects.length} total objects and ${currentlyOverlapping.length} currently overlapping`);
+  console.log(`🔄 Currently overlapping IDs:`, Array.from(overlappingIds));
 
   allObjects.forEach(obj => {
-    // Check if object has color state and was previously overlapping
-    if (obj.colorState && obj.colorState.hasBeenChanged && !overlappingIds.has(obj.id || obj)) {
-      // Object was overlapping but is no longer - restore original color
-      console.log(`🔄 Object ${obj.id} no longer overlapping - restoring original color`);
+    const objId = obj.id || obj;
+    const isCurrentlyOverlapping = overlappingIds.has(objId);
+    const hasColorState = obj.colorState && obj.colorState.hasBeenChanged;
+    
+    console.log(`🔍 Checking object ${objId}:`, {
+      hasColorState,
+      hasBeenChanged: obj.colorState?.hasBeenChanged,
+      isCurrentlyOverlapping,
+      currentColor: obj.colorState?.currentColor,
+      originalColor: obj.colorState?.originalColor
+    });
+    
+    // Check if object has color state and was previously overlapping but is no longer
+    if (hasColorState && !isCurrentlyOverlapping) {
+      alert(`${obj.type}`);
+      // Object overlapping but is no longer - restore original color
+      console.log(`🔄 Object ${objId} no longer overlapping - restoring original color from ${obj.colorState.currentColor} to ${obj.colorState.originalColor}`);
       
       // Restore original color state
       obj.colorState.isOverlapping = false;
-      obj.colorState.currentColor = obj.colorState.originalColor;
+      obj.colorState.currentColor = obj.colorStad2disngmer.originalColor;
       obj.colorState.harmonyType = null;
       obj.colorState.isColorLocked = false; // Unlock color
       obj.colorState.hasBeenChanged = false; // Reset change flag
       obj.colorState.lastChangeTime = 0; // Reset change time
-      
-      // Apply original color
-      applyColorToObject(obj, obj.colorState.originalColor);
-      
-      console.log(`✅ Restored original color for object ${obj.id}: ${obj.colorState.originalColor} - COLOR UNLOCKED`);
-    } else if (obj.colorState && !obj.colorState.isOverlapping && overlappingIds.has(obj.id || obj)) {
+      // Apply original color - use gradient restoration if available
+      if (obj.colorState.originalData) {
+          alert(`${JSON.stringify(obj.colorState.originalData)}`)
+        restoreOriginalColorToObject(obj, obj.colorState.originalData);
+        console.log(`✅ Restored original gradient/color for object ${objId} - COLOR UNLOCKED`); y
+        applyColorToObject(obj, obj.colorState.originalColor);
+        console.log(`✅ Restored original color for object ${objId}: ${obj.colorState.originalColor} - COLOR UNLOCKED`);
+      }
+    } else if (obj.colorState && !obj.colorState.isOverlapping && isCurrentlyOverlapping) {
       // Object is now overlapping - mark as overlapping
-      console.log(`🎯 Object ${obj.id} is now overlapping with logo`);
+      console.log(`🎯 Object ${objId} is now overlapping with logo`);
       obj.colorState.isOverlapping = true;
     }
   });
@@ -513,6 +575,7 @@ export function restoreAllOriginalColors(allObjects: any[]): void {
   console.log(`🔄 Restoring all original colors for ${allObjects.length} objects`);
   
   allObjects.forEach(obj => {
+
     if (obj.colorState && obj.colorState.hasBeenChanged) {
       console.log(`🔄 Restoring original color for object ${obj.id}: ${obj.colorState.originalColor}`);
       
@@ -578,6 +641,212 @@ export function testColorSystem(): void {
   });
   
   console.log('\n✅ Color System Test Complete!');
+}
+
+/**
+ * Debug function to check color restoration status
+ */
+export function debugColorRestoration(canvas: any): void {
+  console.log('🔍 DEBUG: Color Restoration Status');
+  
+  const allObjects = canvas.getObjects();
+  console.log(`📊 Total objects on canvas: ${allObjects.length}`);
+  
+  allObjects.forEach((obj: any, index: number) => {
+    const objId = obj.id || `obj_${index}`;
+    const hasColorState = !!obj.colorState;
+    const currentColor = obj.fill || obj.color || obj.stroke || 'unknown';
+    
+    console.log(`🔍 Object ${objId}:`, {
+      type: obj.type,
+      hasColorState,
+      currentColor,
+      originalColor: obj.colorState?.originalColor,
+      hasBeenChanged: obj.colorState?.hasBeenChanged,
+      isOverlapping: obj.colorState?.isOverlapping,
+      isColorLocked: obj.colorState?.isColorLocked
+    });
+  });
+  
+  console.log('🔍 DEBUG: Color Restoration Status Complete');
+}
+
+/**
+ * Apply gradient to Fabric.js object (specifically for path objects)
+ */
+export function applyGradientToObject(fabricObject: any, gradient: any): void {
+  console.log(`🌈 APPLYING GRADIENT TO OBJECT:`, {
+    type: fabricObject.type,
+    id: fabricObject.id,
+    gradient: gradient,
+    objectBounds: fabricObject.getBoundingRect(),
+    objectWidth: fabricObject.width,
+    objectHeight: fabricObject.height,
+    currentFill: fabricObject.fill
+  });
+  
+  // Add stack trace to see where this is being called from
+  console.log(`📍 applyGradientToObject called from:`, new Error().stack);
+
+  if (fabricObject.type === 'path') {
+    console.log(`🌊 Setting path gradient:`, gradient);
+    
+    // Check fill before setting
+    console.log(`🔍 Fill BEFORE setting:`, fabricObject.fill);
+    
+    // Wrap the set method to track all fill changes
+    const originalSet = fabricObject.set;
+    fabricObject.set = function(property: string, value: any) {
+      if (property === 'fill') {
+        console.log(`🔍 set('fill') called with:`, value);
+        console.log(`🔍 Current fill before set:`, this.fill);
+        console.log(`🔍 Stack trace:`, new Error().stack);
+      }
+      return originalSet.call(this, property, value);
+    };
+    
+    // Create a proper Fabric.js Gradient instance
+    const fabricGradient = new fabric.Gradient({
+      type: (gradient.type || 'linear') as 'linear' | 'radial',
+      coords: gradient.coords || {
+        x1: 0,
+        y1: 0,
+        x2: fabricObject.width || 100,
+        y2: 0
+      },
+      colorStops: gradient.colorStops || [
+        { offset: 0, color: '#000000' },
+        { offset: 1, color: '#ffffff' }
+      ]
+    });
+    
+    console.log(`🌈 Created Fabric.js gradient:`, fabricGradient);
+    
+    fabricObject.set('fill', fabricGradient);
+    console.log(`✅ Applied gradient to path object`);
+    
+    // Restore original set method
+    fabricObject.set = originalSet;
+    
+    // Check fill immediately after setting
+    console.log(`🔍 Fill AFTER setting:`, fabricObject.fill);
+    
+    // Check if it's still a gradient object
+    if (typeof fabricObject.fill === 'object' && fabricObject.fill.type === 'linear') {
+      console.log(`✅ Gradient successfully applied - type: ${fabricObject.fill.type}`);
+      
+      // Set a flag to prevent other functions from overriding
+      fabricObject._hasGradient = true;
+      console.log(`🏷️ Set _hasGradient flag to true`);
+    } else {
+      console.error(`❌ Gradient was overridden! Fill is now:`, fabricObject.fill);
+    }
+  } else {
+    console.warn(`⚠️ Cannot apply gradient to non-path object type: ${fabricObject.type}`);
+  }
+  
+  // Force canvas re-render
+  if (fabricObject.canvas) {
+    console.log(`🔄 Rendering canvas after gradient change`);
+    fabricObject.canvas.renderAll();
+    console.log(`✅ Canvas rendered successfully`);
+    
+    // Check fill after rendering
+    console.log(`🔍 Fill AFTER rendering:`, fabricObject.fill);
+  } else {
+    console.warn(`⚠️ No canvas found on object - cannot render`);
+  }
+}
+
+/**
+ * Test gradient restoration for wave objects
+ */
+export function testGradientRestoration(canvas: any): void {
+  console.log('🧪 Testing Gradient Restoration');
+  
+  const allObjects = canvas.getObjects();
+  const waveObjects = allObjects.filter((obj: any) => obj.type === 'path');
+  
+  console.log(`🌊 Found ${waveObjects.length} wave objects`);
+  
+  waveObjects.forEach((wave: any, index: number) => {
+    console.log(`🌊 Wave ${index + 1}:`, {
+      id: wave.id,
+      hasColorState: !!wave.colorState,
+      hasOriginalData: !!wave.colorState?.originalData,
+      currentFill: wave.fill,
+      originalFill: wave.colorState?.originalData?.fill
+    });
+    
+    if (wave.colorState?.originalData?.fill && typeof wave.colorState.originalData.fill === 'object') {
+      console.log(`🌈 Wave ${index + 1} has gradient data:`, wave.colorState.originalData.fill);
+    }
+  });
+  
+  console.log('🧪 Gradient Restoration Test Complete');
+}
+
+/**
+ * Restore original gradient or color to an object
+ */
+export function restoreOriginalColorToObject(fabricObject: any, originalData: any): void {
+  console.log(`🔄 RESTORING ORIGINAL COLOR TO OBJECT:`, {
+    type: fabricObject.type,
+    id: fabricObject.id,
+    hasOriginalData: !!originalData
+  });
+  
+  if (!originalData) {
+    console.warn('⚠️ No original data provided for restoration');
+    return;
+  }
+  
+  // Check if original data has a gradient
+  if (originalData.fill && typeof originalData.fill === 'object' && originalData.fill.type === 'linear') {
+    console.log(`🌈 Restoring gradient fill:`, originalData.fill);
+    
+    // Create a proper Fabric.js Gradient instance
+    const fabricGradient = new fabric.Gradient({
+      type: (originalData.fill.type || 'linear') as 'linear' | 'radial',
+      coords: originalData.fill.coords || {
+        x1: 0,
+        y1: 0,
+        x2: fabricObject.width || 100,
+        y2: 0
+      },
+      colorStops: originalData.fill.colorStops || [
+        { offset: 0, color: '#000000' },
+        { offset: 1, color: '#ffffff' }
+      ]
+    });
+    
+    fabricObject.set('fill', fabricGradient);
+    (fabricObject as any)._hasGradient = true; // Mark as having gradient
+    console.log(`✅ Restored gradient fill`);
+  } else if (originalData.fill && typeof originalData.fill === 'string') {
+    console.log(`🎨 Restoring solid fill: ${originalData.fill}`);
+    fabricObject.set('fill', originalData.fill);
+    console.log(`✅ Restored solid fill`);
+  } else if (originalData.color && typeof originalData.color === 'string') {
+    console.log(`🎨 Restoring color: ${originalData.color}`);
+    fabricObject.set('color', originalData.color);
+    console.log(`✅ Restored color`);
+  } else if (originalData.stroke && typeof originalData.stroke === 'string') {
+    console.log(`🎨 Restoring stroke: ${originalData.stroke}`);
+    fabricObject.set('stroke', originalData.stroke);
+    console.log(`✅ Restored stroke`);
+  } else {
+    console.warn('⚠️ No valid color data found in original data');
+  }
+  
+  // Force canvas re-render
+  if (fabricObject.canvas) {
+    console.log(`🔄 Rendering canvas after color restoration`);
+    fabricObject.canvas.renderAll();
+    console.log(`✅ Canvas rendered successfully`);
+  } else {
+    console.warn(`⚠️ No canvas found on object - cannot render`);
+  }
 }
 
 /**
@@ -683,6 +952,7 @@ export class ColorHarmonyManager {
    * Monitor logo movement and update colors in real-time
    */
   private monitorLogoMovement(): void {
+
     console.log("🔄 monitorLogoMovement - checking for overlaps");
     if (!this.isActive) {
       console.log("⚠️ monitorLogoMovement: Not active", {
@@ -765,10 +1035,11 @@ export class ColorHarmonyManager {
       
       // Ensure all objects have color states initialized
       allObjects.forEach((obj: any) => {
+//---------------------------------------------------------------------------------------------------------------------
         if (!obj.colorState) {
           try {
             console.log('🎨 Initializing missing color state for object:', obj.type, obj.id);
-            initializeObjectColorState(obj);
+            initializeObjectColorState(obj);    
           } catch (error) {
             console.error('❌ Error initializing color state for object:', obj.type, obj.id, error);
             // Initialize with default color state
@@ -780,7 +1051,8 @@ export class ColorHarmonyManager {
               harmonyType: null,
               isColorLocked: false,
               lastChangeTime: 0,
-              hasBeenChanged: false
+              hasBeenChanged: false,
+              originalData: null
             };
           }
         }
@@ -794,16 +1066,7 @@ export class ColorHarmonyManager {
       
       const overlappingObjects = detectOverlappingObjects(this.logoObject, allObjects);
       console.log(`🎯 Overlapping objects detected: ${overlappingObjects.length}`);
-      
-      if (overlappingObjects.length > 0) {
-        console.log("📋 Overlapping object details:", overlappingObjects.map(obj => ({
-          type: obj.type,
-          id: obj.id,
-          fill: obj.fill,
-          color: obj.color
-        })));
-      }
-      
+
       // Restore colors for objects that are no longer overlapping
       restoreOriginalColors(allObjects, overlappingObjects);
       
@@ -830,7 +1093,7 @@ export class ColorHarmonyManager {
     setTimeout(() => {
       console.log("⏰ setTimeout - continuing monitoring");
       this.monitorLogoMovement();
-    }, 100);
+    }, 200); // Increased delay to 200ms for better performance
   }
 
   /**
@@ -865,4 +1128,69 @@ export class ColorHarmonyManager {
       adjustedObjects: adjustedObjects
     };
   }
+}
+
+/**
+ * Test function to debug gradient application with your specific gradient data
+ */
+export function testGradientApplication(canvas: any, objectId?: string): void {
+  console.log('🧪 Testing Gradient Application with your specific data...');
+  
+  const allObjects = canvas.getObjects();
+  const targetObject = objectId 
+    ? allObjects.find((obj: any) => obj.id === objectId)
+    : allObjects.find((obj: any) => obj.type === 'path');
+  
+  if (!targetObject) {
+    console.error('❌ No path object found to test gradient on');
+    return;
+  }
+  
+  console.log('🎯 Target object:', {
+    id: targetObject.id,
+    type: targetObject.type,
+    width: targetObject.width,
+    height: targetObject.height,
+    currentFill: targetObject.fill
+  });
+  
+  // Your specific gradient data
+  const gradientData = {
+    type: "linear",
+    gradientUnits: "pixels",
+    coords: {
+      x1: 0,
+      y1: 0,
+      x2: 1080,
+      y2: 0
+    },
+    colorStops: [
+      { offset: 0, color: "#230038" },
+      { offset: 1, color: "#32e0c5" }
+    ],
+    offsetX: 0,
+    offsetY: 0,
+    id: 0
+  };
+  
+  console.log('🌈 Applying gradient data:', gradientData);
+  
+  // Create proper Fabric.js gradient
+  const fabricGradient = new fabric.Gradient({
+    type: gradientData.type as 'linear' | 'radial',
+    coords: gradientData.coords,
+    colorStops: gradientData.colorStops
+  });
+  
+  console.log('🌈 Created Fabric.js gradient:', fabricGradient);
+  
+  // Apply gradient
+  targetObject.set('fill', fabricGradient);
+  targetObject._hasGradient = true;
+  
+  // Force render
+  canvas.renderAll();
+  
+  console.log('✅ Gradient applied. Check the object visually.');
+  console.log('🔍 Final fill:', targetObject.fill);
 }

@@ -22,8 +22,8 @@ import { AIImageEnhancementManager, EnhancementOptions, EnhancementResult } from
 import { AI_SERVICES_CONFIG, AI_FEATURES } from '@/config/aiServices';
 import { saveTemplateBackground, getTemplateBackground, deleteTemplateBackground, canvasToBase64, getImageTypeFromDataUrl } from '@/utils/templateBackgrounds';
 import { findOverlappingObjects, getHighContrastColor, getObjectBounds, CanvasObject } from '@/utils/overlapUtils';
-import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject, extractLogoColor } from '@/utils/colorHarmony';
-import { generateBeautifulColor, calculateDeltaE, generateHarmoniousColorFromOriginal } from '@/utils/colorScience';
+import { ColorHarmonyManager, initializeObjectColorState, detectOverlappingObjects, applyColorToObject, applyGradientToObject, extractLogoColor, debugColorRestoration, testGradientRestoration } from '@/utils/colorHarmony';
+import { generateBeautifulColor, calculateDeltaE, generateHarmoniousColorFromOriginal, selectRandomPredefinedColor, selectRandomGradient } from '@/utils/colorScience';
 import { runColorSystemTest } from '@/utils/colorSystemTest';
 import AIImageEnhancement from '@/components/AIImageEnhancement';
 import ProposalGenerator from '@/components/ProposalGenerator';
@@ -43,6 +43,7 @@ import SecurityDashboard from '@/components/SecurityDashboard';
 import { advancedSecurity } from '@/utils/advancedSecurity';
 import InfrastructureDashboard from '@/components/InfrastructureDashboard';
 import { scalabilitySystem } from '@/utils/scalabilitySystem';
+import { randomBytes } from 'crypto';
 
 interface UnifiedEditorProps {
   id: string;
@@ -534,6 +535,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   // History and undo/redo
   const [history, setHistory] = useState<HistoryState[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  
+  // Computed values for undo/redo state
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
   
   // Drag and resize state
   const [isDragging, setIsDragging] = useState(false);
@@ -2112,6 +2117,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   ]
                 });
                 path.set('fill', gradient);
+                (path as any)._hasGradient = true; // Mark as having gradient
                 console.log('🎨 Teal → Blue gradient restored for wave shape');
               } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
                 const gradient = new fabric.Gradient({
@@ -2128,11 +2134,15 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   ]
                 });
                 path.set('fill', gradient);
+                (path as any)._hasGradient = true; // Mark as having gradient
                 console.log('🎨 Blue → Teal gradient restored for wave shape');
               }
             }
             
             canvas.add(path);
+            // Initialize color state with original color from saved JSON data
+            initializeObjectColorState(path, obj);
+            
             console.log(`✅ Path object (wave) loaded with path data from design file:`, {
               left: path.left,
               top: path.top,
@@ -2195,6 +2205,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   ]
                 });
                 path.set('fill', gradient);
+                (path as any)._hasGradient = true; // Mark as having gradient
                 console.log('🎨 Teal → Blue gradient restored for shape with pathData');
               } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
                 const gradient = new fabric.Gradient({
@@ -2211,11 +2222,16 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   ]
                 });
                 path.set('fill', gradient);
+                (path as any)._hasGradient = true; // Mark as having gradient
                 console.log('🎨 Blue → Teal gradient restored for shape with pathData');
               }
             }
             
             canvas.add(path);
+            
+            // Initialize color state with original color from saved JSON data
+            initializeObjectColorState(path, obj);
+            
             console.log(`✅ Shape object with path data (wave) loaded:`, {
               left: path.left,
               top: path.top,
@@ -2283,6 +2299,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   ]
                 });
                 path.set('fill', gradient);
+                (path as any)._hasGradient = true; // Mark as having gradient
                 console.log('🎨 Teal → Blue gradient restored for catch-all path object');
               } else if (obj.gradientType === 'blue-teal' && obj.gradientColors.length >= 2) {
                 const gradient = new fabric.Gradient({
@@ -2299,11 +2316,16 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                   ]
                 });
                 path.set('fill', gradient);
+                (path as any)._hasGradient = true; // Mark as having gradient
                 console.log('🎨 Blue → Teal gradient restored for catch-all path object');
               }
             }
             
             canvas.add(path);
+            
+            // Initialize color state with original color from saved JSON data
+            initializeObjectColorState(path, obj);
+            
             console.log(`✅ Catch-all path object (wave) loaded:`, {
               left: path.left,
               top: path.top,
@@ -2619,7 +2641,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
             }
             
             canvas.add(rect);
-            
             // Initialize color state with original color from saved JSON data
             initializeObjectColorState(rect, obj);
             
@@ -2768,6 +2789,11 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               // Restore gradient using helper function
               restoreGradient(obj, path);
               canvas.add(path);
+              
+              // Initialize color state with original color from saved JSON data
+              initializeObjectColorState(path, obj);
+              alert(`path originalData ${obj.colorState.originalData}`)
+              
               console.log(`✅ Path object loaded with path data:`, pathData ? 'yes' : 'no');
             } else {
               console.warn(`⚠️ Path object missing both 'path' and 'pathData' properties:`, obj);
@@ -2808,6 +2834,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
               // Restore gradient using helper function
               restoreGradient(obj, path);
               canvas.add(path);
+              
+              // Initialize color state with original color from saved JSON data
+              initializeObjectColorState(path, obj);
+              
               console.log(`✅ Shape object with path data (wave) loaded`);
             } else {
               // Fallback to rectangle for regular shapes
@@ -3276,6 +3306,9 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
     // Apply gradient to selected object
     selectedObject.set('fill', gradient);
     
+    // Mark as having gradient to prevent override
+    (selectedObject as any)._hasGradient = true;
+    
     // Store gradient metadata for database saving
     (selectedObject as any).gradientType = 'custom';
     (selectedObject as any).gradientColors = sortedStops.map(stop => stop.color);
@@ -3361,6 +3394,8 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
       
       if (gradient) {
         fabricObj.set('fill', gradient);
+        // Mark as having gradient to prevent override
+        (fabricObj as any)._hasGradient = true;
         // Store gradient metadata
         (fabricObj as any).gradientType = obj.gradientType;
         (fabricObj as any).gradientColors = obj.gradientColors;
@@ -4357,38 +4392,37 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         const template = await response.json();
         console.log('✅ Template loaded by ID:', template);
         
-        // Priority 1: Use designFilename field from database (primary method)
-        if (template.designFilename) {
-          console.log('📁 Loading design from designFilename field:', template.designFilename);
+        // // Priority 1: Use designFilename field from database (primary method)
+        // if (template.designFilename) {
+        //   console.log('📁 Loading design from designFilename field:', template.designFilename);
           
-          try {
-            const fileExists = await checkDesignFileExists(template.designFilename);
+        //   try {
+        //     const fileExists = await checkDesignFileExists(template.designFilename);
             
-            if (fileExists) {
-              console.log('✅ Design file exists, loading from designFilename...');
-              const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(template.designFilename));
-              if (designResponse.ok) {
-                const designData = await designResponse.json();
-                console.log('🎨 User-saved design data loaded from designFilename:', designData);
+        //     if (fileExists) {
+        //       console.log('✅ Design file exists, loading from designFilename...');
+        //       const designResponse = await fetch(API_ENDPOINTS.GET_DESIGN(template.designFilename));
+        //       if (designResponse.ok) {
+        //         const designData = await designResponse.json();
+        //         console.log('🎨 User-saved design data loaded from designFilename:', designData);
+        //         // Load user-saved design directly (not through loadTemplateFromData)
+        //         await loadUserSavedDesign(designData, template);
                 
-                // Load user-saved design directly (not through loadTemplateFromData)
-                await loadUserSavedDesign(designData, template);
-                
-                // Add brand kit logo after user-saved design is loaded
-                setTimeout(async () => {
-                  await addBrandKitLogoIfNeeded();
-                }, 300);
-                return;
-              } else {
-                console.warn('⚠️ Failed to load design file from designFilename:', template.designFilename);
-              }
-            } else {
-              console.warn('⚠️ Design file does not exist:', template.designFilename);
-            }
-          } catch (error) {
-            console.error('❌ Error loading design file from designFilename:', template.designFilename, error);
-          }
-        }
+        //         // Add brand kit logo after user-saved design is loaded
+        //         setTimeout(async () => {
+        //           await addBrandKitLogoIfNeeded();
+        //         }, 300);
+        //         return;
+        //       } else {
+        //         console.warn('⚠️ Failed to load design file from designFilename:', template.designFilename);
+        //       }
+        //     } else {
+        //       console.warn('⚠️ Design file does not exist:', template.designFilename);
+        //     }
+        //   } catch (error) {
+        //     console.error('❌ Error loading design file from designFilename:', template.designFilename, error);
+        //   }
+        // }
         
         // Priority 2: Check _id-based filename (fallback)
         const idBasedFilename = `${templateId}.json`;
@@ -4417,7 +4451,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         
         // Fallback to loading from template data (fresh template)
         console.log('📋 Loading fresh template from template data...');
-        await loadTemplateFromData(templateId, template);
+        // await loadTemplateFromData(templateId, template);
         
         // Add brand kit logo after template is loaded
         setTimeout(async () => {
@@ -6088,14 +6122,23 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
         const logoColor = await extractLogoColor(logoObject);
         
         overlappingObjects.forEach((obj: any) => {
-          const beautifulColor = generateBeautifulColor(logoColor, '#000000'); // Use black as base
-          const newDeltaE = calculateDeltaE(logoColor, beautifulColor);
-          console.log(`✨ Changing ${obj.type} to beautiful color: ${beautifulColor} (ΔE: ${newDeltaE.toFixed(2)})`);
-          applyColorToObject(obj, beautifulColor);
+          if (obj.type === 'path') {
+            // For path objects (waves), use random gradient
+            const randomGradient = selectRandomGradient(logoColor, 16, obj.id, obj.width, obj.scaleX);
+            console.log(`✨ Changing ${obj.type} to random gradient:`, randomGradient);            
+            alert(`${randomGradient}`);
+            applyGradientToObject(obj, randomGradient);
+          } else {
+            // For other objects, use random solid color
+            const randomColor = selectRandomPredefinedColor(logoColor, 16, obj.id);
+            const newDeltaE = calculateDeltaE(logoColor, randomColor);
+            console.log(`✨ Changing ${obj.type} to random predefined color: ${randomColor} (ΔE: ${newDeltaE.toFixed(2)})`);
+            applyColorToObject(obj, randomColor);
+          }
         });
         
         canvas.renderAll();
-        console.log('✨ All overlapping objects changed to beautiful colors');
+        console.log('✨ All overlapping objects changed to random colors/gradients');
       } else {
         console.warn('⚠️ No logo found for overlap detection');
       }
@@ -7009,6 +7052,139 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
          <div className="px-6 py-3 flex-1">
           <h3 className="text-sm font-medium text-gray-700 mb-3">Herramientas de Diseño</h3>
           
+          {/* File Operations - Moved above tabs */}
+          <div className="bg-gray-50 p-3 rounded-lg border mb-4">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Operaciones de Archivo</h4>
+            <div className="flex items-center space-x-2">
+              {/* Keep/Save Button */}
+              <button
+                onClick={async () => await saveDesign()}
+                className={`p-2 rounded-lg transition-colors relative ${
+                  userPlan === 'Gratis' 
+                    ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
+                    : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+                title={userPlan === 'Gratis' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
+              >
+                <FloppyDisk size={16} />
+                {userPlan === 'Gratis' && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </button>
+
+              {/* Download Dropdown */}
+              <div className="relative download-dropdown">
+                <button
+                  onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+                  className={`p-2 rounded-lg transition-colors relative ${
+                    userPlan === 'Gratis' 
+                      ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
+                      : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                  title={userPlan === 'Gratis' ? 'Descargar (Premium) - Upgrade para descargar' : 'Descargar Diseño'}
+                >
+                  <Download size={16} />
+                  {userPlan === 'Gratis' && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+                
+                {showDownloadDropdown && (
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setShowDownloadDropdown(false);
+                          downloadDesign('PNG');
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                      >
+                        <ImageIcon size={16} />
+                        <span>PNG</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowDownloadDropdown(false);
+                          downloadDesign('PDF');
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                      >
+                        <FilePdf size={16} />
+                        <span>PDF</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Undo Button */}
+              <button
+                onClick={undo}
+                disabled={!canUndo}
+                className={`p-2 rounded-lg transition-colors ${
+                  canUndo 
+                    ? 'bg-gray-100 hover:bg-gray-200' 
+                    : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                }`}
+                title="Deshacer (Ctrl+Z)"
+              >
+                <ArrowArcLeft size={16} />
+              </button>
+
+              {/* Redo Button */}
+              <button
+                onClick={redo}
+                disabled={!canRedo}
+                className={`p-2 rounded-lg transition-colors ${
+                  canRedo 
+                    ? 'bg-gray-100 hover:bg-gray-200' 
+                    : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                }`}
+                title="Rehacer (Ctrl+Y)"
+              >
+                <ArrowArcRight size={16} />
+              </button>
+
+              {/* Separator */}
+              <div className="w-px h-6 bg-gray-300"></div>
+
+              {/* Copy Button */}
+              <button
+                onClick={duplicateSelectedObject}
+                disabled={!selectedObject}
+                className={`p-2 rounded-lg transition-colors ${
+                  selectedObject 
+                    ? 'bg-gray-100 hover:bg-gray-200' 
+                    : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                }`}
+                title="Duplicar Objeto (Ctrl+D)"
+              >
+                <Copy size={16} />
+              </button>
+
+              {/* Delete Button */}
+              <button
+                onClick={deleteSelectedObject}
+                disabled={!selectedObject}
+                className={`p-2 rounded-lg transition-colors ${
+                  selectedObject 
+                    ? 'bg-red-100 hover:bg-red-200 text-red-600' 
+                    : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                }`}
+                title="Eliminar Objeto (Delete)"
+              >
+                <Trash size={16} />
+              </button>
+            </div>
+          </div>
           
           {/* Tab Navigation */}
           <div className="flex border-b border-gray-200 mb-4">
@@ -7060,119 +7236,6 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           {/* Tab Content */}
           {activeTab === 'elements' && (
             <div className="space-y-3">
-              {/* File Operations - Moved to second sidebar */}
-              <div className="bg-gray-50 p-3 rounded-lg border">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Operaciones de Archivo</h4>
-                <div className="flex items-center space-x-2">
-                  {/* Keep/Save Button */}
-              <button
-                    onClick={async () => await saveDesign()}
-                    className={`p-2 rounded-lg transition-colors relative ${
-                      userPlan === 'Gratis' 
-                        ? 'bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200' 
-                        : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                    title={userPlan === 'Gratis' ? 'Guardar Diseño (Premium) - Upgrade para guardar' : 'Guardar Diseño (Ctrl+S) - Guarda todo en un solo archivo'}
-                  >
-                    <FloppyDisk size={16} />
-                    {userPlan === 'Gratis' && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-              </button>
-
-                          {/* Download Dropdown */}
-            <div className="relative download-dropdown">
-              <button
-                onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-                title="Descargar diseño"
-              >
-                      <Download size={16} />
-              </button>
-              
-              {/* Download Dropdown Menu */}
-              {showDownloadDropdown && (
-                <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
-              <button
-                      onClick={() => {
-                        downloadDesign('PNG');
-                        setShowDownloadDropdown(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-t-lg"
-                    >
-                      <span>PNG</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        downloadDesign('PDF');
-                        setShowDownloadDropdown(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 rounded-b-lg"
-                    >
-                    <FilePdf size={4} className="w-4 h-4 text-red-600" />
-                      <span>PDF</span>
-              </button>
-                  </div>
-                )}
-            </div>
-
-                  {/* Edit Operations */}
-                  <div className="flex items-center space-x-2 ml-2">
-              <button
-                onClick={undo}
-                disabled={historyIndex <= 0}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Deshacer (Ctrl+Z)"
-              >
-                      <ArrowArcLeft size={4} className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={redo}
-                disabled={historyIndex >= history.length - 1}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Rehacer (Ctrl+Y)"
-              >
-                      <ArrowArcRight size={4} className="w-4 h-4" />
-              </button>
-              
-                    <div className="w-px h-6 bg-gray-300 mx-1"></div>
-              
-              <button
-                onClick={duplicateSelectedObject}
-                disabled={!selectedObject}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Duplicar (Ctrl+D)"
-              >
-                      <Copy size={4} className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={deleteSelectedObject}
-                disabled={!selectedObject}
-                className={`p-2 rounded-lg transition-colors relative ${
-                  userPlan === 'Gratis' 
-                    ? 'bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200' 
-                    : 'bg-gray-100 hover:bg-gray-200'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title={userPlan === 'Gratis' ? 'Eliminar (Premium) - Upgrade para eliminar' : 'Eliminar (Delete)'}
-              >
-                <Trash size={4} className="w-4 h-4" />
-                {userPlan === 'Gratis' && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
-                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-          </div>
-        </div>
-          </div>
           
                {/* Basic Design Tools */}
                <div className="space-y-2">
@@ -9418,6 +9481,20 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
                       title="Debug Color Harmony System"
                     >
                       🎨 Debug Colors
+                    </button>
+                    <button
+                      onClick={() => debugColorRestoration(canvas)}
+                      className="px-3 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors shadow-lg"
+                      title="Debug Color Restoration Status"
+                    >
+                      🔍 Debug Restoration
+                    </button>
+                    <button
+                      onClick={() => testGradientRestoration(canvas)}
+                      className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
+                      title="Test Gradient Restoration"
+                    >
+                      🌊 Test Gradients
                     </button>
                     <button
                       onClick={testColorSystem}
