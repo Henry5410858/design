@@ -541,22 +541,22 @@ export function restoreOriginalColors(allObjects: any[], currentlyOverlapping: a
     
     // Check if object has color state and was previously overlapping but is no longer
     if (hasColorState && !isCurrentlyOverlapping) {
-      alert(`${obj.type}`);
-      // Object overlapping but is no longer - restore original color
+
+      // Object was overlapping but is no longer - restore original color
       console.log(`🔄 Object ${objId} no longer overlapping - restoring original color from ${obj.colorState.currentColor} to ${obj.colorState.originalColor}`);
       
       // Restore original color state
       obj.colorState.isOverlapping = false;
-      obj.colorState.currentColor = obj.colorStad2disngmer.originalColor;
+      obj.colorState.currentColor = obj.colorState.originalColor;
       obj.colorState.harmonyType = null;
       obj.colorState.isColorLocked = false; // Unlock color
       obj.colorState.hasBeenChanged = false; // Reset change flag
       obj.colorState.lastChangeTime = 0; // Reset change time
       // Apply original color - use gradient restoration if available
       if (obj.colorState.originalData) {
-          alert(`${JSON.stringify(obj.colorState.originalData)}`)
         restoreOriginalColorToObject(obj, obj.colorState.originalData);
-        console.log(`✅ Restored original gradient/color for object ${objId} - COLOR UNLOCKED`); y
+        console.log(`✅ Restored original gradient/color for object ${objId} - COLOR UNLOCKED`);
+      } else {
         applyColorToObject(obj, obj.colorState.originalColor);
         console.log(`✅ Restored original color for object ${objId}: ${obj.colorState.originalColor} - COLOR UNLOCKED`);
       }
