@@ -6125,8 +6125,7 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
           if (obj.type === 'path') {
             // For path objects (waves), use random gradient
             const randomGradient = selectRandomGradient(logoColor, 16, obj.id, obj.width, obj.scaleX);
-            console.log(`✨ Changing ${obj.type} to random gradient:`, randomGradient);            
-            alert(`${randomGradient}`);
+            console.log(`✨ Changing ${obj.type} to random gradient:`, randomGradient);
             applyGradientToObject(obj, randomGradient);
           } else {
             // For other objects, use random solid color
