@@ -51,6 +51,7 @@ const initialData = {
         { id: '6', type: 'text', x: 100, y: 530, width: 300, height: 50, text: 'Llámamos:', fontSize: 24, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'normal' },
         { id: '7', type: 'text', x: 100, y: 570, width: 300, height: 50, text: '+123-456-7890', fontSize: 36, color: '#FFFFFF', fontFamily: 'Arial', fontWeight: 'normal' }
       ],
+      
       backgroundColor: '#1e3a8a',
       backgroundImage: null,
       canvasSize: '1080x1920'
