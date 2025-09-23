@@ -39,6 +39,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       description: 'Configura tu identidad de marca'
     },
     {
+      name: '✨ IA Mejora',
+      href: '/ai-enhance',
+      icon: '✨',
+      description: 'Mejora tus imágenes con IA'
+    },
+    {
       name: '📥 Descargas',
       href: '/downloads',
       icon: '📥',

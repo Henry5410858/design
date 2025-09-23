@@ -62,6 +62,10 @@ export const API_ENDPOINTS = {
   
   // AI endpoints
   AI_TEXT: `${API_BASE_URL}/api/ai-text`,
+
+  // Premium features
+  IMAGE_ENHANCE: `${API_BASE_URL}/api/images/enhance`,
+  PROPOSAL_GENERATE: `${API_BASE_URL}/api/proposals/generate`,
   
   // Upload endpoints
   UPLOADS: `${API_BASE_URL}/uploads`,

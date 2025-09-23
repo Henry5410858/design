@@ -1,0 +1,23 @@
+# MongoDB Configuration
+MONGODB_URL=mongodb+srv://tonyklassen:fXUND8zN7necywxH@designflow.hlbvhbv.mongodb.net/design_center
+# MONGODB_URL=mongodb://localhost:27017/designcenter
+
+# JWT Secret
+JWT_SECRET=zxcvbnm,./asdfghjklqwertyuiop[]
+
+# Server Port
+PORT=4000
+# NEXT_PUBLIC_API_URL=https://designcenter.vercel.app
+# NEXT_PUBLIC_API_URL=https://turbo-enigma-eight.vercel.app
+
+# Canva API Configuration (optional)
+# CANVA_API_BASE_URL=https://api.canva.com
+# CANVA_CLIENT_ID=
+# CANVA_CLIENT_SECRET=
+# CANVA_REDIRECT_URI=http://localhost:3000/canva/callback
+# 
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=dbk9b78qf
+CLOUDINARY_API_KEY=311157821686177
+CLOUDINARY_API_SECRET=fYaL9PcGi1q8xbU9vf72rgBDSlE

@@ -31,11 +31,20 @@ router.post('/signup', async (req, res) => {
     }
 
     const hashed = await bcrypt.hash(password, 10);
+    // Normalize plan to match enum values in User model
+    const planMap = {
+      'Free': 'Gratis',
+      'Gratis': 'Gratis',
+      'Premium': 'Premium',
+      'Ultra-Premium': 'Ultra-Premium'
+    };
+    const normalizedPlan = planMap[plan] || 'Gratis';
+
     const userData = {
       username,
       email,
       password: hashed,
-      plan: plan || 'Free',
+      plan: normalizedPlan,
       firstName: firstName || '',
       lastName: lastName || '',
       phone: phone || '',
@@ -59,6 +68,9 @@ router.post('/signup', async (req, res) => {
     });
   } catch (err) {
     console.error('Signup error:', err);
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ message: err.message });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -132,7 +144,7 @@ router.put('/update-profile', async (req, res) => {
       position: position || '',
       location: location || '',
       bio: bio || '',
-      plan: plan || 'Free',
+      plan: plan || 'Gratis',
       preferences: preferences || {}
     };
 

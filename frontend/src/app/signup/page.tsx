@@ -9,7 +9,7 @@ export default function SignupPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    plan: 'Free',
+    plan: 'Gratis',
     firstName: '',
     lastName: '',
     phone: '',
@@ -95,7 +95,7 @@ export default function SignupPage() {
               </label>
               <div className="grid grid-cols-1 gap-3">
                 {[
-                  { value: 'Free', label: 'Plan Gratuito', description: 'Acceso básico a templates' },
+                  { value: 'Gratis', label: 'Plan Gratuito', description: 'Acceso básico a templates' },
                   { value: 'Premium', label: 'Plan Premium', description: 'Funcionalidades avanzadas' },
                   { value: 'Ultra-Premium', label: 'Plan Ultra-Premium', description: 'Experiencia completa' }
                 ].map((plan) => (

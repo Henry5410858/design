@@ -10,6 +10,8 @@ const authRoutes = require('./routes/auth');
 const templateRoutes = require('./routes/templates');
 const brandKitRoutes = require('./routes/brandKit');
 const canvaRoutes = require('./routes/canva');
+const imageRoutes = require('./routes/images');
+const proposalRoutes = require('./routes/proposals');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -26,7 +28,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Database connection
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/design_center';
+    const mongoURI = process.env.MONGODB_URI || process.env.MONGODB_URL || 'mongodb://localhost:27017/design_center';
     console.log('🔌 Connecting to MongoDB:', mongoURI.replace(/\/\/.*@/, '//***:***@')); // Hide credentials in logs
     
     await mongoose.connect(mongoURI, {
@@ -75,6 +77,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/brand-kit', brandKitRoutes);
 app.use('/api/canva', canvaRoutes);
+app.use('/api/images', imageRoutes);
+app.use('/api/proposals', proposalRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
