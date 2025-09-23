@@ -21,34 +21,34 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   const navigationItems = useMemo(() => [
     {
-      name: '🏠 Dashboard',
+      name: 'Dashboard',
       href: '/',
       icon: '🏠',
       description: 'Vista general del centro de diseño'
     },
     {
-      name: '🎨 Plantillas',
+      name: 'Plantillas',
       href: '/templates',
       icon: '🎨',
       description: 'Explora nuestras plantillas profesionales'
     },
     {
-      name: '🏷️ Mi Marca',
-      href: '/brand-kit',
-      icon: '🏷️',
-      description: 'Configura tu identidad de marca'
+      name: 'Crear Nueva Plantilla',
+      href: '/editor?type=flyer',
+      icon: '➕',
+      description: 'Crea una nueva plantilla desde cero'
     },
     {
-      name: '✨ IA Mejora',
+      name: 'Mejora de Imágenes (IA)',
       href: '/ai-enhance',
       icon: '✨',
       description: 'Mejora tus imágenes con IA'
     },
     {
-      name: '📥 Descargas',
-      href: '/downloads',
-      icon: '📥',
-      description: 'Gestiona tus diseños descargados'
+      name: 'Kit de Marca',
+      href: '/brand-kit',
+      icon: '🏷️',
+      description: 'Configura tu identidad de marca'
     }
   ], []);
 

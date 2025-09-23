@@ -5,6 +5,7 @@ import { Template } from '@/types';
 import API_ENDPOINTS from '@/config/api';
 import { exportTemplateAsImage } from '@/utils/canvasExport';
 import { templateDesignManager, useTemplateDesignManager } from '@/utils/templateDesignManager';
+import { useNotification } from '@/context/NotificationContext';
 
 interface TemplateGalleryProps {
   templates: Template[];
@@ -17,6 +18,8 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
   const [showInstructions, setShowInstructions] = useState(false);
   const [instructionData, setInstructionData] = useState<{template: Template, format: 'png' | 'pdf'} | null>(null);
   const designManager = useTemplateDesignManager();
+  // Notifications
+  const { showInfo, showError, showSuccess, showWarning } = useNotification();
 
   // Cleanup function for modal state
   const closeModal = useCallback(() => {
@@ -160,28 +163,16 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
 
   const downloadTemplate = useCallback(async (template: Template, format: 'png' | 'pdf') => {
     try {
-      if ((window as any).showNotification) {
-        (window as any).showNotification({
-          type: 'info',
-          title: 'Generando plantilla',
-          message: `Creando ${format.toUpperCase()} de "${template.name}"...`,
-          duration: 3000
-        });
-      }
+      const { showInfo, showError, showSuccess } = useNotification();
+      // Info toast when starting
+      showInfo(`Creando ${format.toUpperCase()} de "${template.name}"...`, 3000);
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
       if (!ctx) {
         console.error('Could not get canvas context');
-        if ((window as any).showNotification) {
-          (window as any).showNotification({
-            type: 'error',
-            title: 'Error',
-            message: 'No se pudo generar la plantilla. Por favor intenta de nuevo.',
-            duration: 5000
-          });
-        }
+        showError('No se pudo generar la plantilla. Por favor intenta de nuevo.', 5000);
         return;
       }
 
@@ -222,14 +213,8 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            if ((window as any).showNotification) {
-              (window as any).showNotification({
-                type: 'success',
-                title: '¡PNG Descargado!',
-                message: `La plantilla "${template.name}" se descargó exitosamente.`,
-                duration: 4000
-              });
-            }
+            // Success notification
+            showSuccess(`¡PNG Descargado! La plantilla "${template.name}" se descargó exitosamente.`, 4000);
           }
         });
       } else if (format === 'pdf') {
@@ -245,26 +230,13 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
         pdf.addImage(imgData, 'PNG', 0, 0, width, height);
         pdf.save(`${template.name.replace(/\s+/g, '_')}.pdf`);
 
-        if ((window as any).showNotification) {
-          (window as any).showNotification({
-            type: 'success',
-            title: '¡PDF Descargado!',
-            message: `La plantilla "${template.name}" se descargó exitosamente.`,
-            duration: 4000
-          });
-        }
+        // Success notification
+        showSuccess(`¡PDF Descargado! La plantilla "${template.name}" se descargó exitosamente.`, 4000);
       }
     } catch (error) {
       console.error('Error downloading template:', error);
       
-      if ((window as any).showNotification) {
-        (window as any).showNotification({
-          type: 'error',
-          title: 'Error en la descarga',
-          message: 'Hubo un problema al descargar la plantilla. Por favor intenta de nuevo.',
-          duration: 5000
-        });
-      }
+      showError('Hubo un problema al descargar la plantilla. Por favor intenta de nuevo.', 5000);
     }
   }, []);
 
@@ -272,14 +244,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
     setSelectedCategory(category);
     
     if (category !== 'all') {
-      if ((window as any).showNotification) {
-        (window as any).showNotification({
-          type: 'info',
-          title: 'Categoría seleccionada',
-          message: `Mostrando plantillas de: ${category}`,
-          duration: 2000
-        });
-      }
+      showInfo(`Categoría seleccionada: Mostrando plantillas de ${category}`, 2000);
     }
   }, []);
 
@@ -288,14 +253,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
     setSearchQuery(query);
     
     if (query && filteredTemplates.length === 0) {
-      if ((window as any).showNotification) {
-        (window as any).showNotification({
-          type: 'info',
-          title: 'Búsqueda sin resultados',
-          message: 'No se encontraron plantillas que coincidan con tu búsqueda.',
-          duration: 3000
-        });
-      }
+      showInfo('Búsqueda sin resultados: No se encontraron plantillas que coincidan con tu búsqueda.', 3000);
     }
   }, [filteredTemplates.length]);
 
