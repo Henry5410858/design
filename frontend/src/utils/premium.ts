@@ -1,4 +1,4 @@
-import API_ENDPOINTS from '@/src/config/api';
+import API_ENDPOINTS from '@/config/api';
 
 export type ProposalItem = {
   title: string;

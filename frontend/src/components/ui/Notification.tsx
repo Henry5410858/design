@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export interface NotificationProps {
   id: string;
@@ -67,54 +67,52 @@ const Notification: React.FC<NotificationProps> = ({
   };
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: -50, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -50, scale: 0.9 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className={`relative max-w-sm w-full bg-white rounded-xl shadow-2xl border-2 ${getColors()} overflow-hidden`}
-        >
-          {/* Progress Bar */}
-          <div className="absolute top-0 left-0 h-1 bg-current opacity-30">
-            <motion.div
-              className="h-full bg-current"
-              initial={{ width: '100%' }}
-              animate={{ width: '0%' }}
-              transition={{ duration: duration / 1000, ease: 'linear' }}
-            />
-          </div>
+    isVisible ? (
+      <motion.div
+        initial={{ opacity: 0, y: -50, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -50, scale: 0.9 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className={`relative max-w-sm w-full bg-white rounded-xl shadow-2xl border-2 ${getColors()} overflow-hidden`}
+      >
+        {/* Progress Bar */}
+        <div className="absolute top-0 left-0 h-1 bg-current opacity-30">
+          <motion.div
+            className="h-full bg-current"
+            initial={{ width: '100%' }}
+            animate={{ width: '0%' }}
+            transition={{ duration: duration / 1000, ease: 'linear' }}
+          />
+        </div>
 
-          <div className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 text-2xl">
-                {getIcon()}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-sm mb-1">
-                  {title}
-                </h4>
-                <p className="text-sm opacity-90 leading-relaxed">
-                  {message}
-                </p>
-              </div>
-
-              <button
-                onClick={handleClose}
-                className="flex-shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity p-1"
-                aria-label="Close notification"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+        <div className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 text-2xl">
+              {getIcon()}
             </div>
+            
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-sm mb-1">
+                {title}
+              </h4>
+              <p className="text-sm opacity-90 leading-relaxed">
+                {message}
+              </p>
+            </div>
+
+            <button
+              onClick={handleClose}
+              className="flex-shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity p-1"
+              aria-label="Close notification"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
+      </motion.div>
+    ) : null
   );
 };
 

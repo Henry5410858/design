@@ -176,15 +176,24 @@ async function networkFirst(request, cacheName) {
 // Stale while revalidate strategy
 async function staleWhileRevalidate(request, cacheName) {
   const cachedResponse = await caches.match(request);
-  
+
   const fetchPromise = fetch(request).then((networkResponse) => {
+    // Clone immediately to avoid "Response body is already used" when caching later
+    const responseClone = networkResponse.clone();
     if (networkResponse.ok) {
-      const cache = caches.open(cacheName);
-      cache.then(c => c.put(request, networkResponse.clone()));
+      caches.open(cacheName).then((cache) => {
+        cache.put(request, responseClone).catch((err) => {
+          console.error('Service Worker: Cache put failed', err);
+        });
+      });
     }
     return networkResponse;
+  }).catch((err) => {
+    console.error('Service Worker: Network fetch failed', err);
+    // Fall back to cached if available
+    return cachedResponse || Promise.reject(err);
   });
-  
+
   return cachedResponse || fetchPromise;
 }
 

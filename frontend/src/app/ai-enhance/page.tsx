@@ -7,15 +7,14 @@ import {
   getEnhanceUsage,
   type EnhancementPreset,
   type EnhanceResponse,
-} from "@/src/utils/premium";
-import { useAuth } from "@/src/context/AuthContext";
+} from "@/utils/premium";
+import { useAuth } from "@/context/AuthContext";
 import { 
   MagicWand, 
   Image as ImageIcon, 
   ArrowsClockwise,
   ArrowCounterClockwise,
   DownloadSimple,
-  ImagesSquare,
   Lightning,
 } from "phosphor-react";
 
@@ -237,7 +236,7 @@ export default function AIEnhancePage() {
               onClick={() => fileInputRef.current?.click()}
               className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors duration-200 flex items-center gap-2"
             >
-              <ImagesSquare size={18} /> Añadir Imágenes
+              <ImageIcon size={18} /> Añadir Imágenes
             </button>
             <button
               onClick={enhanceAll}
