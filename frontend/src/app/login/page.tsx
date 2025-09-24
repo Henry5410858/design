@@ -14,6 +14,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
+  // Disable exit animations on redirect to avoid mutation errors during unmount
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
       router.replace('/');
@@ -29,7 +30,8 @@ export default function LoginPage() {
       if (email && password) {
         // Use the AuthContext login function
         await login(email, password);
-        router.push('/');
+        // Use replace to avoid back navigation to login and keep animations stable
+        router.replace('/');
       } else {
         setError('Por favor ingresa email y contraseña');
       }

@@ -3,18 +3,13 @@
  * Offline functionality, caching, and push notifications
  */
 
-const CACHE_NAME = 'diseñopro-v1';
-const STATIC_CACHE = 'diseñopro-static-v1';
-const DYNAMIC_CACHE = 'diseñopro-dynamic-v1';
+const CACHE_NAME = 'diseñopro-v3';
+const STATIC_CACHE = 'diseñopro-static-v3';
+const DYNAMIC_CACHE = 'diseñopro-dynamic-v3';
 
-// Assets to cache immediately
+// Assets to cache immediately (HTML routes removed)
 const STATIC_ASSETS = [
-  '/',
-  '/editor',
-  '/templates',
-  '/my-designs',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
+  // Do NOT cache any HTML routes like '/', '/templates', '/editor', etc.
   '/manifest.json',
   '/favicon.ico',
   '/assets/img/logo.png'
@@ -93,6 +88,11 @@ async function handleRequest(request) {
   const url = new URL(request.url);
 
   try {
+    // HTML navigations: network-only, do not cache
+    if (isHtmlRequest(request) || request.mode === 'navigate') {
+      return await fetch(request);
+    }
+
     // Static assets - cache first
     if (isStaticAsset(url)) {
       return await cacheFirst(request, STATIC_CACHE);
@@ -100,11 +100,6 @@ async function handleRequest(request) {
 
     // API requests - network first with cache fallback
     if (isApiRequest(url)) {
-      return await networkFirst(request, DYNAMIC_CACHE);
-    }
-
-    // HTML pages - network first with cache fallback
-    if (isHtmlRequest(request)) {
       return await networkFirst(request, DYNAMIC_CACHE);
     }
 

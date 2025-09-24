@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, AuthToken, LoginResponse } from '@/types';
 import API_ENDPOINTS from '@/config/api';
 
@@ -166,7 +167,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // Logout user
+  const router = useRouter();
+
   const logout = useCallback(() => {
+    // Capture callsite to track unexpected triggers
+    try { throw new Error('Logout stacktrace'); } catch (e) { console.warn('🔐 Logout: Stacktrace (who called logout):', e); }
     console.log('🔐 Logout: Starting logout process...');
     
     // Clear localStorage
@@ -187,9 +192,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     console.log('🔐 Logout: Cleared user state, redirecting to login...');
     
-    // Force redirect to login page
-    window.location.href = '/login';
-  }, []);
+    // Use Next router to avoid full reloads
+    router.replace('/login');
+  }, [router]);
 
   const value: AuthContextType = {
     user,

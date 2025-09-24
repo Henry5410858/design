@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from '../context/AuthContext';
 import { NotificationProvider } from '../context/NotificationContext';
 import ClientOnly from '../components/ClientOnly';
+import DevServiceWorkerGuard from '../components/DevServiceWorkerGuard';
 
 export const metadata: Metadata = {
   title: 'LupaProp - Centro de Diseño Profesional',
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans antialiased">
+        <DevServiceWorkerGuard />
         <ClientOnly>
           <AuthProvider>
             <NotificationProvider>

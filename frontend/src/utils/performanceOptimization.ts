@@ -687,12 +687,33 @@ export class PerformanceOptimizationManager {
   }
 
   /**
-   * Load component dynamically
+   * Load component dynamically using a static import map to satisfy bundlers
    */
-  private async loadComponent(componentPath: string): Promise<void> {
+  private async loadComponent(componentPath: string): Promise<any> {
     try {
-      const module = await import(componentPath);
-      return module.default;
+      // Static import map to avoid expression-based dynamic imports
+      const componentMap: Record<string, () => Promise<any>> = {
+        '/components/AIImageEnhancement': () => import('@/components/AIImageEnhancement'),
+        '/components/ProposalGenerator': () => import('@/components/ProposalGenerator'),
+        '/components/SmartCampaignCalendar': () => import('@/components/SmartCampaignCalendar'),
+        '/components/AITextGeneration': () => import('@/components/AITextGeneration'),
+        '/components/AdvancedAIIntegration': () => import('@/components/AdvancedAIIntegration'),
+        '/components/CollaborationPanel': () => import('@/components/CollaborationPanel'),
+        '/components/AdvancedExportIntegration': () => import('@/components/AdvancedExportIntegration'),
+        '/components/AdvancedAnalyticsDashboard': () => import('@/components/AdvancedAnalyticsDashboard'),
+        '/components/AdvancedCustomizationDashboard': () => import('@/components/AdvancedCustomizationDashboard'),
+        '/components/mobile/MobileEditor': () => import('@/components/mobile/MobileEditor'),
+        '/components/PerformanceDashboard': () => import('@/components/PerformanceDashboard'),
+        '/components/SecurityDashboard': () => import('@/components/SecurityDashboard'),
+        '/components/InfrastructureDashboard': () => import('@/components/InfrastructureDashboard'),
+      };
+
+      const loader = componentMap[componentPath];
+      if (!loader) {
+        throw new Error(`Unknown component path: ${componentPath}`);
+      }
+      const module = await loader();
+      return module.default ?? module;
     } catch (error) {
       console.error('Error loading component:', error);
       throw error;

@@ -93,9 +93,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     if (!isLoading && !user && pathname !== '/login' && pathname !== '/signup') {
       // Only redirect if not already on auth pages
       console.log('🔐 DashboardLayout: User not authenticated, redirecting to login...');
-      window.location.href = '/login';
+      router.replace('/login');
     }
-  }, [user, isLoading, pathname]); // Include pathname to check current route
+  }, [user, isLoading, pathname, router]); // Include pathname to check current route
 
   // Handle responsive behavior - only run once on mount
   useEffect(() => {

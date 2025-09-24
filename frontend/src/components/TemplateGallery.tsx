@@ -163,7 +163,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = React.memo(({ templates 
 
   const downloadTemplate = useCallback(async (template: Template, format: 'png' | 'pdf') => {
     try {
-      const { showInfo, showError, showSuccess } = useNotification();
+      // Use top-level hooks only; context already available
       // Info toast when starting
       showInfo(`Creando ${format.toUpperCase()} de "${template.name}"...`, 3000);
 
