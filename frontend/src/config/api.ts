@@ -66,6 +66,7 @@ export const API_ENDPOINTS = {
   // Premium features
   IMAGE_ENHANCE: `${API_BASE_URL}/api/images/enhance`,
   PROPOSAL_GENERATE: `${API_BASE_URL}/api/proposals/generate`,
+  PROPOSAL_ENHANCE_INTRO: `${API_BASE_URL}/api/proposals/enhance-intro`,
   
   // Upload endpoints
   UPLOADS: `${API_BASE_URL}/uploads`,

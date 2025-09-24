@@ -1,139 +1,269 @@
 'use client';
-import { useState } from 'react';
 
-// Force dynamic rendering for this page
-export const dynamic = 'auto';
+import React, { useState, useCallback, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { 
-  Pencil, 
-  FilePdf, 
-  Image as ImageIcon, 
-  SquaresFour, 
-  Export 
+import {
+  FilePdf,
+  Upload,
+  Plus,
+  Trash2,
+  Wand2,
+  Building,
+  MapPin,
+  DollarSign,
+  User,
+  Mail,
+  Phone,
+  Globe,
+  X,
+  Eye
 } from 'phosphor-react';
-interface Proposal {
+import API_ENDPOINTS from '@/config/api';
+import { useAuth } from '@/context/AuthContext';
+import { NotificationManager } from '@/components/ui/NotificationManager';
+
+interface PropertyItem {
   id: string;
   title: string;
-  client: string;
-  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
-  amount: number;
-  currency: string;
-  createdAt: string;
-  expiresAt: string;
-  lastModified: string;
+  location?: string;
+  price?: number;
+  keyFacts?: string;
+  description: string;
+  imageUrl?: string;
+  imageFile?: File;
 }
 
+interface ClientInfo {
+  name: string;
+  industry?: string;
+  valueProps?: string[];
+}
+
+interface ContactInfo {
+  name?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  address?: string;
+  website?: string;
+}
+
+interface BrandTheme {
+  primary: string;
+  secondary: string;
+  logoUrl?: string;
+}
+
+const TEMPLATE_OPTIONS = [
+  {
+    id: 'comparative-short',
+    name: 'Comparativa Corta',
+    description: '2-3 propiedades, 2 páginas',
+    icon: '📊'
+  },
+  {
+    id: 'simple-proposal',
+    name: 'Propuesta Simple',
+    description: '4-6 páginas con fotos y detalles',
+    icon: '📄'
+  },
+  {
+    id: 'dossier-express',
+    name: 'Dossier Express',
+    description: 'Resumen ejecutivo de 1 página',
+    icon: '📋'
+  }
+];
+
 export default function ProposalPage() {
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { user } = useAuth();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
-  const proposals: Proposal[] = [
-    {
-      id: '1',
-      title: 'Rediseño de Sitio Web Corporativo',
-      client: 'TechCorp S.L.',
-      status: 'approved',
-      amount: 5000,
-      currency: 'EUR',
-      createdAt: '2024-08-20',
-      expiresAt: '2024-09-20',
-      lastModified: '2024-08-25'
-    },
-    {
-      id: '2',
-      title: 'Identidad Visual para Startup',
-      client: 'InnovateLab',
-      status: 'sent',
-      amount: 3000,
-      currency: 'EUR',
-      createdAt: '2024-08-22',
-      expiresAt: '2024-09-22',
-      lastModified: '2024-08-24'
-    },
-    {
-      id: '3',
-      title: 'Campaña de Marketing Digital',
-      client: 'Retail Solutions',
-      status: 'draft',
-      amount: 7500,
-      currency: 'EUR',
-      createdAt: '2024-08-23',
-      expiresAt: '2024-09-23',
-      lastModified: '2024-08-25'
-    },
-    {
-      id: '4',
-      title: 'Packaging para Producto',
-      client: 'EcoProducts',
-      status: 'rejected',
-      amount: 2500,
-      currency: 'EUR',
-      createdAt: '2024-08-15',
-      expiresAt: '2024-09-15',
-      lastModified: '2024-08-18'
-    }
-  ];
-
-  const statuses = [
-    { id: 'all', name: 'Todos', count: proposals.length },
-    { id: 'draft', name: 'Borradores', count: proposals.filter(p => p.status === 'draft').length },
-    { id: 'sent', name: 'Enviadas', count: proposals.filter(p => p.status === 'sent').length },
-    { id: 'approved', name: 'Aprobadas', count: proposals.filter(p => p.status === 'approved').length },
-    { id: 'rejected', name: 'Rechazadas', count: proposals.filter(p => p.status === 'rejected').length },
-    { id: 'expired', name: 'Expiradas', count: proposals.filter(p => p.status === 'expired').length }
-  ];
-
-  const filteredProposals = proposals.filter(proposal => {
-    const matchesStatus = selectedStatus === 'all' || proposal.status === selectedStatus;
-    const matchesSearch = proposal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         proposal.client.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+  // Form data
+  const [client, setClient] = useState<ClientInfo>({ name: '', industry: '', valueProps: [''] });
+  const [introText, setIntroText] = useState('');
+  const [properties, setProperties] = useState<PropertyItem[]>([
+    { id: '1', title: '', description: '', price: undefined }
+  ]);
+  const [contact, setContact] = useState<ContactInfo>({});
+  const [selectedTemplate, setSelectedTemplate] = useState('comparative-short');
+  const [brandTheme, setBrandTheme] = useState<BrandTheme>({
+    primary: '#1f2937',
+    secondary: '#6366f1'
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'sent': return 'bg-blue-100 text-blue-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'expired': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Load brand kit if available
+  useEffect(() => {
+    const loadBrandKit = async () => {
+      if (!user?.id) return;
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'draft': return <Pencil size={16} className="w-4 h-4" />;
-      case 'sent': return <FilePdf size={16} className="w-4 h-4" />;
-      case 'approved': return <Pencil size={16} className="w-4 h-4" />;
-      case 'rejected': return <Pencil size={16} className="w-4 h-4" />;
-      case 'expired': return <Pencil size={16} className="w-4 h-4" />;
-      default: return <FilePdf size={16} className="w-4 h-4" />;
-    }
-  };
+      try {
+        const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'draft': return 'Borrador';
-      case 'sent': return 'Enviada';
-      case 'approved': return 'Aprobada';
-      case 'rejected': return 'Rechazada';
-      case 'expired': return 'Expirada';
-      default: return status;
-    }
-  };
+        if (response.ok) {
+          const brandKit = await response.json();
+          if (brandKit) {
+            setBrandTheme({
+              primary: brandKit.primaryColor || '#1f2937',
+              secondary: brandKit.secondaryColor || '#6366f1',
+              logoUrl: brandKit.logoUrl
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading brand kit:', error);
+      }
+    };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
-  };
+    loadBrandKit();
+  }, [user?.id]);
+
+  const handlePropertyChange = useCallback((index: number, field: keyof PropertyItem, value: any) => {
+    setProperties(prev => prev.map((prop, i) =>
+      i === index ? { ...prop, [field]: value } : prop
+    ));
+  }, []);
+
+  const addProperty = useCallback(() => {
+    setProperties(prev => [...prev, {
+      id: Date.now().toString(),
+      title: '',
+      description: '',
+      price: undefined
+    }]);
+  }, []);
+
+  const removeProperty = useCallback((index: number) => {
+    setProperties(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleImageUpload = useCallback((index: number, file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageUrl = e.target?.result as string;
+      handlePropertyChange(index, 'imageUrl', imageUrl);
+      handlePropertyChange(index, 'imageFile', file);
+    };
+    reader.readAsDataURL(file);
+  }, [handlePropertyChange]);
+
+  const enhanceIntro = useCallback(async () => {
+    if (!introText.trim()) {
+      NotificationManager.show('Por favor escribe algo de texto para mejorar', 'warning');
+      return;
+    }
+
+    setIsEnhancing(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.PROPOSAL_ENHANCE_INTRO, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          text: introText,
+          clientName: client.name,
+          industry: client.industry,
+          valueProps: client.valueProps?.filter(v => v.trim())
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIntroText(data.enhancedText);
+        NotificationManager.show('Texto mejorado exitosamente', 'success');
+      } else {
+        throw new Error('Error al mejorar el texto');
+      }
+    } catch (error) {
+      console.error('Error enhancing intro:', error);
+      NotificationManager.show('Error al mejorar el texto', 'error');
+    } finally {
+      setIsEnhancing(false);
+    }
+  }, [introText, client]);
+
+  const generatePDF = useCallback(async () => {
+    if (!client.name.trim()) {
+      NotificationManager.show('Por favor ingresa el nombre del cliente', 'warning');
+      return;
+    }
+
+    if (properties.length === 0 || properties.some(p => !p.title.trim() || !p.description.trim())) {
+      NotificationManager.show('Por favor completa al menos una propiedad con título y descripción', 'warning');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // Prepare form data for file uploads
+      const formData = new FormData();
+
+      // Add client data
+      formData.append('client', JSON.stringify(client));
+
+      // Add properties (with image files if any)
+      const processedProperties = properties.map(prop => ({
+        ...prop,
+        price: prop.price || undefined,
+        keyFacts: prop.keyFacts || undefined
+      }));
+
+      formData.append('items', JSON.stringify(processedProperties));
+      formData.append('contact', JSON.stringify(contact));
+      formData.append('theme', JSON.stringify(brandTheme));
+      formData.append('template', selectedTemplate);
+      formData.append('introText', introText);
+
+      // Add image files
+      properties.forEach((prop, index) => {
+        if (prop.imageFile) {
+          formData.append(`propertyImage_${index}`, prop.imageFile);
+        }
+      });
+
+      const response = await fetch(API_ENDPOINTS.PROPOSAL_GENERATE, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        // Create download link
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `propuesta-${client.name}-${Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        NotificationManager.show('PDF generado exitosamente', 'success');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al generar el PDF');
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      NotificationManager.show('Error al generar el PDF', 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [client, properties, contact, brandTheme, selectedTemplate, introText]);
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -141,253 +271,364 @@ export default function ProposalPage() {
               <FilePdf size={24} className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Propuestas</h1>
-              <p className="text-gray-600">Gestiona y crea propuestas profesionales para tus clientes</p>
+              <h1 className="text-3xl font-bold text-gray-900">Generador de Propuestas</h1>
+              <p className="text-gray-600">Crea propuestas comerciales profesionales con propiedades y productos</p>
             </div>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center">
-                <FilePdf size={24} className="w-6 h-6 text-brand-primary" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Form */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Client Information */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <User size={20} className="text-brand-primary" />
+                Información del Cliente
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre del Cliente *
+                  </label>
+                  <input
+                    type="text"
+                    value={client.name}
+                    onChange={(e) => setClient(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    placeholder="Ej: Empresa XYZ"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Industria
+                  </label>
+                  <input
+                    type="text"
+                    value={client.industry}
+                    onChange={(e) => setClient(prev => ({ ...prev, industry: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    placeholder="Ej: Inmobiliaria, Retail, etc."
+                  />
+                </div>
               </div>
-              <span className="text-sm text-gray-500">Total</span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">{proposals.length}</h3>
-            <p className="text-sm text-gray-600">Propuestas</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center">
-                <Pencil size={24} className="w-6 h-6 text-success" />
-              </div>
-              <span className="text-sm text-gray-500">Aprobadas</span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">
-              {proposals.filter(p => p.status === 'approved').length}
-            </h3>
-            <p className="text-sm text-gray-600">Aprobadas</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center">
-                <Pencil size={24} className="w-6 h-6 text-warning" />
-              </div>
-              <span className="text-sm text-gray-500">Pendientes</span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">
-              {proposals.filter(p => p.status === 'sent').length}
-            </h3>
-            <p className="text-sm text-gray-600">Pendientes</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-info/10 rounded-xl flex items-center justify-center">
-                <Pencil size={24} className="text-info" />
-              </div>
-              <span className="text-sm text-gray-500">Valor Total</span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">
-              {formatCurrency(proposals.reduce((sum, p) => sum + p.amount, 0), 'EUR')}
-            </h3>
-            <p className="text-sm text-gray-600">Valor Total</p>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl p-6 text-white shadow-soft mb-8">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-semibold mb-2">¿Listo para crear una nueva propuesta?</h3>
-              <p className="text-white/90">Utiliza nuestras plantillas profesionales para crear propuestas atractivas</p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-white text-brand-primary rounded-xl font-semibold hover:bg-gray-50 transition-colors duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1"
-            >
-              <ImageIcon size={20} className="w-5 h-5" />
-              Crear Propuesta
-            </button>
-          </div>
-        </div>
-
-        {/* Filters and Search */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft mb-8">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <input
-                type="text"
-                placeholder="Buscar propuestas..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200"
-              />
-              <SquaresFour size={16} className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             </div>
 
-            {/* Status Filters */}
-            <div className="flex flex-wrap gap-2">
-              {statuses.map(status => (
+            {/* Introduction Text */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <FilePdf size={20} className="text-brand-primary" />
+                Texto de Introducción
+              </h2>
+
+              <div className="space-y-4">
+                <textarea
+                  value={introText}
+                  onChange={(e) => setIntroText(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  placeholder="Escribe una introducción personalizada o deja vacío para generar automáticamente..."
+                />
+
                 <button
-                  key={status.id}
-                  onClick={() => setSelectedStatus(status.id)}
-                  className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
-                    selectedStatus === status.id
-                      ? 'bg-brand-primary text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  onClick={enhanceIntro}
+                  disabled={isEnhancing || !introText.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
-                  {status.name}
-                  <span className="ml-2 text-xs bg-white/20 px-2 py-1 rounded-full">
-                    {status.count}
-                  </span>
+                  <Wand2 size={16} />
+                  {isEnhancing ? 'Mejorando...' : 'Mejorar con IA'}
                 </button>
-              ))}
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Proposals Table */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-soft overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Propuesta
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
-                  </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Monto
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProposals.map(proposal => (
-                  <tr key={proposal.id} className="hover:bg-gray-50 transition-colors duration-200">
-                    <td className="px-6 py-4 whitespace-nowrap">
+            {/* Properties */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Building size={20} className="text-brand-primary" />
+                  Propiedades/Productos
+                </h2>
+                <button
+                  onClick={addProperty}
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary/90 transition-colors"
+                >
+                  <Plus size={16} />
+                  Agregar Propiedad
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {properties.map((property, index) => (
+                  <div key={property.id} className="border border-gray-200 rounded-lg p-4 relative">
+                    {properties.length > 1 && (
+                      <button
+                        onClick={() => removeProperty(index)}
+                        className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-50 rounded"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{proposal.title}</div>
-                        <div className="text-sm text-gray-500">ID: {proposal.id}</div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Título *
+                        </label>
+                        <input
+                          type="text"
+                          value={property.title}
+                          onChange={(e) => handlePropertyChange(index, 'title', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                          placeholder="Ej: Apartamento Centro"
+                        />
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-brand-primary/10 rounded-full flex items-center justify-center mr-3">
-                          <Pencil size={16} className="w-4 h-4 text-brand-primary" />
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Ubicación
+                        </label>
+                        <input
+                          type="text"
+                          value={property.location || ''}
+                          onChange={(e) => handlePropertyChange(index, 'location', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                          placeholder="Ej: Madrid Centro"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Precio (€)
+                        </label>
+                        <input
+                          type="number"
+                          value={property.price || ''}
+                          onChange={(e) => handlePropertyChange(index, 'price', parseFloat(e.target.value) || undefined)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                          placeholder="Ej: 250000"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Foto
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => e.target.files?.[0] && handleImageUpload(index, e.target.files[0])}
+                            className="hidden"
+                            id={`image-upload-${index}`}
+                          />
+                          <label
+                            htmlFor={`image-upload-${index}`}
+                            className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
+                          >
+                            <Upload size={16} />
+                            Subir Foto
+                          </label>
+                          {property.imageUrl && (
+                            <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
+                              <img src={property.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                            </div>
+                          )}
                         </div>
-                        <div className="text-sm font-medium text-gray-900">{proposal.client}</div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
-                        {getStatusIcon(proposal.status)}
-                        {getStatusText(proposal.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {formatCurrency(proposal.amount, proposal.currency)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{proposal.createdAt}</div>
-                      <div className="text-sm text-gray-500">Expira: {proposal.expiresAt}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors duration-200">
-                          <Pencil size={16} className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors duration-200">
-                          <Pencil size={16} className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors duration-200">
-                          <Export size={16} className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-gray-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors duration-200">
-                          <Pencil size={16} className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Características Clave
+                      </label>
+                      <input
+                        type="text"
+                        value={property.keyFacts || ''}
+                        onChange={(e) => handlePropertyChange(index, 'keyFacts', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                        placeholder="Ej: 3 habitaciones, 2 baños, terraza"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Descripción *
+                      </label>
+                      <textarea
+                        value={property.description}
+                        onChange={(e) => handlePropertyChange(index, 'description', e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                        placeholder="Describe la propiedad o producto..."
+                      />
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Mail size={20} className="text-brand-primary" />
+                Información de Contacto
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    value={contact.name || ''}
+                    onChange={(e) => setContact(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={contact.email || ''}
+                    onChange={(e) => setContact(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    value={contact.phone || ''}
+                    onChange={(e) => setContact(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Empresa
+                  </label>
+                  <input
+                    type="text"
+                    value={contact.company || ''}
+                    onChange={(e) => setContact(prev => ({ ...prev, company: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Dirección
+                  </label>
+                  <input
+                    type="text"
+                    value={contact.address || ''}
+                    onChange={(e) => setContact(prev => ({ ...prev, address: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sitio Web
+                  </label>
+                  <input
+                    type="url"
+                    value={contact.website || ''}
+                    onChange={(e) => setContact(prev => ({ ...prev, website: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Empty State */}
-        {filteredProposals.length === 0 && (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FilePdf size={32} className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No se encontraron propuestas
-            </h3>
-            <p className="text-gray-600">
-              Intenta ajustar los filtros o crear tu primera propuesta
-            </p>
-          </div>
-        )}
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Template Selection */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+              <h3 className="text-lg font-semibold mb-4">Seleccionar Plantilla</h3>
 
-        {/* Templates Section */}
-        <div className="mt-12 bg-gradient-to-r from-brand-primary/5 to-brand-secondary/5 rounded-2xl p-8 border border-brand-primary/20">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-            Plantillas de Propuestas
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
-              <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <FilePdf size={24} className="w-6 h-6 text-brand-primary" />
+              <div className="space-y-3">
+                {TEMPLATE_OPTIONS.map((template) => (
+                  <div
+                    key={template.id}
+                    onClick={() => setSelectedTemplate(template.id)}
+                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                      selectedTemplate === template.id
+                        ? 'border-brand-primary bg-brand-primary/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">{template.icon}</span>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{template.name}</h4>
+                        <p className="text-sm text-gray-600">{template.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <h4 className="font-medium text-gray-900 mb-2 text-center">Diseño Web</h4>
-              <p className="text-sm text-gray-600 text-center mb-4">Plantilla para proyectos de diseño web</p>
-              <button className="w-full px-4 py-2 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary-dark transition-colors duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1">
-                Usar Plantilla
-              </button>
+
+              {/* Language selector removed per request */}
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
-              <div className="w-12 h-12 bg-brand-secondary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <FilePdf size={24} className="w-6 h-6 text-brand-secondary" />
+            {/* Brand Preview */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+              <h3 className="text-lg font-semibold mb-4">Vista Previa de Marca</h3>
+
+              <div className="space-y-4">
+                {brandTheme.logoUrl && (
+                  <div className="flex justify-center">
+                    <img src={brandTheme.logoUrl} alt="Logo" className="h-12 object-contain" />
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <div
+                    className="w-8 h-8 rounded"
+                    style={{ backgroundColor: brandTheme.primary }}
+                  />
+                  <div
+                    className="w-8 h-8 rounded"
+                    style={{ backgroundColor: brandTheme.secondary }}
+                  />
+                </div>
+
+                <p className="text-sm text-gray-600">
+                  Los colores y logo de tu marca se aplicarán automáticamente al PDF.
+                </p>
               </div>
-              <h4 className="font-medium text-gray-900 mb-2 text-center">Branding</h4>
-              <p className="text-sm text-gray-600 text-center mb-4">Plantilla para proyectos de branding</p>
-              <button className="w-full px-4 py-2 bg-brand-secondary text-white rounded-xl font-medium hover:bg-brand-secondary-dark transition-colors duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1">
-                Usar Plantilla
-              </button>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft hover:shadow-elevated transition-all duration-200 hover:-translate-y-1">
-              <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <FilePdf size={24} className="w-6 h-6 text-success" />
-              </div>
-              <h4 className="font-medium text-gray-900 mb-2 text-center">Marketing</h4>
-              <p className="text-sm text-gray-600 text-center mb-4">Plantilla para campañas de marketing</p>
-              <button className="w-full px-4 py-2 bg-success text-white rounded-xl font-medium hover:bg-success/90 transition-colors duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1">
-                Usar Plantilla
-              </button>
-            </div>
+            {/* Generate Button */}
+            <button
+              onClick={generatePDF}
+              disabled={isGenerating}
+              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-brand-primary to-brand-secondary text-white rounded-xl font-semibold hover:from-brand-primary/90 hover:to-brand-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Generando PDF...
+                </>
+              ) : (
+                <>
+                  <FilePdf size={20} />
+                  Generar PDF
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
