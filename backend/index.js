@@ -25,41 +25,64 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Database connection
-const connectDB = async () => {
+// Database connection with retry/backoff
+let isConnecting = false;
+let retryCount = 0;
+const baseDelay = parseInt(process.env.MONGODB_RETRY_DELAY_MS || '2000', 10);
+const maxDelay = parseInt(process.env.MONGODB_MAX_RETRY_DELAY_MS || '30000', 10);
+
+const connectWithRetry = async () => {
+  if (isConnecting || mongoose.connection.readyState === 1) return; // Avoid duplicate connects
+  isConnecting = true;
+  const mongoURI = process.env.MONGODB_URI || process.env.MONGODB_URL || 'mongodb://localhost:27017/design_center';
+  const safeURI = mongoURI.replace(/\/\/.*@/, '//***:***@');
   try {
-    const mongoURI = process.env.MONGODB_URI || process.env.MONGODB_URL || 'mongodb://localhost:27017/design_center';
-    console.log('🔌 Connecting to MongoDB:', mongoURI.replace(/\/\/.*@/, '//***:***@')); // Hide credentials in logs
-    
+    console.log('🔌 Connecting to MongoDB:', safeURI);
     await mongoose.connect(mongoURI, {
       // Core connection options
       useNewUrlParser: true,
       useUnifiedTopology: true,
 
-      // Timeouts (tweak based on your app/network)
-      connectTimeoutMS: 100000,  // 100s max to initially connect
-      socketTimeoutMS: 450000,   // 450s max inactivity before close
+      // Timeouts (tuned for quicker feedback and reconnects)
+      connectTimeoutMS: 20000,
+      socketTimeoutMS: 45000,
 
-      // Retry logic
-      serverSelectionTimeoutMS: 500000, // Stop trying after 500s if no server
-      heartbeatFrequencyMS: 1000000,    // Keep connection alive with pings
+      // Driver server selection timeout (fail fast, we handle retries)
+      serverSelectionTimeoutMS: 20000,
+      heartbeatFrequencyMS: 10000,
     });
-    
+    retryCount = 0;
     console.log('✅ MongoDB connected successfully');
     console.log('🔍 Connected to database:', mongoose.connection.db?.databaseName);
     console.log('🔍 Connection host:', mongoose.connection.host);
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
-    if (process.env.NODE_ENV === 'production') {
-      console.error('❌ Database connection failed in production, but continuing...');
-    } else {
-      process.exit(1);
-    }
+    retryCount += 1;
+    const delay = Math.min(baseDelay * Math.pow(2, retryCount - 1), maxDelay);
+    console.error('❌ MongoDB connection error:', error?.message || error);
+    console.error(`⏳ Retrying in ${delay}ms (attempt ${retryCount}) — server stays up`);
+    setTimeout(connectWithRetry, delay);
+  } finally {
+    isConnecting = false;
   }
 };
 
-// Connect to database
-connectDB();
+// Initial connect attempt (non-blocking)
+connectWithRetry();
+
+// Connection state logs and auto-reconnect
+mongoose.connection.on('connected', () => {
+  console.log('🟢 Mongoose connected');
+});
+mongoose.connection.on('reconnected', () => {
+  console.log('🟡 Mongoose reconnected');
+});
+mongoose.connection.on('disconnected', () => {
+  console.warn('🔴 Mongoose disconnected — scheduling reconnect');
+  connectWithRetry();
+});
+mongoose.connection.on('error', (err) => {
+  console.error('⚠️ Mongoose connection error:', err?.message || err);
+});
 
 // Add error handling for unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
@@ -82,10 +105,19 @@ app.use('/api/proposals', proposalRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  const readyState = mongoose.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+    database: {
+      state: readyState === 1 ? 'Connected' : readyState === 2 ? 'Connecting' : readyState === 3 ? 'Disconnecting' : 'Disconnected',
+      readyState
+    },
+    reconnect: {
+      retryCount,
+      baseDelay,
+      maxDelay
+    },
     environment: process.env.NODE_ENV || 'development',
     version: '1.0.0'
   });

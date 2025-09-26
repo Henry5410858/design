@@ -95,7 +95,7 @@ TemplateSchema.index({ type: 1 });
 TemplateSchema.index({ category: 1 });
 // isDefault index removed
 TemplateSchema.index({ isRealEstate: 1 });
-TemplateSchema.index({ templateKey: 1 });
+// Unique index for templateKey is declared on the schema path (unique: true)
 TemplateSchema.index({ dimensions: 1 });
 // TemplateSchema.index({ dimensions: 1 });
 

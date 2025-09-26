@@ -9,7 +9,6 @@ const authRoutes = require('../routes/auth');
 const templateRoutes = require('../routes/templates');
 const brandKitRoutes = require('../routes/brandKit');
 const canvaRoutes = require('../routes/canva');
-const proposalRoutes = require('../routes/proposals');
 
 const app = express();
 
@@ -67,7 +66,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/brand-kit', brandKitRoutes);
 app.use('/api/canva', canvaRoutes);
-app.use('/api/proposals', proposalRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

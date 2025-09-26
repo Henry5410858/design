@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import {
-  FilePdf,
+  FileText as FilePdf,
   Upload,
   Plus,
   Trash2,
@@ -17,10 +17,23 @@ import {
   Globe,
   X,
   Eye
-} from 'phosphor-react';
+} from 'lucide-react';
 import API_ENDPOINTS from '@/config/api';
 import { useAuth } from '@/context/AuthContext';
-import { NotificationManager } from '@/components/ui/NotificationManager';
+import NotificationManager from '@/components/ui/NotificationManager';
+
+// Simple helper to show toasts via the global NotificationManager
+const notify = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', title = '') => {
+  try {
+    (window as any).showNotification?.({
+      type,
+      title: title ||
+        (type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : type === 'warning' ? 'Aviso' : 'Info'),
+      message,
+      duration: 4000
+    });
+  } catch {}
+};
 
 interface PropertyItem {
   id: string;
@@ -154,7 +167,7 @@ export default function ProposalPage() {
 
   const enhanceIntro = useCallback(async () => {
     if (!introText.trim()) {
-      NotificationManager.show('Por favor escribe algo de texto para mejorar', 'warning');
+      notify('Por favor escribe algo de texto para mejorar', 'warning');
       return;
     }
 
@@ -177,13 +190,13 @@ export default function ProposalPage() {
       if (response.ok) {
         const data = await response.json();
         setIntroText(data.enhancedText);
-        NotificationManager.show('Texto mejorado exitosamente', 'success');
+        notify('Texto mejorado exitosamente', 'success');
       } else {
         throw new Error('Error al mejorar el texto');
       }
     } catch (error) {
       console.error('Error enhancing intro:', error);
-      NotificationManager.show('Error al mejorar el texto', 'error');
+      notify('Error al mejorar el texto', 'error');
     } finally {
       setIsEnhancing(false);
     }
@@ -191,12 +204,12 @@ export default function ProposalPage() {
 
   const generatePDF = useCallback(async () => {
     if (!client.name.trim()) {
-      NotificationManager.show('Por favor ingresa el nombre del cliente', 'warning');
+      notify('Por favor ingresa el nombre del cliente', 'warning');
       return;
     }
 
     if (properties.length === 0 || properties.some(p => !p.title.trim() || !p.description.trim())) {
-      NotificationManager.show('Por favor completa al menos una propiedad con título y descripción', 'warning');
+      notify('Por favor completa al menos una propiedad con título y descripción', 'warning');
       return;
     }
 
@@ -248,14 +261,14 @@ export default function ProposalPage() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        NotificationManager.show('PDF generado exitosamente', 'success');
+        notify('PDF generado exitosamente', 'success');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error al generar el PDF');
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
-      NotificationManager.show('Error al generar el PDF', 'error');
+      notify('Error al generar el PDF', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -579,8 +592,6 @@ export default function ProposalPage() {
                   </div>
                 ))}
               </div>
-
-              {/* Language selector removed per request */}
             </div>
 
             {/* Brand Preview */}

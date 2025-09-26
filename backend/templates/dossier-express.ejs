@@ -1,318 +1,103 @@
 <!DOCTYPE html>
-<html lang="<%= lang || 'es' %>">
+<html lang="<%= locale || 'es' %>">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dossier Express</title>
-    <style>
-        body {
-            font-family: 'Helvetica', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            color: #333;
-            line-height: 1.6;
-        }
-        .page {
-            width: 210mm;
-            height: 297mm;
-            margin: 0 auto;
-            padding: 20mm;
-            box-sizing: border-box;
-        }
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid <%= secondary %>;
-        }
-        .logo {
-            width: 100px;
-            height: auto;
-        }
-        .header-info {
-            text-align: right;
-        }
-        .header-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: <%= primary %>;
-            margin-bottom: 5px;
-        }
-        .client-name {
-            font-size: 16px;
-            color: #6b7280;
-        }
-        .executive-summary {
-            background: linear-gradient(135deg, <%= primary %>10 0%, <%= secondary %>10 100%);
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-        .summary-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: <%= primary %>;
-            margin-bottom: 10px;
-        }
-        .summary-text {
-            font-size: 14px;
-            line-height: 1.8;
-        }
-        .properties-overview {
-            margin-bottom: 30px;
-        }
-        .overview-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: <%= primary %>;
-            margin-bottom: 15px;
-        }
-        .properties-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        .property-card {
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            overflow: hidden;
-            background: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .property-image {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-        }
-        .property-content {
-            padding: 12px;
-        }
-        .property-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .property-price {
-            font-size: 16px;
-            font-weight: bold;
-            color: <%= secondary %>;
-            margin-bottom: 5px;
-        }
-        .property-keyfact {
-            font-size: 12px;
-            color: #374151;
-        }
-        .key-benefits {
-            margin-bottom: 30px;
-        }
-        .benefits-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: <%= primary %>;
-            margin-bottom: 15px;
-        }
-        .benefits-list {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        .benefit-item {
-            display: flex;
-            align-items: center;
-            font-size: 13px;
-        }
-        .benefit-bullet {
-            width: 8px;
-            height: 8px;
-            background: <%= secondary %>;
-            border-radius: 50%;
-            margin-right: 10px;
-            flex-shrink: 0;
-        }
-        .investment-summary {
-            background: #f9fafb;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-        .investment-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: <%= primary %>;
-            margin-bottom: 15px;
-        }
-        .investment-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
-        .investment-item {
-            text-align: center;
-        }
-        .investment-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: <%= secondary %>;
-            margin-bottom: 5px;
-        }
-        .investment-label {
-            font-size: 12px;
-            color: #6b7280;
-        }
-        .contact-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-        }
-        .contact-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: <%= primary %>;
-            margin-bottom: 10px;
-        }
-        .contact-info {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .contact-item {
-            font-size: 12px;
-            color: #374151;
-        }
-        .contact-label {
-            font-weight: bold;
-        }
-        .footer {
-            position: absolute;
-            bottom: 20mm;
-            left: 20mm;
-            right: 20mm;
-            text-align: center;
-            font-size: 10px;
-            color: #9ca3af;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dossier Express</title>
+  <style>
+    :root {
+      --primary: <%= theme?.primary || '#1f2937' %>;
+      --secondary: <%= theme?.secondary || '#6366f1' %>;
+      --text: #111827;
+      --muted: #6b7280;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; color: var(--text); }
+
+    .cover {
+      height: 240px;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 32px 40px;
+      position: relative;
+    }
+    .logo { max-height: 64px; max-width: 200px; object-fit: contain; }
+    .title-wrap { margin-left: 24px; }
+    .title { margin: 0; font-size: 28px; font-weight: 800; }
+    .subtitle { margin: 6px 0 0; font-size: 16px; opacity: 0.95; }
+
+    .container { padding: 28px 40px; }
+    .intro { white-space: pre-line; line-height: 1.5; font-size: 14px; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #fff; }
+    .card img { width: 100%; height: 180px; object-fit: cover; display: block; }
+    .card-body { padding: 12px 14px; }
+    .card-title { margin: 0; font-weight: 700; font-size: 16px; color: var(--text); }
+    .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .desc { margin-top: 8px; font-size: 13px; line-height: 1.4; color: var(--text); }
+    .price { margin-top: 10px; color: var(--secondary); font-weight: 800; }
+
+    .footer { margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+  </style>
 </head>
 <body>
-    <div class="page">
-        <!-- Header -->
-        <div class="header">
-            <% if (logoUrl) { %>
-                <img src="<%= getImg(logoUrl, 250, 80, 'fit') %>" alt="Logo" class="logo">
-            <% } %>
-            <div class="header-info">
-                <h1 class="header-title"><%= t.cover_title_dossier %></h1>
-                <p class="client-name"><%= client.name %></p>
-            </div>
-        </div>
-
-        <!-- Executive Summary -->
-        <div class="executive-summary">
-            <h2 class="summary-title"><%= t.summary %></h2>
-            <p class="summary-text"><%= aiIntro %></p>
-        </div>
-
-        <!-- Properties Overview -->
-        <div class="properties-overview">
-            <h3 class="overview-title"><%= t.comparison %></h3>
-            <div class="properties-grid">
-                <% items.forEach(item => { %>
-                    <div class="property-card">
-                        <% if (item.enhancedUrl || item.imageUrl) { %>
-                            <img src="<%= getImg(item.enhancedUrl || item.imageUrl, 800, 600, 'fill') %>" alt="<%= item.title %>" class="property-image">
-                        <% } %>
-                        <div class="property-content">
-                            <h4 class="property-title"><%= item.title %></h4>
-                            <% if (typeof item.price === 'number') { %>
-                                <p class="property-price"><%= item.price.toFixed(2) %> €</p>
-                            <% } %>
-                            <% if (item.keyFacts) { %>
-                                <p class="property-keyfact"><%= item.keyFacts.split(',')[0] %></p>
-                            <% } %>
-                        </div>
-                    </div>
-                <% }); %>
-            </div>
-        </div>
-
-        <!-- Key Benefits -->
-        <div class="key-benefits">
-            <h3 class="benefits-title"><%= t.benefits %></h3>
-            <div class="benefits-list">
-                <% items.forEach(item => { %>
-                    <% if (item.keyFacts) { %>
-                        <% item.keyFacts.split(',').slice(0, 4).forEach(fact => { %>
-                            <div class="benefit-item">
-                                <div class="benefit-bullet"></div>
-                                <span><%= fact.trim() %></span>
-                            </div>
-                        <% }); %>
-                    <% } %>
-                <% }); %>
-            </div>
-        </div>
-
-        <!-- Investment Summary -->
-        <% if (items.some(item => typeof item.price === 'number')) { %>
-            <div class="investment-summary">
-                <h3 class="investment-title">Resumen de Inversión</h3>
-                <div class="investment-grid">
-                    <div class="investment-item">
-                        <div class="investment-value">
-                            <%= Math.min(...items.filter(item => typeof item.price === 'number').map(item => item.price)).toFixed(2) %> €
-                        </div>
-                        <div class="investment-label">Precio Mínimo</div>
-                    </div>
-                    <div class="investment-item">
-                        <div class="investment-value">
-                            <%= Math.max(...items.filter(item => typeof item.price === 'number').map(item => item.price)).toFixed(2) %> €
-                        </div>
-                        <div class="investment-label">Precio Máximo</div>
-                    </div>
-                    <div class="investment-item">
-                        <div class="investment-value">
-                            <%= (items.filter(item => typeof item.price === 'number').reduce((sum, item) => sum + item.price, 0) / items.filter(item => typeof item.price === 'number').length).toFixed(2) %> €
-                        </div>
-                        <div class="investment-label">Precio Promedio</div>
-                    </div>
-                </div>
-            </div>
-        <% } %>
-
-        <!-- Contact Information -->
-        <% if (contact) { %>
-            <div class="contact-section">
-                <h3 class="contact-title">Contacto</h3>
-                <div class="contact-info">
-                    <% if (contact.name) { %>
-                        <div class="contact-item">
-                            <span class="contact-label">Nombre:</span> <%= contact.name %>
-                        </div>
-                    <% } %>
-                    <% if (contact.email) { %>
-                        <div class="contact-item">
-                            <span class="contact-label">Email:</span> <%= contact.email %>
-                        </div>
-                    <% } %>
-                    <% if (contact.phone) { %>
-                        <div class="contact-item">
-                            <span class="contact-label">Teléfono:</span> <%= contact.phone %>
-                        </div>
-                    <% } %>
-                    <% if (contact.company) { %>
-                        <div class="contact-item">
-                            <span class="contact-label">Empresa:</span> <%= contact.company %>
-                        </div>
-                    <% } %>
-                </div>
-            </div>
-        <% } %>
-
-        <div class="footer">
-            Documento generado automáticamente - <%= new Date().toLocaleDateString('es-ES') %>
-        </div>
+  <header class="cover">
+    <% if (theme?.logoUrl) { %>
+      <img class="logo" src="<%= logoTransformed %>" alt="Logo" />
+    <% } %>
+    <div class="title-wrap">
+      <h1 class="title"><%= t('proposal_title', 'Propuesta Comercial') %></h1>
+      <p class="subtitle"><%= client?.name || '' %></p>
     </div>
+  </header>
+
+  <main class="container">
+    <% if (intro) { %>
+      <section class="intro">
+        <%= intro %>
+      </section>
+    <% } %>
+
+    <% if ((items || []).length) { %>
+      <section class="grid">
+        <% (items || []).forEach(function(it) { %>
+          <article class="card">
+            <% if (it._thumb) { %>
+              <img src="<%= it._thumb %>" alt="<%= it.title || '' %>" />
+            <% } %>
+            <div class="card-body">
+              <h3 class="card-title"><%= it.title || '' %></h3>
+              <% if (it.location) { %>
+                <div class="meta"><%= it.location %></div>
+              <% } %>
+              <% if (it.keyFacts && it.keyFacts.length) { %>
+                <div class="meta"><%= it.keyFacts.join(' • ') %></div>
+              <% } %>
+              <% if (it.description) { %>
+                <div class="desc"><%= it.description %></div>
+              <% } %>
+              <% if (typeof it.price === 'number') { %>
+                <div class="price"><%= currency((it.price || 0), currencyCode) %></div>
+              <% } %>
+            </div>
+          </article>
+        <% }) %>
+      </section>
+    <% } %>
+
+    <footer class="footer">
+      <div>
+        <strong><%= client?.contact?.name || '' %></strong>
+        <% if (client?.contact?.email) { %> · <%= client.contact.email %><% } %>
+        <% if (client?.contact?.phone) { %> · <%= client.contact.phone %><% } %>
+      </div>
+      <div>
+        <%= t('powered_by', 'Generado automáticamente') %>
+      </div>
+    </footer>
+  </main>
 </body>
 </html>

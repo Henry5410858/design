@@ -60,8 +60,7 @@ const BrandKitSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Index for faster queries
-BrandKitSchema.index({ userId: 1 });
+// Note: userId is unique on the schema path; no separate non-unique index needed to avoid duplication
 
 // Virtual for logo URL (if we want to serve it as a file later)
 BrandKitSchema.virtual('logoUrl').get(function() {

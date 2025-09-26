@@ -644,67 +644,38 @@ router.get('/', async (req, res) => {
   try {
     console.log('🔍 GET /api/templates called');
     console.log('📊 Query params:', req.query);
-    console.log('🔍 Template model type:', typeof Template);
-    console.log('🔍 Template model:', Template);
-    
-    // Check database connection
-    console.log('🔍 Database connection state:', mongoose.connection.readyState);
-    console.log('🔍 Database name:', mongoose.connection.db?.databaseName);
-    console.log('🔍 Database host:', mongoose.connection.host);
-    
-    // Test database access
-    console.log('🔍 Testing database access...');
-    const db = mongoose.connection.db;
-    if (db) {
-      const collections = await db.listCollections().toArray();
-      console.log('🔍 Available collections:', collections.map(c => c.name));
-      
-      // Check if templates collection exists
-      const templatesCollection = collections.find(c => c.name === 'templates');
-      console.log('🔍 Templates collection exists:', !!templatesCollection);
-      
-      if (templatesCollection) {
-        const count = await db.collection('templates').countDocuments();
-        console.log('🔍 Templates collection count:', count);
-      }
+
+    // If DB is not connected, return safe empty response for gallery
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('⚠️ DB not connected — returning empty templates list');
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      return res.json({
+        templates: [],
+        pagination: { page, limit, total: 0, pages: 0 }
+      });
     }
-    
+
     const { type, category, isRealEstate } = req.query;
     let query = {};
-    
-    if (type) {
-      query.type = type;
-    }
-    
-    if (category) {
-      query.category = category;
-    }
-    
-    if (isRealEstate !== undefined) {
-      query.isRealEstate = isRealEstate === 'true';
-    }
-    
-    console.log('🔍 Database query:', query);
-    console.log('🔍 About to execute Template.find()...');
-    
+
+    if (type) query.type = type;
+    if (category) query.category = category;
+    if (isRealEstate !== undefined) query.isRealEstate = isRealEstate === 'true';
+
     // Add pagination and select only necessary fields for gallery
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    
-    // Only select fields needed for gallery display to reduce payload
+
     const templates = await Template.find(query)
       .select('_id name type category thumbnail thumbnailFilename dimensions canvasSize createdAt templateKey')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    
-    // Get total count for pagination
+
     const totalTemplates = await Template.countDocuments(query);
-    
-    console.log(`✅ Found ${templates.length} templates (page ${page}/${Math.ceil(totalTemplates / limit)})`);
-    console.log('🔍 First template:', templates[0] ? 'Exists' : 'No templates');
-    
+
     res.json({
       templates,
       pagination: {
@@ -716,14 +687,10 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error fetching templates:', error);
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error name:', error.name);
-    console.error('❌ Error stack:', error.stack);
-    res.status(500).json({ 
-      error: 'Failed to fetch templates',
-      message: error.message,
-      name: error.name
-    });
+    // Fail soft for gallery — send empty payload to avoid breaking UI
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    return res.json({ templates: [], pagination: { page, limit, total: 0, pages: 0 } });
   }
 });
 

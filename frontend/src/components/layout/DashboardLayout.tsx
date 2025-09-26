@@ -33,12 +33,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       description: 'Explora nuestras plantillas profesionales'
     },
     {
-      name: 'Generador de Propuestas',
-      href: '/proposal',
-      icon: '📑',
-      description: 'Crea propuestas comerciales en PDF con tus marcas'
-    },
-    {
       name: 'Crear Nueva Plantilla',
       href: '/editor?type=flyer',
       icon: '➕',
@@ -55,6 +49,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       href: '/brand-kit',
       icon: '🏷️',
       description: 'Configura tu identidad de marca'
+    },
+    {
+      name: 'Propuestas',
+      href: '/proposal',
+      icon: '📑',
+      description: 'Genera propuestas en PDF'
     }
   ], []);
 

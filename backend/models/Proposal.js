@@ -4,10 +4,13 @@ const ItemSchema = new mongoose.Schema({
   title: String,
   description: String,
   price: Number,
-  location: String,
-  keyFacts: String,
   imageUrl: String,
   enhancedUrl: String,
+  location: String,
+  keyFacts: [String],
+  benefits: [String],
+  performance: [String],
+  highlights: [String],
 });
 
 const ProposalSchema = new mongoose.Schema(
@@ -20,14 +23,11 @@ const ProposalSchema = new mongoose.Schema(
       quote: String,
       industry: String,
       valueProps: [String],
-    },
-    contact: {
-      name: String,
-      email: String,
-      phone: String,
-      company: String,
-      address: String,
-      website: String,
+      contact: {
+        name: String,
+        email: String,
+        phone: String,
+      },
     },
     theme: {
       primary: String,
@@ -35,8 +35,10 @@ const ProposalSchema = new mongoose.Schema(
       logoUrl: String,
     },
     items: [ItemSchema],
-    template: { type: String, enum: ['comparative-short', 'simple-proposal', 'dossier-express'], default: 'comparative-short' },
     aiIntro: String,
+    template: String,
+    locale: String,
+    currencyCode: String,
     pdfUrl: String,
   },
   { timestamps: true }

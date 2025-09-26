@@ -124,39 +124,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       
       // Send email and password to backend for authentication
-      const response = await fetch(API_ENDPOINTS.SIGNIN, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
+      // Try backend first; if it fails (e.g., server down), fall back to Next.js internal API
+      const payload = { email, password };
+      let response: Response | null = null;
+
+      try {
+        response = await fetch(API_ENDPOINTS.SIGNIN, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        console.warn('🔐 Login: Primary backend unreachable, falling back to internal API /api/auth/signin');
+      }
+
+      if (!response) {
+        response = await fetch('/api/auth/signin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
 
       if (response.ok) {
         const loginData = await response.json();
         console.log('🔐 Login: Login successful, data:', loginData);
-        
+
         // Construct user object with name field
         const userData: User = {
           ...loginData.user,
           name: loginData.user.username || loginData.user.email
         };
-        
+
         console.log('🔐 Login: Constructed user data:', userData);
-        
+
         // Calculate expiry time (7 days from now, matching backend JWT expiry)
         const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
-        
+
         // Store token, user data, and expiry
         localStorage.setItem('token', loginData.token);
         localStorage.setItem('tokenExpiry', expiresAt.toString());
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
-        
+
         console.log('🔐 Login: User state set, token stored');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Invalid credentials');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error((errorData as any).message || 'Invalid credentials');
       }
     } catch (error) {
       console.error('Login error:', error);
