@@ -7,6 +7,9 @@ const cloudinary = require('../config/cloudinary');
  */
 function cldFetch(url, opts = {}) {
   if (!url) return '';
+  // Support data URLs or local images directly (no Cloudinary transformation)
+  if (typeof url === 'string' && url.startsWith('data:')) return url;
+
   const {
     width,
     height,
@@ -32,8 +35,11 @@ function cldFetch(url, opts = {}) {
 
   const transformation = parts.join(',');
 
-  // Use Cloudinary image fetch
-  const cloudName = cloudinary.config().cloud_name;
+  // Use Cloudinary image fetch when config exists; fallback to raw URL otherwise
+  const cfg = cloudinary.config();
+  const cloudName = cfg && cfg.cloud_name;
+  if (!cloudName) return url;
+
   const base = `https://res.cloudinary.com/${cloudName}/image/fetch/${transformation}/`;
   // URL-encode the remote URL
   return base + encodeURIComponent(url);

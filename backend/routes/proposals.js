@@ -9,7 +9,14 @@ const { uploadPdf } = require('../services/cloudinaryHelpers');
 const Proposal = require('../models/Proposal');
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fieldSize: 10 * 1024 * 1024, // 10MB for text fields (JSON)
+    fileSize: 20 * 1024 * 1024,  // 20MB per file
+    files: 20
+  }
+});
 
 // List available templates (for UI selection)
 router.get('/templates', auth, (req, res) => {
@@ -107,18 +114,24 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
 
     // Upload images to Cloudinary if file exists
     const uploadedItems = await Promise.all(items.map(async (it, idx) => {
-      if (fileMap.has(idx)) {
-        const f = fileMap.get(idx);
-        const uploadResult = await new Promise((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream(
-            { folder: `users/${req.user.id}/proposal-items` },
-            (error, result) => (error ? reject(error) : resolve(result))
-          );
-          stream.end(f.buffer);
-        });
-        return { ...it, imageUrl: uploadResult.secure_url || uploadResult.url };
+      try {
+        if (fileMap.has(idx)) {
+          const f = fileMap.get(idx);
+          const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+              { folder: `users/${req.user.id}/proposal-items` },
+              (error, result) => (error ? reject(error) : resolve(result))
+            );
+            stream.end(f.buffer);
+          });
+          return { ...it, imageUrl: uploadResult.secure_url || uploadResult.url };
+        }
+        return it;
+      } catch (e) {
+        // If Cloudinary upload fails (e.g., missing credentials), continue with original imageUrl
+        console.warn('Image upload failed, using original imageUrl:', e?.message || e);
+        return it;
       }
-      return it;
     }));
 
     // Choose intro: prefer provided text; fallback to AI

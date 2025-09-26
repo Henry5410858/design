@@ -224,6 +224,9 @@ export default function ProposalPage() {
       // Add properties (with image files if any)
       const processedProperties = properties.map(prop => ({
         ...prop,
+        // Do NOT include inline base64 image data in JSON payload
+        imageUrl: undefined,
+        imageFile: undefined,
         price: prop.price || undefined,
         keyFacts: prop.keyFacts || undefined
       }));
@@ -250,18 +253,21 @@ export default function ProposalPage() {
       });
 
       if (response.ok) {
-        // Create download link
+        // Create download link without mutating React-managed DOM
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `propuesta-${client.name}-${Date.now()}.pdf`;
-        document.body.appendChild(a);
+        // Trigger download without inserting into the DOM (prevents NotFoundError with concurrent rendering)
         a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Revoke URL on next tick
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 0);
 
-        notify('PDF generado exitosamente', 'success');
+        // Defer notification to next tick to avoid interfering with concurrent rendering commit
+        setTimeout(() => notify('PDF generado exitosamente', 'success'), 0);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error al generar el PDF');
