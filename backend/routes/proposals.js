@@ -72,6 +72,7 @@ router.post('/render', auth, premium, async (req, res) => {
       locale,
       currencyCode,
     });
+    console.log(`[PDF] /render generated ${pdfBuffer?.length || 0} bytes for template: ${template}`);
 
     if (persist) {
       const upload = await uploadPdf(pdfBuffer, { folder: `users/${req.user.id}/proposals`, publicId: `${template}-${Date.now()}` });
@@ -79,8 +80,9 @@ router.post('/render', auth, premium, async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=${template}.pdf`);
-    return res.send(pdfBuffer);
+    res.setHeader('Content-Disposition', `attachment; filename="${template}.pdf"`);
+    res.setHeader('Content-Length', Buffer.byteLength(pdfBuffer).toString());
+    return res.end(pdfBuffer);
   } catch (e) {
     console.error('PDF render failed:', e);
     return res.status(500).json({ message: 'PDF render failed', error: e.message });
@@ -150,6 +152,7 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
       locale: 'es',
       currencyCode: 'EUR',
     });
+    console.log(`[PDF] /generate generated ${pdfBuffer?.length || 0} bytes for template: ${template}`);
 
     if (persist) {
       const upload = await uploadPdf(pdfBuffer, { folder: `users/${req.user.id}/proposals`, publicId: `${template}-${Date.now()}` });
@@ -157,8 +160,9 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=${template}.pdf`);
-    return res.send(pdfBuffer);
+    res.setHeader('Content-Disposition', `attachment; filename="${template}.pdf"`);
+    res.setHeader('Content-Length', Buffer.byteLength(pdfBuffer).toString());
+    return res.end(pdfBuffer);
   } catch (e) {
     console.error('PDF generation (multipart) failed:', e);
     return res.status(500).json({ message: 'PDF generation failed', error: e.message });

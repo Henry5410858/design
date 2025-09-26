@@ -253,6 +253,13 @@ export default function ProposalPage() {
       });
 
       if (response.ok) {
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/pdf')) {
+          // If backend did not return a PDF, surface server response for debugging
+          const text = await response.text();
+          throw new Error(`Respuesta no es PDF (${contentType}): ${text?.slice(0, 200)}`);
+        }
+
         // Create download link without mutating React-managed DOM
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -261,15 +268,15 @@ export default function ProposalPage() {
         a.download = `propuesta-${client.name}-${Date.now()}.pdf`;
         // Trigger download without inserting into the DOM (prevents NotFoundError with concurrent rendering)
         a.click();
-        // Revoke URL on next tick
+        // Revoke URL after a short delay to ensure the download has started
         setTimeout(() => {
           window.URL.revokeObjectURL(url);
-        }, 0);
+        }, 2000);
 
         // Defer notification to next tick to avoid interfering with concurrent rendering commit
         setTimeout(() => notify('PDF generado exitosamente', 'success'), 0);
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Error al generar el PDF');
       }
     } catch (error) {
