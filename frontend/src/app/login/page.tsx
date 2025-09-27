@@ -11,12 +11,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const router = useRouter();
   const { login } = useAuth();
 
-  // Disable exit animations on redirect to avoid mutation errors during unmount
+  // If already authenticated, go to dashboard immediately
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('token')) {
+      setRedirecting(true);
       router.replace('/');
     }
   }, [router]);
@@ -28,9 +30,9 @@ export default function LoginPage() {
     
     try {
       if (email && password) {
-        // Use the AuthContext login function
         await login(email, password);
-        // Use replace to avoid back navigation to login and keep animations stable
+        // Prevent any exit animations or further DOM updates on this page during navigation
+        setRedirecting(true);
         router.replace('/');
       } else {
         setError('Por favor ingresa email y contraseña');
@@ -42,6 +44,11 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (redirecting) {
+    // Render nothing while Next navigates to avoid React mutation errors
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4">

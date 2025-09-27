@@ -5,6 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+// Notifications are rendered globally in app/layout.tsx to avoid DOM reparenting issues
+// import InlineNotifications from '@/components/ui/InlineNotifications';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -94,11 +96,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     setSidebarOpen(false);
   }, []);
 
-  // Check if user is authenticated - only run when user or isLoading changes
+  // Check auth and avoid redirecting during brief post-login state
   useEffect(() => {
-    if (!isLoading && !user && pathname !== '/login' && pathname !== '/signup') {
-      // Only redirect if not already on auth pages
-      console.log('🔐 DashboardLayout: User not authenticated, redirecting to login...');
+    if (isLoading) return;
+    const isAuthRoute = pathname === '/login' || pathname === '/signup';
+    const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('token');
+
+    // Only redirect if there's truly no auth signal (no user and no token) and not on auth routes
+    if (!user && !hasToken && !isAuthRoute) {
+      console.log('🔐 DashboardLayout: No user and no token, redirecting to login...');
       router.replace('/login');
     }
   }, [user, isLoading, pathname, router]); // Include pathname to check current route
@@ -118,22 +124,30 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   }, []); // Empty dependency array - only run on mount
 
   // Loading state with skeleton loader
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-600 rounded-full animate-spin mx-auto" style={{ animationDelay: '-0.5s' }}></div>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Cargando Centro de Diseño</h2>
-          <p className="text-gray-500">Preparando tu experiencia creativa...</p>
+  const LoadingScreen = (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-600 rounded-full animate-spin mx-auto" style={{ animationDelay: '-0.5s' }}></div>
         </div>
+        <h2 className="text-xl font-semibold text-gray-700 mb-2">Cargando Centro de Diseño</h2>
+        <p className="text-gray-500">Preparando tu experiencia creativa...</p>
       </div>
-    );
+    </div>
+  );
+
+  if (isLoading) {
+    return LoadingScreen;
   }
 
-  // Not authenticated
+  // If token exists but user not yet hydrated, show loading instead of redirecting/blank
+  const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('token');
+  if (!user && hasToken) {
+    return LoadingScreen;
+  }
+
+  // Not authenticated (no user and no token)
   if (!user) {
     return null;
   }
@@ -141,6 +155,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden flex">
+        {/* Inline notifications are rendered globally in app/layout.tsx */}
       {/* Background Decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-full blur-3xl"></div>

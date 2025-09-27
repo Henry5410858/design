@@ -20,19 +20,20 @@ import {
 } from 'lucide-react';
 import API_ENDPOINTS from '@/config/api';
 import { useAuth } from '@/context/AuthContext';
-import NotificationManager from '@/components/ui/NotificationManager';
+import { useNotifications } from '@/context/NotificationsContext';
 
-// Simple helper to show toasts via the global NotificationManager
-const notify = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', title = '') => {
-  try {
-    (window as any).showNotification?.({
-      type,
-      title: title ||
-        (type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : type === 'warning' ? 'Aviso' : 'Info'),
-      message,
-      duration: 4000
-    });
-  } catch {}
+// Download without mutating document.body to avoid React DOM conflicts
+const triggerDownload = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  // Clicking without appending is supported in modern browsers and avoids DOM mutations
+  link.click();
+  // Revoke after a delay to ensure download starts
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 interface PropertyItem {
@@ -165,9 +166,11 @@ export default function ProposalPage() {
     reader.readAsDataURL(file);
   }, [handlePropertyChange]);
 
+  const { safeAdd } = useNotifications();
+
   const enhanceIntro = useCallback(async () => {
     if (!introText.trim()) {
-      notify('Por favor escribe algo de texto para mejorar', 'warning');
+      safeAdd('Por favor escribe algo de texto para mejorar', 'warning');
       return;
     }
 
@@ -190,26 +193,26 @@ export default function ProposalPage() {
       if (response.ok) {
         const data = await response.json();
         setIntroText(data.enhancedText);
-        notify('Texto mejorado exitosamente', 'success');
+        safeAdd('Texto mejorado exitosamente', 'success');
       } else {
         throw new Error('Error al mejorar el texto');
       }
     } catch (error) {
       console.error('Error enhancing intro:', error);
-      notify('Error al mejorar el texto', 'error');
+      safeAdd('Error al mejorar el texto', 'error');
     } finally {
       setIsEnhancing(false);
     }
-  }, [introText, client]);
+  }, [introText, client, safeAdd]);
 
   const generatePDF = useCallback(async () => {
     if (!client.name.trim()) {
-      notify('Por favor ingresa el nombre del cliente', 'warning');
+      safeAdd('Por favor ingresa el nombre del cliente', 'warning');
       return;
     }
 
     if (properties.length === 0 || properties.some(p => !p.title.trim() || !p.description.trim())) {
-      notify('Por favor completa al menos una propiedad con título y descripción', 'warning');
+      safeAdd('Por favor completa al menos una propiedad con título y descripción', 'warning');
       return;
     }
 
@@ -260,28 +263,18 @@ export default function ProposalPage() {
           throw new Error(`Respuesta no es PDF (${contentType}): ${text?.slice(0, 200)}`);
         }
 
-        // Create download link without mutating React-managed DOM
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `propuesta-${client.name}-${Date.now()}.pdf`;
-        // Trigger download without inserting into the DOM (prevents NotFoundError with concurrent rendering)
-        a.click();
-        // Revoke URL after a short delay to ensure the download has started
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 2000);
-
-        // Defer notification to next tick to avoid interfering with concurrent rendering commit
-        setTimeout(() => notify('PDF generado exitosamente', 'success'), 0);
+        triggerDownload(blob, `propuesta-${client.name}-${Date.now()}.pdf`);
+        // Notify post-commit safely using context notifications
+        safeAdd('PDF generado exitosamente', 'success');
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Error al generar el PDF');
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
-      notify('Error al generar el PDF', 'error');
+      // Defer notification to avoid DOM mutations during React commit
+      safeAdd('Error al generar el PDF', 'error');
     } finally {
       setIsGenerating(false);
     }

@@ -4,6 +4,7 @@ import { AuthProvider } from '../context/AuthContext';
 import { NotificationProvider } from '../context/NotificationContext';
 import ClientOnly from '../components/ClientOnly';
 import DevServiceWorkerGuard from '../components/DevServiceWorkerGuard';
+import InlineNotifications from '../components/ui/InlineNotifications';
 
 export const metadata: Metadata = {
   title: 'LupaProp - Centro de Diseño Profesional',
@@ -26,6 +27,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ClientOnly>
           <AuthProvider>
             <NotificationProvider>
+              {/* Global notifications anchored once to avoid DOM reparenting during route changes */}
+              <InlineNotifications />
               {children}
             </NotificationProvider>
           </AuthProvider>
