@@ -4,22 +4,39 @@ const cors = require('cors');
 // This fixes login/API failures caused by an overly strict whitelist.
 
 const staticOrigins = [
+  'https://design-center.netlify.app',
+  'https://designcenter.vercel.app',
   'https://turbo-enigma-frontend.vercel.app',
   'https://turbo-enigma-frontend-bydm.vercel.app',
   'https://turbo-enigma-jw51.vercel.app',
   'https://turbo-enigma.vercel.app',
   'https://turbo-enigma-frontend-sq3h.vercel.app',
-  'https://design-center.netlify.app',
-  'https://designcenter.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001'
 ];
 
-// Optional env-configured single origin (e.g., when testing from a custom domain)
-const envOrigin = process.env.CORS_ORIGIN;
-const baseOrigins = envOrigin && !staticOrigins.includes(envOrigin)
-  ? [...staticOrigins, envOrigin]
-  : staticOrigins;
+function buildOriginList() {
+  const envOrigin = process.env.CORS_ORIGIN;
+  const extraOrigins = process.env.CORS_ORIGINS;
+
+  const originSet = new Set(staticOrigins);
+
+  if (envOrigin) {
+    originSet.add(envOrigin);
+  }
+
+  if (extraOrigins) {
+    extraOrigins
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+      .forEach((origin) => originSet.add(origin));
+  }
+
+  return Array.from(originSet);
+}
+
+const baseOrigins = buildOriginList();
 
 // Regex patterns to allow local development hosts (any port)
 const allowLocalhost = process.env.CORS_ALLOW_LOCALHOST !== '0';
