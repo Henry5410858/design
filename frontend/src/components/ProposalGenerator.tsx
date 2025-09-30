@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { PDFProposalGenerator, ProposalData, ProposalVariant, PROPOSAL_VARIANTS } from '@/utils/pdfProposalGenerator';
 import { DEMO_PROPOSALS } from '@/data/demoProposalData';
 import { FileText, Download, Wand2, Building, Home, Megaphone, User, Mail, Phone, Globe, DollarSign, Calendar, CheckCircle, Zap } from 'lucide-react';
@@ -42,7 +42,7 @@ export default function ProposalGenerator({ onClose, initialData }: ProposalGene
     ...initialData
   });
 
-  const generator = new PDFProposalGenerator();
+  const generator = useMemo(() => new PDFProposalGenerator(), []);
 
   const handleInputChange = useCallback((field: string, value: any) => {
     setProposalData(prev => {
@@ -113,15 +113,17 @@ export default function ProposalGenerator({ onClose, initialData }: ProposalGene
   }, []);
 
   const calculateTotal = useCallback(() => {
-    const total = proposalData.pricing.breakdown.reduce((sum, item) => sum + item.amount, 0);
-    setProposalData(prev => ({
-      ...prev,
-      pricing: {
-        ...prev.pricing,
-        total
-      }
-    }));
-  }, [proposalData.pricing.breakdown]);
+    setProposalData(prev => {
+      const total = prev.pricing.breakdown.reduce((sum, item) => sum + item.amount, 0);
+      return {
+        ...prev,
+        pricing: {
+          ...prev.pricing,
+          total
+        }
+      };
+    });
+  }, []); // Empty dependency array - function uses functional state update
 
   const loadDemoData = useCallback((variantId: string) => {
     let demoData: ProposalData;
