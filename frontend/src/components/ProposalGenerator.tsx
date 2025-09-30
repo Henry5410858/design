@@ -93,37 +93,36 @@ export default function ProposalGenerator({ onClose, initialData }: ProposalGene
   }, []);
 
   const addPricingItem = useCallback(() => {
-    setProposalData(prev => ({
-      ...prev,
-      pricing: {
-        ...prev.pricing,
-        breakdown: [...prev.pricing.breakdown, { item: '', amount: 0 }]
-      }
-    }));
-  }, []);
-
-  const removePricingItem = useCallback((index: number) => {
-    setProposalData(prev => ({
-      ...prev,
-      pricing: {
-        ...prev.pricing,
-        breakdown: prev.pricing.breakdown.filter((_, i) => i !== index)
-      }
-    }));
-  }, []);
-
-  const calculateTotal = useCallback(() => {
     setProposalData(prev => {
-      const total = prev.pricing.breakdown.reduce((sum, item) => sum + item.amount, 0);
+      const breakdown = [...prev.pricing.breakdown, { item: '', amount: 0 }];
+      const total = breakdown.reduce((sum, item) => sum + item.amount, 0);
       return {
         ...prev,
         pricing: {
           ...prev.pricing,
+          breakdown,
           total
         }
       };
     });
-  }, []); // Empty dependency array - function uses functional state update
+  }, []);
+
+  const removePricingItem = useCallback((index: number) => {
+    setProposalData(prev => {
+      const breakdown = prev.pricing.breakdown.filter((_, i) => i !== index);
+      const total = breakdown.reduce((sum, item) => sum + item.amount, 0);
+      return {
+        ...prev,
+        pricing: {
+          ...prev.pricing,
+          breakdown,
+          total
+        }
+      };
+    });
+  }, []);
+
+
 
   const loadDemoData = useCallback((variantId: string) => {
     let demoData: ProposalData;
@@ -439,11 +438,17 @@ export default function ProposalGenerator({ onClose, initialData }: ProposalGene
                       onChange={(e) => {
                         const breakdown = [...proposalData.pricing.breakdown];
                         breakdown[index].amount = parseFloat(e.target.value) || 0;
-                        setProposalData(prev => ({
-                          ...prev,
-                          pricing: { ...prev.pricing, breakdown }
-                        }));
-                        setTimeout(calculateTotal, 100);
+                        setProposalData(prev => {
+                          const total = breakdown.reduce((sum, item) => sum + item.amount, 0);
+                          return {
+                            ...prev,
+                            pricing: { 
+                              ...prev.pricing, 
+                              breakdown,
+                              total
+                            }
+                          };
+                        });
                       }}
                       className="w-20 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="0"
