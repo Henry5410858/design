@@ -547,6 +547,46 @@ async function renderTemplateToPdf({ template, data, locale = 'es', currencyCode
       throw new Error(`All PDF generation methods failed. Main: ${mainError.message}. Fallback: ${fallbackError.message}`);
     }
   }
+  
+  } catch (criticalError) {
+    console.error('[PDF] Critical error in PDF generation:', criticalError);
+    console.error('[PDF] Stack trace:', criticalError.stack);
+    
+    // Try one final ultra-simple fallback
+    try {
+      console.log('[PDF] Attempting final emergency fallback...');
+      const emergencyHtml = createSimpleHtml(data);
+      
+      let browser;
+      try {
+        browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox'],
+          timeout: 15000
+        });
+        
+        const page = await browser.newPage();
+        await page.setContent(emergencyHtml, { waitUntil: 'domcontentloaded', timeout: 10000 });
+        
+        const pdf = await page.pdf({
+          format: 'A4',
+          printBackground: true
+        });
+        
+        await browser.close();
+        console.log(`[PDF] Emergency fallback successful: ${pdf.length} bytes`);
+        return pdf;
+      } catch (emergencyError) {
+        if (browser) {
+          try { await browser.close(); } catch {}
+        }
+        throw emergencyError;
+      }
+    } catch (emergencyError) {
+      console.error('[PDF] Emergency fallback also failed:', emergencyError);
+      throw new Error(`Complete PDF generation failure. Critical: ${criticalError.message}. Emergency: ${emergencyError.message}`);
+    }
+  }
 }
 
 module.exports = { renderTemplateToPdf };
