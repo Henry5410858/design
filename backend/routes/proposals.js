@@ -169,34 +169,34 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
   }
 });
 
-// Backward-compatible endpoint (kept for existing clients)
-router.post('/generate', auth, premium, async (req, res) => {
-  try {
-    const { client, items = [], theme } = req.body;
-    if (!client?.name || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: 'Invalid payload' });
-    }
-
-    const aiIntro = await generateIntro({
-      clientName: client.name,
-      industry: client.industry,
-      valueProps: client.valueProps,
-    });
-
-    const pdfBuffer = await renderTemplateToPdf({
-      template: 'dossier-express',
-      data: { client, items, theme, intro: aiIntro },
-      locale: 'es',
-      currencyCode: 'EUR',
-    });
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=proposal.pdf');
-    return res.send(pdfBuffer);
-  } catch (e) {
-    console.error('PDF generation failed:', e);
-    return res.status(500).json({ message: 'PDF generation failed', error: e.message });
-  }
-});
+// Backward-compatible endpoint (kept for existing clients) - DEPRECATED: Use the multipart version above
+// router.post('/generate', auth, premium, async (req, res) => {
+//   try {
+//     const { client, items = [], theme } = req.body;
+//     if (!client?.name || !Array.isArray(items) || items.length === 0) {
+//       return res.status(400).json({ message: 'Invalid payload' });
+//     }
+//
+//     const aiIntro = await generateIntro({
+//       clientName: client.name,
+//       industry: client.industry,
+//       valueProps: client.valueProps,
+//     });
+//
+//     const pdfBuffer = await renderTemplateToPdf({
+//       template: 'dossier-express',
+//       data: { client, items, theme, intro: aiIntro },
+//       locale: 'es',
+//       currencyCode: 'EUR',
+//     });
+//
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', 'attachment; filename=proposal.pdf');
+//     return res.send(pdfBuffer);
+//   } catch (e) {
+//     console.error('PDF generation failed:', e);
+//     return res.status(500).json({ message: 'PDF generation failed', error: e.message });
+//   }
+// });
 
 module.exports = router;
