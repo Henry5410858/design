@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Lightning, Envelope, Lock, ArrowRight } from 'phosphor-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -13,7 +13,34 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
   const { login } = useAuth();
+
+  const disableMotion = redirecting || prefersReducedMotion;
+
+  const motionlessProps = useMemo(() => ({
+    logo: disableMotion ? {} : {
+      initial: { opacity: 0, y: -20 },
+      animate: { opacity: 1, y: 0 },
+      transition: { duration: 0.5 }
+    },
+    card: disableMotion ? {} : {
+      initial: { opacity: 0, y: 20 },
+      animate: { opacity: 1, y: 0 },
+      transition: { duration: 0.5, delay: 0.1 }
+    },
+    error: disableMotion ? {} : {
+      initial: { opacity: 0, scale: 0.95 },
+      animate: { opacity: 1, scale: 1 }
+    },
+    footer: disableMotion ? {} : {
+      initial: { opacity: 0 },
+      animate: { opacity: 1 },
+      transition: { duration: 0.5, delay: 0.3 }
+    }
+  }), [disableMotion]);
+
+  const AnimatedDiv = disableMotion ? 'div' : motion.div;
 
   // If already authenticated, go to dashboard immediately
   useEffect(() => {
@@ -46,33 +73,36 @@ export default function LoginPage() {
   };
 
   if (redirecting) {
-    // Render nothing while Next navigates to avoid React mutation errors
-    return null;
+    // Minimal skeleton to keep DOM stable while navigation resolves
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md" aria-busy="true" aria-live="polite">
+          <div className="h-16" />
+          <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200" />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo Section */}
-        <motion.div 
+        <AnimatedDiv 
           className="text-center mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          {...motionlessProps.logo}
         >
           <div className="w-16 h-16 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Lightning size={32} className="text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">LupaProp</h1>
           <p className="text-gray-600">Centro de Diseño Profesional</p>
-        </motion.div>
+        </AnimatedDiv>
 
         {/* Login Form */}
-        <motion.div
+        <AnimatedDiv
           className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          {...motionlessProps.card}
         >
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Bienvenido de vuelta</h2>
@@ -124,13 +154,12 @@ export default function LoginPage() {
 
             {/* Error Message */}
             {error && (
-              <motion.div 
+              <AnimatedDiv 
                 className="text-error text-sm text-center p-3 bg-error/10 rounded-xl border border-error/20"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                {...motionlessProps.error}
               >
                 {error}
-              </motion.div>
+              </AnimatedDiv>
             )}
 
             {/* Submit Button */}
@@ -165,17 +194,15 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
-        </motion.div>
+        </AnimatedDiv>
 
         {/* Footer */}
-        <motion.div 
+        <AnimatedDiv 
           className="text-center mt-8 text-gray-500 text-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          {...motionlessProps.footer}
         >
           <p>© 2024 LupaProp. Todos los derechos reservados.</p>
-        </motion.div>
+        </AnimatedDiv>
       </div>
     </div>
   );
