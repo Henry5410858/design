@@ -453,6 +453,7 @@ async function renderTemplateToPdf({ template, data, locale = 'es', currencyCode
 
       await browser.close();
       return pdf;
+    }
     } catch (e) {
       console.error('[PDF] Error during PDF generation:', e);
       console.error('[PDF] Error name:', e.name);
