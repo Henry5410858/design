@@ -157,18 +157,25 @@ export default function ProposalGenerator({ onClose, initialData }: ProposalGene
     }
   }, [proposalData, selectedVariant, generator]);
 
+  // Safe download without mutating document.body to avoid React DOM conflicts
+  const triggerDownload = useCallback((blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    // Clicking without appending is supported in modern browsers and avoids DOM mutations
+    link.click();
+    // Revoke after a delay to ensure download starts
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, []);
+
   const handleDownloadPDF = useCallback(() => {
     if (generatedPDF) {
-      const url = URL.createObjectURL(generatedPDF);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `propuesta-${proposalData.clientName || 'cliente'}-${proposalData.date}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      triggerDownload(generatedPDF, `propuesta-${proposalData.clientName || 'cliente'}-${proposalData.date}.pdf`);
     }
-  }, [generatedPDF, proposalData.clientName, proposalData.date]);
+  }, [generatedPDF, proposalData.clientName, proposalData.date, triggerDownload]);
 
   const getVariantIcon = (variantId: string) => {
     switch (variantId) {

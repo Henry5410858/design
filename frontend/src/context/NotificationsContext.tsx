@@ -45,8 +45,15 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }>
       add(message, type);
       return;
     }
+    // Use triple requestAnimationFrame + setTimeout for maximum safety during React's commit phase
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => add(message, type));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            add(message, type);
+          }, 10);
+        });
+      });
     });
   }, [add]);
 

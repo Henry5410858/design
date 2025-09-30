@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, startTransition } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import {
   FileText as FilePdf,
@@ -24,16 +24,30 @@ import { useNotifications } from '@/context/NotificationsContext';
 
 // Download without mutating document.body to avoid React DOM conflicts
 const triggerDownload = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.target = '_blank';
-  link.rel = 'noopener';
-  // Clicking without appending is supported in modern browsers and avoids DOM mutations
-  link.click();
-  // Revoke after a delay to ensure download starts
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // Use triple requestAnimationFrame + setTimeout to ensure complete separation from React's commit phase
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.style.display = 'none';
+          
+          // Clicking without appending is supported in modern browsers and avoids DOM mutations
+          link.click();
+          
+          // Clean up after a longer delay to ensure download has started
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 500);
+        }, 10);
+      });
+    });
+  });
 };
 
 interface PropertyItem {
@@ -193,15 +207,24 @@ export default function ProposalPage() {
       if (response.ok) {
         const data = await response.json();
         setIntroText(data.enhancedText);
-        safeAdd('Texto mejorado exitosamente', 'success');
+        // Use startTransition to mark state updates as non-urgent
+        startTransition(() => {
+          safeAdd('Texto mejorado exitosamente', 'success');
+        });
       } else {
         throw new Error('Error al mejorar el texto');
       }
     } catch (error) {
       console.error('Error enhancing intro:', error);
-      safeAdd('Error al mejorar el texto', 'error');
+      // Use startTransition to mark state updates as non-urgent
+      startTransition(() => {
+        safeAdd('Error al mejorar el texto', 'error');
+      });
     } finally {
-      setIsEnhancing(false);
+      // Use startTransition to mark state updates as non-urgent
+      startTransition(() => {
+        setIsEnhancing(false);
+      });
     }
   }, [introText, client, safeAdd]);
 
@@ -264,19 +287,30 @@ export default function ProposalPage() {
         }
 
         const blob = await response.blob();
-        triggerDownload(blob, `propuesta-${client.name}-${Date.now()}.pdf`);
-        // Notify post-commit safely using context notifications
-        safeAdd('PDF generado exitosamente', 'success');
+        const filename = `propuesta-${client.name}-${Date.now()}.pdf`;
+        
+        // Trigger download and defer all state updates to avoid React DOM conflicts
+        triggerDownload(blob, filename);
+        
+        // Use startTransition to mark state updates as non-urgent
+        startTransition(() => {
+          safeAdd('PDF generado exitosamente', 'success');
+        });
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Error al generar el PDF');
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
-      // Defer notification to avoid DOM mutations during React commit
-      safeAdd('Error al generar el PDF', 'error');
+      // Use startTransition to mark state updates as non-urgent
+      startTransition(() => {
+        safeAdd('Error al generar el PDF', 'error');
+      });
     } finally {
-      setIsGenerating(false);
+      // Use startTransition to mark state updates as non-urgent
+      startTransition(() => {
+        setIsGenerating(false);
+      });
     }
   }, [client, properties, contact, brandTheme, selectedTemplate, introText]);
 
