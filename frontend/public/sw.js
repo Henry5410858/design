@@ -107,23 +107,24 @@ async function handleRequest(request) {
     return await staleWhileRevalidate(request, DYNAMIC_CACHE);
 
   } catch (error) {
-    console.error('Service Worker: Fetch error', error);
-    
+    // Silently handle fetch errors for non-critical resources
+    console.warn('Service Worker: Fetch error (non-critical)', error.message);
+
     // Return offline page for navigation requests
     if (request.mode === 'navigate') {
       return await getOfflinePage();
     }
-    
+
     // Return cached version if available
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Return error response
-    return new Response('Offline', { 
-      status: 503, 
-      statusText: 'Service Unavailable' 
+    return new Response('Offline', {
+      status: 503,
+      statusText: 'Service Unavailable'
     });
   }
 }
