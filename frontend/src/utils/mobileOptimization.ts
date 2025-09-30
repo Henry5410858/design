@@ -493,6 +493,23 @@ export class MobileOptimizationManager {
   preloadResource(href: string, as: string): void {
     if (!this.config.performance.preloading) return;
 
+    // Skip preloading in production environments to avoid excessive unused preloads
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isProduction = (
+        hostname.includes('netlify.app') ||
+        hostname.includes('vercel.app') ||
+        hostname.includes('render.com') ||
+        hostname.includes('herokuapp.com') ||
+        hostname.includes('github.io') ||
+        (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.') && !hostname.startsWith('10.'))
+      );
+      
+      if (isProduction) {
+        return;
+      }
+    }
+
     const link = document.createElement('link');
     link.rel = 'preload';
     link.href = href;

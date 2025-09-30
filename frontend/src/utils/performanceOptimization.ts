@@ -514,6 +514,18 @@ export class PerformanceOptimizationManager {
   private setupPreloading(): void {
     if (!this.config.preloading.enabled) return;
 
+    // Skip preloading in production environments to avoid excessive unused preloads
+    if (typeof window !== 'undefined' && (
+      window.location.hostname.includes('netlify.app') ||
+      window.location.hostname.includes('vercel.app') ||
+      window.location.hostname.includes('render.com') ||
+      window.location.hostname.includes('herokuapp.com') ||
+      window.location.hostname !== 'localhost'
+    )) {
+      console.log('📊 Performance Optimization: Skipping preloading in production environment');
+      return;
+    }
+
     // Preload critical resources
     this.config.preloading.critical.forEach(url => {
       this.preloadResource(url, 'fetch');

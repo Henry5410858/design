@@ -10,7 +10,11 @@
   "scope": "/",
   "lang": "es",
   "dir": "ltr",
-  "categories": ["business", "productivity", "design"],
+  "categories": [
+    "business",
+    "productivity",
+    "design"
+  ],
   "screenshots": [
     {
       "src": "/assets/img/screenshot-mobile.png",
@@ -167,8 +171,16 @@
     {
       "action": "/editor",
       "accept": {
-        "image/*": [".png", ".jpg", ".jpeg", ".gif", ".svg"],
-        "application/pdf": [".pdf"]
+        "image/*": [
+          ".png",
+          ".jpg",
+          ".jpeg",
+          ".gif",
+          ".svg"
+        ],
+        "application/pdf": [
+          ".pdf"
+        ]
       }
     }
   ],
@@ -183,9 +195,12 @@
       "files": [
         {
           "name": "image",
-          "accept": ["image/*"]
+          "accept": [
+            "image/*"
+          ]
         }
       ]
     }
-  }
+  },
+  "version": "1759227469814"
 }

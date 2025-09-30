@@ -66,13 +66,35 @@ router.post('/render', auth, premium, async (req, res) => {
       ? await generateIntro({ clientName: client.name, industry: client.industry, valueProps: client.valueProps })
       : (client?.intro || '');
 
-    const pdfBuffer = await renderTemplateToPdf({
-      template,
-      data: { client, items, theme, intro: aiIntro },
-      locale,
-      currencyCode,
-    });
-    console.log(`[PDF] /render generated ${pdfBuffer?.length || 0} bytes for template: ${template}`);
+    let pdfBuffer;
+    try {
+      pdfBuffer = await renderTemplateToPdf({
+        template,
+        data: { client, items, theme, intro: aiIntro },
+        locale,
+        currencyCode,
+      });
+      console.log(`[PDF] /render generated ${pdfBuffer?.length || 0} bytes for template: ${template}`);
+    } catch (pdfError) {
+      console.error('[PDF] Primary PDF generation failed:', pdfError);
+      
+      // Try with reduced retry count and simpler options
+      try {
+        console.log('[PDF] Attempting fallback PDF generation...');
+        pdfBuffer = await renderTemplateToPdf({
+          template,
+          data: { client, items, theme, intro: aiIntro },
+          locale,
+          currencyCode,
+          prefetch: false, // Skip image prefetching
+          retries: 0 // No retries for fallback
+        });
+        console.log(`[PDF] Fallback PDF generation successful: ${pdfBuffer?.length || 0} bytes`);
+      } catch (fallbackError) {
+        console.error('[PDF] Fallback PDF generation also failed:', fallbackError);
+        throw new Error(`PDF generation failed: ${pdfError.message}. Fallback also failed: ${fallbackError.message}`);
+      }
+    }
 
     if (persist) {
       const upload = await uploadPdf(pdfBuffer, { folder: `users/${req.user.id}/proposals`, publicId: `${template}-${Date.now()}` });
@@ -146,13 +168,56 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
 
     const persist = Boolean(req.body?.persist === 'true' || req.body?.persist === true);
 
-    const pdfBuffer = await renderTemplateToPdf({
-      template,
-      data: { client, items: uploadedItems, theme, intro: aiIntro },
-      locale: 'es',
-      currencyCode: 'EUR',
-    });
-    console.log(`[PDF] /generate generated ${pdfBuffer?.length || 0} bytes for template: ${template}`);
+    let pdfBuffer;
+    try {
+      pdfBuffer = await renderTemplateToPdf({
+        template,
+        data: { client, items: uploadedItems, theme, intro: aiIntro },
+        locale: 'es',
+        currencyCode: 'EUR',
+      });
+      console.log(`[PDF] /generate generated ${pdfBuffer?.length || 0} bytes for template: ${template}`);
+    } catch (pdfError) {
+      console.error('[PDF] Primary PDF generation failed:', pdfError);
+      
+      // Try with reduced retry count and simpler options
+      try {
+        console.log('[PDF] Attempting fallback PDF generation...');
+        pdfBuffer = await renderTemplateToPdf({
+          template,
+          data: { client, items: uploadedItems, theme, intro: aiIntro },
+          locale: 'es',
+          currencyCode: 'EUR',
+          prefetch: false, // Skip image prefetching
+          retries: 0 // No retries for fallback
+        });
+        console.log(`[PDF] Fallback PDF generation successful: ${pdfBuffer?.length || 0} bytes`);
+      } catch (fallbackError) {
+        console.error('[PDF] Fallback PDF generation also failed:', fallbackError);
+        
+        // Try ultra-simple fallback with minimal options
+        try {
+          console.log('[PDF] Attempting ultra-simple fallback PDF generation...');
+          pdfBuffer = await renderTemplateToPdf({
+            template: 'dossier-express', // Use simpler template
+            data: { 
+              client: { ...client, contact: client.contact || {} }, 
+              items: uploadedItems.slice(0, 3), // Limit items to reduce complexity
+              theme: { ...theme, logoUrl: null }, // Remove logo to avoid image issues
+              intro: aiIntro 
+            },
+            locale: 'es',
+            currencyCode: 'EUR',
+            prefetch: false,
+            retries: 0
+          });
+          console.log(`[PDF] Ultra-simple fallback successful: ${pdfBuffer?.length || 0} bytes`);
+        } catch (ultraFallbackError) {
+          console.error('[PDF] All PDF generation attempts failed:', ultraFallbackError);
+          throw new Error(`PDF generation completely failed. Primary: ${pdfError.message}. Fallback: ${fallbackError.message}. Ultra-fallback: ${ultraFallbackError.message}`);
+        }
+      }
+    }
 
     if (persist) {
       const upload = await uploadPdf(pdfBuffer, { folder: `users/${req.user.id}/proposals`, publicId: `${template}-${Date.now()}` });

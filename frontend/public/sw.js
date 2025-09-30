@@ -3,9 +3,9 @@
  * Offline functionality, caching, and push notifications
  */
 
-const CACHE_NAME = 'diseñopro-v3';
-const STATIC_CACHE = 'diseñopro-static-v3';
-const DYNAMIC_CACHE = 'diseñopro-dynamic-v3';
+const CACHE_NAME = 'diseñopro-v1759227469813';
+const STATIC_CACHE = 'diseñopro-static-v1759227469813';
+const DYNAMIC_CACHE = 'diseñopro-dynamic-v1759227469813';
 
 // Assets to cache immediately (HTML routes removed)
 const STATIC_ASSETS = [
@@ -80,12 +80,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // EMERGENCY: Block all example.com requests immediately
+  if (url.hostname === 'cdn.example.com' || url.hostname.includes('example.com')) {
+    console.log('Service Worker: BLOCKING example.com request', url.href);
+    event.respondWith(new Response('Blocked by Service Worker', { 
+      status: 204,
+      statusText: 'No Content - Blocked CDN Request'
+    }));
+    return;
+  }
+
   event.respondWith(handleRequest(request));
 });
 
 // Handle different types of requests
 async function handleRequest(request) {
   const url = new URL(request.url);
+
+  // Double-check for example.com requests
+  if (url.hostname === 'cdn.example.com' || url.hostname.includes('example.com')) {
+    console.log('Service Worker: Blocking example.com request in handler', url.href);
+    return new Response('Blocked', { status: 403 });
+  }
 
   try {
     // HTML navigations: network-only, do not cache

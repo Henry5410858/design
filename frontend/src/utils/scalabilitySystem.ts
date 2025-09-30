@@ -179,15 +179,36 @@ export class ScalabilitySystemManager {
    * Initialize scalability system
    */
   private initialize(): void {
+    // COMPLETELY DISABLE ALL SCALABILITY FEATURES IN PRODUCTION
+    // Skip all setup to prevent any placeholder URL requests or resource loading
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isProduction = (
+        hostname.includes('netlify.app') ||
+        hostname.includes('vercel.app') ||
+        hostname.includes('render.com') ||
+        hostname.includes('herokuapp.com') ||
+        hostname.includes('github.io') ||
+        (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.') && !hostname.startsWith('10.'))
+      );
+      
+      if (isProduction) {
+        console.log('🚀 Scalability System: Completely disabled in production environment:', hostname);
+        this.isInitialized = true;
+        return;
+      }
+    }
+
+    // Only initialize in development environments
     this.setupAutoScaling();
     this.setupLoadBalancing();
     this.setupCaching();
-    this.setupCDN();
+    this.setupCDN(); // This is already disabled but keeping for consistency
     this.setupDatabase();
     this.setupMonitoring();
     
     this.isInitialized = true;
-    console.log('🚀 Scalability System initialized');
+    console.log('🚀 Scalability System initialized (development mode)');
   }
 
   /**
@@ -429,7 +450,37 @@ export class ScalabilitySystemManager {
    * Setup CDN
    */
   private setupCDN(): void {
+    // COMPLETELY DISABLE CDN in all environments to prevent placeholder URL requests
+    console.log('🚀 Scalability System: CDN setup disabled to prevent placeholder URL requests');
+    return;
+
+    // Legacy code below - kept for reference but never executed
     if (!this.config.cdn.enabled) return;
+
+    // Skip CDN setup in production environments to avoid placeholder URL requests
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isProduction = (
+        hostname.includes('netlify.app') ||
+        hostname.includes('vercel.app') ||
+        hostname.includes('render.com') ||
+        hostname.includes('herokuapp.com') ||
+        hostname.includes('github.io') ||
+        (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.') && !hostname.startsWith('10.'))
+      );
+      
+      if (isProduction) {
+        console.log('🚀 Scalability System: Skipping CDN setup in production environment:', hostname);
+        return;
+      }
+    }
+
+    // Additional check for placeholder CDN URLs
+    const cdnUrl = this.getCDNUrl();
+    if (!cdnUrl || cdnUrl.includes('example.com') || cdnUrl.includes('example.')) {
+      console.log('🚀 Scalability System: Skipping CDN setup (placeholder URL detected)');
+      return;
+    }
 
     // Preload critical resources from CDN
     this.preloadCDNResources();
@@ -439,7 +490,19 @@ export class ScalabilitySystemManager {
    * Preload CDN resources
    */
   private preloadCDNResources(): void {
+    // COMPLETELY DISABLE CDN preloading to prevent placeholder URL requests
+    console.log('🚀 Scalability System: CDN preloading disabled to prevent placeholder URL requests');
+    return;
+
+    // Legacy code below - kept for reference but never executed
     const cdnUrl = this.getCDNUrl();
+    
+    // Skip preloading if CDN URL is a placeholder/example domain
+    if (!cdnUrl || cdnUrl.includes('example.com') || cdnUrl.includes('example.')) {
+      console.log('🚀 Scalability System: Skipping CDN preload (placeholder URL detected)');
+      return;
+    }
+    
     const criticalResources = [
       '/assets/css/main.css',
       '/assets/js/main.js',
@@ -459,19 +522,38 @@ export class ScalabilitySystemManager {
    * Get CDN URL
    */
   private getCDNUrl(): string {
+    // Skip CDN URL generation in production environments
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isProduction = (
+        hostname.includes('netlify.app') ||
+        hostname.includes('vercel.app') ||
+        hostname.includes('render.com') ||
+        hostname.includes('herokuapp.com') ||
+        hostname.includes('github.io') ||
+        (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.') && !hostname.startsWith('10.'))
+      );
+      
+      if (isProduction) {
+        return '';
+      }
+    }
+
     const provider = this.config.cdn.provider;
     const regions = this.config.cdn.regions;
     const region = regions[Math.floor(Math.random() * regions.length)];
     
+    // Return empty string for all providers since these are placeholder URLs
+    // In a real implementation, these would be actual CDN URLs
     switch (provider) {
       case 'cloudflare':
-        return `https://cdn.example.com`;
+        return ''; // Was: `https://cdn.example.com`
       case 'aws-cloudfront':
-        return `https://d1234567890.cloudfront.net`;
+        return ''; // Was: `https://d1234567890.cloudfront.net`
       case 'azure-cdn':
-        return `https://cdn.example.azureedge.net`;
+        return ''; // Was: `https://cdn.example.azureedge.net`
       case 'google-cloud-cdn':
-        return `https://cdn.example.googleapis.com`;
+        return ''; // Was: `https://cdn.example.googleapis.com`
       default:
         return '';
     }
@@ -822,5 +904,59 @@ export class ScalabilitySystemManager {
   }
 }
 
+// Create a production-safe instance that won't initialize in production environments
+function createScalabilitySystem(): ScalabilitySystemManager {
+  // EMERGENCY: Always create stub instance to prevent any CDN requests
+  console.log('🚀 Scalability System: Creating emergency stub instance (all features disabled)');
+  
+  // Create completely disabled stub instance
+  const instance = Object.create(ScalabilitySystemManager.prototype);
+  instance.isInitialized = true; // Mark as initialized to prevent any further initialization
+  instance.metrics = {
+    instances: { active: 0, pending: 0, terminating: 0, total: 0 },
+    load: { cpu: 0, memory: 0, network: 0, disk: 0 },
+    requests: { total: 0, successful: 0, failed: 0, averageResponseTime: 0, throughput: 0 },
+    health: { overall: 'healthy', services: [] }
+  };
+  instance.scalingEvents = [];
+  instance.loadBalancer = { name: 'disabled', algorithm: 'round-robin', targets: [], healthCheck: { path: '/health', interval: 30000, timeout: 5000, retries: 3 } };
+  instance.config = { 
+    autoScaling: { enabled: false, minInstances: 1, maxInstances: 1 }, 
+    loadBalancing: { enabled: false }, 
+    caching: { enabled: false }, 
+    cdn: { enabled: false, provider: 'disabled', regions: [] }, 
+    database: { enabled: false }, 
+    monitoring: { enabled: false } 
+  };
+  
+  // Add comprehensive stub methods to prevent any functionality
+  instance.getMetrics = () => instance.metrics;
+  instance.getScalingEvents = () => instance.scalingEvents;
+  instance.getLoadBalancerConfig = () => instance.loadBalancer;
+  instance.getConfig = () => instance.config;
+  instance.updateConfig = () => {};
+  instance.triggerScaling = () => {};
+  instance.getSystemStatus = () => 'Disabled';
+  instance.exportData = () => ({ disabled: true, timestamp: new Date().toISOString() });
+  instance.cleanup = () => {};
+  instance.manualScaleUp = () => false;
+  instance.manualScaleDown = () => false;
+  instance.initialize = () => { console.log('🚀 Scalability System: Initialize blocked (stub instance)'); };
+  instance.setupCDN = () => { console.log('🚀 Scalability System: CDN setup blocked (stub instance)'); };
+  instance.preloadCDNResources = () => { console.log('🚀 Scalability System: CDN preload blocked (stub instance)'); };
+  instance.getCDNUrl = () => '';
+  instance.setupLoadBalancing = () => {};
+  instance.setupCaching = () => {};
+  instance.setupDatabase = () => {};
+  instance.setupMonitoring = () => {};
+  instance.scaleUp = () => {};
+  instance.scaleDown = () => {};
+  instance.addLoadBalancerTarget = () => {};
+  instance.removeLoadBalancerTarget = () => {};
+  instance.cleanupCache = () => {};
+  
+  return instance;
+}
+
 // Export default instance
-export const scalabilitySystem = new ScalabilitySystemManager();
+export const scalabilitySystem = createScalabilitySystem();

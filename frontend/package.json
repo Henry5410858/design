@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/force-cache-invalidation.js && next build",
+    "build:production": "node scripts/force-cache-invalidation.js && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cache-bust": "node scripts/force-cache-invalidation.js"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.19",
