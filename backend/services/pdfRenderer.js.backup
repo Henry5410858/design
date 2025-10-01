@@ -13,6 +13,7 @@ function currency(amount, currencyCode = 'EUR') {
   }
 }
 
+
 function t(key, fallback) {
   // Basic passthrough for now; integrate i18n later
   return fallback || key;
