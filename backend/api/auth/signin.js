@@ -77,8 +77,9 @@ app.post('/', async (req, res) => {
     
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET || 'fallback-secret',
+      { userId: user._id, email: user.email, plan:user.plan },
+      process.env.JWT_SECRET,
+      // || 'fallback-secret',
       { expiresIn: '7d' }
     );
     

@@ -1,3 +1,5 @@
+// 'use client';
+
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from '../context/AuthContext';
@@ -23,8 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans antialiased">
-        <DevServiceWorkerGuard />
+       
         <ClientOnly>
+        <DevServiceWorkerGuard />
           <AuthProvider>
             <NotificationProvider>
               {/* Global notifications anchored once to avoid DOM reparenting during route changes */}

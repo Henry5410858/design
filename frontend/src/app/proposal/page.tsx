@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, startTransition } from 'react';
+// import Head from './head';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import {
   FileText as FilePdf,
@@ -13,18 +14,14 @@ import {
   DollarSign,
   User,
   Mail,
-  Phone,
-  Globe,
-  X,
-  Eye
+  Phone
 } from 'lucide-react';
 import API_ENDPOINTS from '@/config/api';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationsContext';
 
-// Download without mutating document.body to avoid React DOM conflicts
+// Download helper
 const triggerDownload = (blob: Blob, filename: string) => {
-  // Use triple requestAnimationFrame + setTimeout to ensure complete separation from React's commit phase
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -36,11 +33,7 @@ const triggerDownload = (blob: Blob, filename: string) => {
           link.target = '_blank';
           link.rel = 'noopener';
           link.style.display = 'none';
-          
-          // Clicking without appending is supported in modern browsers and avoids DOM mutations
           link.click();
-          
-          // Clean up after a longer delay to ensure download has started
           setTimeout(() => {
             URL.revokeObjectURL(url);
           }, 500);
@@ -83,32 +76,54 @@ interface BrandTheme {
 }
 
 const TEMPLATE_OPTIONS = [
-  {
-    id: 'comparative-short',
-    name: 'Comparativa Corta',
-    description: '2-3 propiedades, 2 páginas',
-    icon: '📊'
-  },
-  {
-    id: 'simple-proposal',
-    name: 'Propuesta Simple',
-    description: '4-6 páginas con fotos y detalles',
-    icon: '📄'
-  },
-  {
-    id: 'dossier-express',
-    name: 'Dossier Express',
-    description: 'Resumen ejecutivo de 1 página',
-    icon: '📋'
-  }
+  { id: 'comparative-short', name: 'Comparativa Corta', description: '2-3 propiedades, 2 páginas', icon: '📊' },
+  { id: 'simple-proposal', name: 'Propuesta Simple', description: '4-6 páginas con fotos y detalles', icon: '📄' },
+  { id: 'dossier-express', name: 'Dossier Express', description: 'Resumen ejecutivo de 1 página', icon: '📋' }
 ];
+
+// ✅ Build PDF payload only from React state (not DOM)
+const prepareProposalPayload = (
+  client: ClientInfo,
+  properties: PropertyItem[],
+  contact: ContactInfo,
+  brandTheme: BrandTheme,
+  selectedTemplate: string,
+  introText: string
+) => {
+  const formData = new FormData();
+
+  formData.append('client', JSON.stringify(client));
+
+  const processedProperties = properties.map(prop => ({
+    ...prop,
+    imageUrl: undefined,
+    imageFile: undefined,
+    price: prop.price || undefined,
+    keyFacts: prop.keyFacts || undefined
+  }));
+
+  formData.append('items', JSON.stringify(processedProperties));
+  formData.append('contact', JSON.stringify(contact));
+  formData.append('theme', JSON.stringify(brandTheme));
+  formData.append('template', selectedTemplate);
+  formData.append('introText', introText);
+
+  properties.forEach((prop, index) => {
+    if (prop.imageFile) {
+      formData.append(`propertyImage_${index}`, prop.imageFile);
+    }
+  });
+
+  return formData;
+};
 
 export default function ProposalPage() {
   const { user } = useAuth();
+  const { safeAdd } = useNotifications();
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
-  // Form data
   const [client, setClient] = useState<ClientInfo>({ name: '', industry: '', valueProps: [''] });
   const [introText, setIntroText] = useState('');
   const [properties, setProperties] = useState<PropertyItem[]>([
@@ -120,19 +135,25 @@ export default function ProposalPage() {
     primary: '#1f2937',
     secondary: '#6366f1'
   });
+  useEffect(() => {
+    const html = document.documentElement;
+    html.lang = 'es';
+    html.setAttribute('translate', 'no');
 
-  // Load brand kit if available
+    // Optional: reset when unmount
+    return () => {
+      html.lang = 'en';
+      html.removeAttribute('translate');
+    };
+  }, []);
+  // Load brand kit
   useEffect(() => {
     const loadBrandKit = async () => {
       if (!user?.id) return;
-
       try {
         const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-
         if (response.ok) {
           const brandKit = await response.json();
           if (brandKit) {
@@ -147,47 +168,39 @@ export default function ProposalPage() {
         console.error('Error loading brand kit:', error);
       }
     };
-
     loadBrandKit();
   }, [user?.id]);
 
   const handlePropertyChange = useCallback((index: number, field: keyof PropertyItem, value: any) => {
-    setProperties(prev => prev.map((prop, i) =>
-      i === index ? { ...prop, [field]: value } : prop
-    ));
+    setProperties(prev => prev.map((prop, i) => (i === index ? { ...prop, [field]: value } : prop)));
   }, []);
 
   const addProperty = useCallback(() => {
-    setProperties(prev => [...prev, {
-      id: Date.now().toString(),
-      title: '',
-      description: '',
-      price: undefined
-    }]);
+    setProperties(prev => [...prev, { id: Date.now().toString(), title: '', description: '', price: undefined }]);
   }, []);
 
   const removeProperty = useCallback((index: number) => {
     setProperties(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  const handleImageUpload = useCallback((index: number, file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const imageUrl = e.target?.result as string;
-      handlePropertyChange(index, 'imageUrl', imageUrl);
-      handlePropertyChange(index, 'imageFile', file);
-    };
-    reader.readAsDataURL(file);
-  }, [handlePropertyChange]);
-
-  const { safeAdd } = useNotifications();
+  const handleImageUpload = useCallback(
+    (index: number, file: File) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const imageUrl = e.target?.result as string;
+        handlePropertyChange(index, 'imageUrl', imageUrl);
+        handlePropertyChange(index, 'imageFile', file);
+      };
+      reader.readAsDataURL(file);
+    },
+    [handlePropertyChange]
+  );
 
   const enhanceIntro = useCallback(async () => {
     if (!introText.trim()) {
       safeAdd('Por favor escribe algo de texto para mejorar', 'warning');
       return;
     }
-
     setIsEnhancing(true);
     try {
       const response = await fetch(API_ENDPOINTS.PROPOSAL_ENHANCE_INTRO, {
@@ -203,28 +216,16 @@ export default function ProposalPage() {
           valueProps: client.valueProps?.filter(v => v.trim())
         })
       });
-
       if (response.ok) {
         const data = await response.json();
         setIntroText(data.enhancedText);
-        // Use startTransition to mark state updates as non-urgent
-        startTransition(() => {
-          safeAdd('Texto mejorado exitosamente', 'success');
-        });
-      } else {
-        throw new Error('Error al mejorar el texto');
-      }
+        startTransition(() => safeAdd('Texto mejorado exitosamente', 'success'));
+      } else throw new Error('Error al mejorar el texto');
     } catch (error) {
       console.error('Error enhancing intro:', error);
-      // Use startTransition to mark state updates as non-urgent
-      startTransition(() => {
-        safeAdd('Error al mejorar el texto', 'error');
-      });
+      startTransition(() => safeAdd('Error al mejorar el texto', 'error'));
     } finally {
-      // Use startTransition to mark state updates as non-urgent
-      startTransition(() => {
-        setIsEnhancing(false);
-      });
+      startTransition(() => setIsEnhancing(false));
     }
   }, [introText, client, safeAdd]);
 
@@ -233,456 +234,409 @@ export default function ProposalPage() {
       safeAdd('Por favor ingresa el nombre del cliente', 'warning');
       return;
     }
-
     if (properties.length === 0 || properties.some(p => !p.title.trim() || !p.description.trim())) {
       safeAdd('Por favor completa al menos una propiedad con título y descripción', 'warning');
       return;
     }
-
     setIsGenerating(true);
     try {
-      // Prepare form data for file uploads
-      const formData = new FormData();
-
-      // Add client data
-      formData.append('client', JSON.stringify(client));
-
-      // Add properties (with image files if any)
-      const processedProperties = properties.map(prop => ({
-        ...prop,
-        // Do NOT include inline base64 image data in JSON payload
-        imageUrl: undefined,
-        imageFile: undefined,
-        price: prop.price || undefined,
-        keyFacts: prop.keyFacts || undefined
-      }));
-
-      formData.append('items', JSON.stringify(processedProperties));
-      formData.append('contact', JSON.stringify(contact));
-      formData.append('theme', JSON.stringify(brandTheme));
-      formData.append('template', selectedTemplate);
-      formData.append('introText', introText);
-
-      // Add image files
-      properties.forEach((prop, index) => {
-        if (prop.imageFile) {
-          formData.append(`propertyImage_${index}`, prop.imageFile);
-        }
-      });
+      const formData = prepareProposalPayload(client, properties, contact, brandTheme, selectedTemplate, introText);
 
       const response = await fetch(API_ENDPOINTS.PROPOSAL_GENERATE, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: formData
       });
 
       if (response.ok) {
-        const contentType = response.headers.get('content-type') || '';
-        if (!contentType.includes('application/pdf')) {
-          // If backend did not return a PDF, surface server response for debugging
-          const text = await response.text();
-          throw new Error(`Respuesta no es PDF (${contentType}): ${text?.slice(0, 200)}`);
-        }
-
         const blob = await response.blob();
         const filename = `propuesta-${client.name}-${Date.now()}.pdf`;
-        
-        // Trigger download and defer all state updates to avoid React DOM conflicts
         triggerDownload(blob, filename);
-        
-        // Use startTransition to mark state updates as non-urgent
-        startTransition(() => {
-          safeAdd('PDF generado exitosamente', 'success');
-        });
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Error al generar el PDF');
-      }
+        startTransition(() => safeAdd('PDF generado exitosamente', 'success'));
+      } else throw new Error('Error al generar el PDF');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      // Use startTransition to mark state updates as non-urgent
-      startTransition(() => {
-        safeAdd('Error al generar el PDF', 'error');
-      });
+      startTransition(() => safeAdd('Error al generar el PDF', 'error'));
     } finally {
-      // Use startTransition to mark state updates as non-urgent
-      startTransition(() => {
-        setIsGenerating(false);
-      });
+      startTransition(() => setIsGenerating(false));
     }
-  }, [client, properties, contact, brandTheme, selectedTemplate, introText]);
+  }, [client, properties, contact, brandTheme, selectedTemplate, introText, safeAdd]);
+
 
   return (
-    <DashboardLayout>
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center">
-              <FilePdf size={24} className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Generador de Propuestas</h1>
-              <p className="text-gray-600">Crea propuestas comerciales profesionales con propiedades y productos</p>
+    
+    <>
+    {/* <html lang="es" translate="no">
+      <body>{children}</body>
+    </html> */}
+      <DashboardLayout>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center">
+                <FilePdf size={24} className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Generador de Propuestas</h1>
+                <p className="text-gray-600">Crea propuestas comerciales profesionales con propiedades y productos</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Client Information */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <User size={20} className="text-brand-primary" />
-                Información del Cliente
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre del Cliente *
-                  </label>
-                  <input
-                    type="text"
-                    value={client.name}
-                    onChange={(e) => setClient(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                    placeholder="Ej: Empresa XYZ"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Industria
-                  </label>
-                  <input
-                    type="text"
-                    value={client.industry}
-                    onChange={(e) => setClient(prev => ({ ...prev, industry: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                    placeholder="Ej: Inmobiliaria, Retail, etc."
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Introduction Text */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <FilePdf size={20} className="text-brand-primary" />
-                Texto de Introducción
-              </h2>
-
-              <div className="space-y-4">
-                <textarea
-                  value={introText}
-                  onChange={(e) => setIntroText(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  placeholder="Escribe una introducción personalizada o deja vacío para generar automáticamente..."
-                />
-
-                <button
-                  onClick={enhanceIntro}
-                  disabled={isEnhancing || !introText.trim()}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                >
-                  <Wand2 size={16} />
-                  {isEnhancing ? 'Mejorando...' : 'Mejorar con IA'}
-                </button>
-              </div>
-            </div>
-
-            {/* Properties */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Building size={20} className="text-brand-primary" />
-                  Propiedades/Productos
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Form */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Client Information */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <User size={20} className="text-brand-primary" />
+                  Información del Cliente
                 </h2>
-                <button
-                  onClick={addProperty}
-                  className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary/90 transition-colors"
-                >
-                  <Plus size={16} />
-                  Agregar Propiedad
-                </button>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre del Cliente *
+                    </label>
+                    <input
+                      type="text"
+                      value={client.name}
+                      onChange={(e) => setClient(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                      placeholder="Ej: Empresa XYZ"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Industria
+                    </label>
+                    <input
+                      type="text"
+                      value={client.industry}
+                      onChange={(e) => setClient(prev => ({ ...prev, industry: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                      placeholder="Ej: Inmobiliaria, Retail, etc."
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-6">
-                {properties.map((property, index) => (
-                  <div key={property.id} className="border border-gray-200 rounded-lg p-4 relative">
-                    {properties.length > 1 && (
-                      <button
-                        onClick={() => removeProperty(index)}
-                        className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-50 rounded"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
+              {/* Introduction Text */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <FilePdf size={20} className="text-brand-primary" />
+                  Texto de Introducción
+                </h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Título *
-                        </label>
-                        <input
-                          type="text"
-                          value={property.title}
-                          onChange={(e) => handlePropertyChange(index, 'title', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                          placeholder="Ej: Apartamento Centro"
-                        />
-                      </div>
+                <div className="space-y-4">
+                  <textarea
+                    value={introText}
+                    onChange={(e) => setIntroText(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    placeholder="Escribe una introducción personalizada o deja vacío para generar automáticamente..."
+                  />
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Ubicación
-                        </label>
-                        <input
-                          type="text"
-                          value={property.location || ''}
-                          onChange={(e) => handlePropertyChange(index, 'location', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                          placeholder="Ej: Madrid Centro"
-                        />
-                      </div>
+                  <button
+                    onClick={enhanceIntro}
+                    disabled={isEnhancing || !introText.trim()}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    <Wand2 size={16} />
+                    {isEnhancing ? 'Mejorando...' : 'Mejorar con IA'}
+                  </button>
+                </div>
+              </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Precio (€)
-                        </label>
-                        <input
-                          type="number"
-                          value={property.price || ''}
-                          onChange={(e) => handlePropertyChange(index, 'price', parseFloat(e.target.value) || undefined)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                          placeholder="Ej: 250000"
-                        />
-                      </div>
+              {/* Properties */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Building size={20} className="text-brand-primary" />
+                    Propiedades/Productos
+                  </h2>
+                  <button
+                    onClick={addProperty}
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary/90 transition-colors"
+                  >
+                    <Plus size={16} />
+                    Agregar Propiedad
+                  </button>
+                </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Foto
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => e.target.files?.[0] && handleImageUpload(index, e.target.files[0])}
-                            className="hidden"
-                            id={`image-upload-${index}`}
-                          />
-                          <label
-                            htmlFor={`image-upload-${index}`}
-                            className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
-                          >
-                            <Upload size={16} />
-                            Subir Foto
+                <div className="space-y-6">
+                  {properties.map((property, index) => (
+                    <div key={property.id} className="border border-gray-200 rounded-lg p-4 relative">
+                      {properties.length > 1 && (
+                        <button
+                          onClick={() => removeProperty(index)}
+                          className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-50 rounded"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Título *
                           </label>
-                          {property.imageUrl && (
-                            <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
-                              <img src={property.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                            </div>
-                          )}
+                          <input
+                            type="text"
+                            value={property.title}
+                            onChange={(e) => handlePropertyChange(index, 'title', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                            placeholder="Ej: Apartamento Centro"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ubicación
+                          </label>
+                          <input
+                            type="text"
+                            value={property.location || ''}
+                            onChange={(e) => handlePropertyChange(index, 'location', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                            placeholder="Ej: Madrid Centro"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Precio (€)
+                          </label>
+                          <input
+                            type="number"
+                            value={property.price || ''}
+                            onChange={(e) => handlePropertyChange(index, 'price', parseFloat(e.target.value) || undefined)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                            placeholder="Ej: 250000"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Foto
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => e.target.files?.[0] && handleImageUpload(index, e.target.files[0])}
+                              className="hidden"
+                              id={`image-upload-${index}`}
+                            />
+                            <label
+                              htmlFor={`image-upload-${index}`}
+                              className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
+                            >
+                              <Upload size={16} />
+                              Subir Foto
+                            </label>
+                            {property.imageUrl && (
+                              <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
+                                <img src={property.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Características Clave
+                        </label>
+                        <input
+                          type="text"
+                          value={property.keyFacts || ''}
+                          onChange={(e) => handlePropertyChange(index, 'keyFacts', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                          placeholder="Ej: 3 habitaciones, 2 baños, terraza"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Descripción *
+                        </label>
+                        <textarea
+                          value={property.description}
+                          onChange={(e) => handlePropertyChange(index, 'description', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                          placeholder="Describe la propiedad o producto..."
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Mail size={20} className="text-brand-primary" />
+                  Información de Contacto
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre
+                    </label>
+                    <input
+                      type="text"
+                      value={contact.name || ''}
+                      onChange={(e) => setContact(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={contact.email || ''}
+                      onChange={(e) => setContact(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      value={contact.phone || ''}
+                      onChange={(e) => setContact(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Empresa
+                    </label>
+                    <input
+                      type="text"
+                      value={contact.company || ''}
+                      onChange={(e) => setContact(prev => ({ ...prev, company: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Dirección
+                    </label>
+                    <input
+                      type="text"
+                      value={contact.address || ''}
+                      onChange={(e) => setContact(prev => ({ ...prev, address: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sitio Web
+                    </label>
+                    <input
+                      type="url"
+                      value={contact.website || ''}
+                      onChange={(e) => setContact(prev => ({ ...prev, website: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Template Selection */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+                <h3 className="text-lg font-semibold mb-4">Seleccionar Plantilla</h3>
+
+                <div className="space-y-3">
+                  {TEMPLATE_OPTIONS.map((template) => (
+                    <div
+                      key={template.id}
+                      onClick={() => setSelectedTemplate(template.id)}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedTemplate === template.id
+                          ? 'border-brand-primary bg-brand-primary/5'
+                          : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl">{template.icon}</span>
+                        <div>
+                          <h4 className="font-medium text-gray-900">{template.name}</h4>
+                          <p className="text-sm text-gray-600">{template.description}</p>
                         </div>
                       </div>
                     </div>
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Características Clave
-                      </label>
-                      <input
-                        type="text"
-                        value={property.keyFacts || ''}
-                        onChange={(e) => handlePropertyChange(index, 'keyFacts', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                        placeholder="Ej: 3 habitaciones, 2 baños, terraza"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Descripción *
-                      </label>
-                      <textarea
-                        value={property.description}
-                        onChange={(e) => handlePropertyChange(index, 'description', e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                        placeholder="Describe la propiedad o producto..."
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Contact Information */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Mail size={20} className="text-brand-primary" />
-                Información de Contacto
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre
-                  </label>
-                  <input
-                    type="text"
-                    value={contact.name || ''}
-                    onChange={(e) => setContact(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={contact.email || ''}
-                    onChange={(e) => setContact(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    value={contact.phone || ''}
-                    onChange={(e) => setContact(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Empresa
-                  </label>
-                  <input
-                    type="text"
-                    value={contact.company || ''}
-                    onChange={(e) => setContact(prev => ({ ...prev, company: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Dirección
-                  </label>
-                  <input
-                    type="text"
-                    value={contact.address || ''}
-                    onChange={(e) => setContact(prev => ({ ...prev, address: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Sitio Web
-                  </label>
-                  <input
-                    type="url"
-                    value={contact.website || ''}
-                    onChange={(e) => setContact(prev => ({ ...prev, website: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                  />
+                  ))}
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Template Selection */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-              <h3 className="text-lg font-semibold mb-4">Seleccionar Plantilla</h3>
+              {/* Brand Preview */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
+                <h3 className="text-lg font-semibold mb-4">Vista Previa de Marca</h3>
 
-              <div className="space-y-3">
-                {TEMPLATE_OPTIONS.map((template) => (
-                  <div
-                    key={template.id}
-                    onClick={() => setSelectedTemplate(template.id)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedTemplate === template.id
-                        ? 'border-brand-primary bg-brand-primary/5'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl">{template.icon}</span>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{template.name}</h4>
-                        <p className="text-sm text-gray-600">{template.description}</p>
-                      </div>
+                <div className="space-y-4">
+                  {brandTheme.logoUrl && (
+                    <div className="flex justify-center">
+                      <img src={brandTheme.logoUrl} alt="Logo" className="h-12 object-contain" />
                     </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <div
+                      className="w-8 h-8 rounded"
+                      style={{ backgroundColor: brandTheme.primary }}
+                    />
+                    <div
+                      className="w-8 h-8 rounded"
+                      style={{ backgroundColor: brandTheme.secondary }}
+                    />
                   </div>
-                ))}
+
+                  <p className="text-sm text-gray-600">
+                    Los colores y logo de tu marca se aplicarán automáticamente al PDF.
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* Brand Preview */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-soft">
-              <h3 className="text-lg font-semibold mb-4">Vista Previa de Marca</h3>
-
-              <div className="space-y-4">
-                {brandTheme.logoUrl && (
-                  <div className="flex justify-center">
-                    <img src={brandTheme.logoUrl} alt="Logo" className="h-12 object-contain" />
-                  </div>
+              {/* Generate Button */}
+              <button
+                onClick={generatePDF}
+                disabled={isGenerating}
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-brand-primary to-brand-secondary text-white rounded-xl font-semibold hover:from-brand-primary/90 hover:to-brand-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1"
+              >
+                {isGenerating ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Generando PDF...
+                  </>
+                ) : (
+                  <>
+                    <FilePdf size={20} />
+                    Generar PDF
+                  </>
                 )}
-
-                <div className="flex gap-2">
-                  <div
-                    className="w-8 h-8 rounded"
-                    style={{ backgroundColor: brandTheme.primary }}
-                  />
-                  <div
-                    className="w-8 h-8 rounded"
-                    style={{ backgroundColor: brandTheme.secondary }}
-                  />
-                </div>
-
-                <p className="text-sm text-gray-600">
-                  Los colores y logo de tu marca se aplicarán automáticamente al PDF.
-                </p>
-              </div>
+              </button>
             </div>
-
-            {/* Generate Button */}
-            <button
-              onClick={generatePDF}
-              disabled={isGenerating}
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-brand-primary to-brand-secondary text-white rounded-xl font-semibold hover:from-brand-primary/90 hover:to-brand-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-soft hover:shadow-elevated transform hover:-translate-y-1"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Generando PDF...
-                </>
-              ) : (
-                <>
-                  <FilePdf size={20} />
-                  Generar PDF
-                </>
-              )}
-            </button>
           </div>
         </div>
-      </div>
-    </DashboardLayout>
+      </DashboardLayout>
+    </>
   );
 }

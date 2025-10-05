@@ -15,8 +15,9 @@
   "dependencies": {
     "concurrently": "^9.2.0",
     "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.2",
-    "jszip": "^3.10.1"
+    "jspdf": "^3.0.3",
+    "jszip": "^3.10.1",
+    "production": "^0.0.2"
   },
   "workspaces": [
     "frontend",

@@ -79,90 +79,178 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
 
   if (!isOpen) return null;
 
+  // const handleCreate = async () => {
+  //   if (!selectedType || !templateName.trim()) return;
+    
+  //   // Check user plan - Free plan users cannot create templates
+  //   if (user?.plan === 'Gratis') {
+  //     showError('Crear plantillas requiere plan Premium o Ultra-Premium. ¡Upgrade tu plan para crear plantillas personalizadas!');
+  //     return;
+  //   }
+    
+  //   // Validate template name length
+  //   if (templateName.trim().length < 3) {
+  //     showWarning('El nombre de la plantilla debe tener al menos 3 caracteres');
+  //     return;
+  //   }
+    
+  //   if (templateName.trim().length > 100) {
+  //     showWarning('El nombre de la plantilla debe tener menos de 100 caracteres');
+  //     return;
+  //   }
+
+  //   setIsCreating(true);
+    
+  //   try {
+  //     // Get brand kit logo from database
+  //     let brandKitLogo = null;
+  //     try {
+  //       const token = localStorage.getItem('token');
+  //       if (token) {
+  //         const response = await fetch(API_ENDPOINTS.BRAND_KIT_LOGO, {
+  //           headers: {
+  //             'Authorization': `Bearer ${token}`,
+  //             'Content-Type': 'application/json'
+  //           }
+  //         });
+          
+  //         if (response.ok) {
+  //           const data = await response.json();
+  //           if (data.success && data.logo && data.logo.data) {
+  //             brandKitLogo = data.logo.data;
+  //           }
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching brand kit logo:', error);
+  //     }
+
+  //     // Create new template in backend
+  //     const response = await fetch(API_ENDPOINTS.TEMPLATES, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         type: selectedType,
+  //         name: templateName || generateDefaultName(selectedType),
+  //         canvasData: null, // Blank canvas
+  //         dimensions: getDefaultDimensions(selectedType),
+  //         userId: 'current-user', // This should come from auth context
+  //         createdAt: new Date().toISOString(),
+  //         brandKitLogo: brandKitLogo // Include brand kit logo
+  //       }),
+  //     });
+
+  //     if (response.ok) {
+  //       const template = await response.json();
+        
+  //       // Open editor with the new template in a new tab
+  //       const editorUrl = `/editor?type=${selectedType}&id=${template._id || template.id}&template=${template._id || template.id}`;
+  //       window.open(editorUrl, '_blank');
+        
+  //       // Show success message
+  //       showSuccess(`¡Plantilla "${templateName}" creada exitosamente! Se ha abierto una nueva pestaña del editor con tu plantilla.`);
+  //       onClose();
+  //     } else {
+  //       console.error('Failed to create template');
+  //       showError('Error al crear la plantilla. Por favor intenta de nuevo.');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error creating template:', error);
+  //     showError('Error al crear la plantilla. Por favor verifica tu conexión e intenta de nuevo.');
+  //   } finally {
+  //     setIsCreating(false);
+  //   }
+  // };
   const handleCreate = async () => {
     if (!selectedType || !templateName.trim()) return;
-    
-    // Check user plan - Free plan users cannot create templates
+
+    // 🚫 Block free-plan users
     if (user?.plan === 'Gratis') {
-      showError('Crear plantillas requiere plan Premium o Ultra-Premium. ¡Upgrade tu plan para crear plantillas personalizadas!');
+      showError(
+        'Crear plantillas requiere plan Premium o Ultra-Premium. ¡Upgrade tu plan para crear plantillas personalizadas!'
+      );
       return;
     }
-    
-    // Validate template name length
+
+    // ✅ Validate template name
     if (templateName.trim().length < 3) {
       showWarning('El nombre de la plantilla debe tener al menos 3 caracteres');
       return;
     }
-    
     if (templateName.trim().length > 100) {
       showWarning('El nombre de la plantilla debe tener menos de 100 caracteres');
       return;
     }
 
     setIsCreating(true);
-    
+
     try {
-      // Get brand kit logo from database
-      let brandKitLogo = null;
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const response = await fetch(API_ENDPOINTS.BRAND_KIT_LOGO, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.logo && data.logo.data) {
-              brandKitLogo = data.logo.data;
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching brand kit logo:', error);
+      // 🔑 Grab token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showError('No estás autenticado. Por favor inicia sesión.');
+        return;
       }
 
-      // Create new template in backend
+      // (Optional) fetch brand kit logo
+      let brandKitLogo: string | null = null;
+      try {
+        const logoRes = await fetch(API_ENDPOINTS.BRAND_KIT_LOGO, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (logoRes.ok) {
+          const data = await logoRes.json();
+          if (data.success && data.logo && data.logo.data) {
+            brandKitLogo = data.logo.data;
+          }
+        }
+      } catch (err) {
+        console.error('⚠️ Error fetching brand kit logo:', err);
+      }
+
+      // 🚀 Create new template
       const response = await fetch(API_ENDPOINTS.TEMPLATES, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // ✅ send JWT
         },
         body: JSON.stringify({
           type: selectedType,
           name: templateName || generateDefaultName(selectedType),
-          canvasData: null, // Blank canvas
           dimensions: getDefaultDimensions(selectedType),
-          userId: 'current-user', // This should come from auth context
-          createdAt: new Date().toISOString(),
-          brandKitLogo: brandKitLogo // Include brand kit logo
+          brandKitLogo: brandKitLogo,
         }),
       });
 
       if (response.ok) {
         const template = await response.json();
-        
-        // Open editor with the new template in a new tab
-        const editorUrl = `/editor?type=${selectedType}&id=${template._id || template.id}&template=${template._id || template.id}`;
+
+        // Open editor in a new tab
+        const editorUrl = `/editor?type=${selectedType}&id=${template._id || template.id}`;
         window.open(editorUrl, '_blank');
-        
-        // Show success message
-        showSuccess(`¡Plantilla "${templateName}" creada exitosamente! Se ha abierto una nueva pestaña del editor con tu plantilla.`);
+
+        showSuccess(`¡Plantilla "${templateName}" creada exitosamente!`);
         onClose();
       } else {
-        console.error('Failed to create template');
-        showError('Error al crear la plantilla. Por favor intenta de nuevo.');
+        const err = await response.json().catch(() => null);
+        console.error('❌ Failed to create template', err);
+        showError(err?.error || 'Error al crear la plantilla. Por favor intenta de nuevo.');
       }
     } catch (error) {
-      console.error('Error creating template:', error);
+      console.error('❌ Error creating template:', error);
       showError('Error al crear la plantilla. Por favor verifica tu conexión e intenta de nuevo.');
     } finally {
       setIsCreating(false);
     }
   };
+
 
   const getDefaultDimensions = (type: string) => {
     const dimensions = {
