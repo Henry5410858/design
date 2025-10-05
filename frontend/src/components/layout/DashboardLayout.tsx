@@ -23,7 +23,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   const navigationItems = useMemo(() => [
     {
-      name: 'Dashboard',
+      name: 'Dashboard123',
       href: '/',
       icon: '🏠',
       description: 'Vista general del centro de diseño'

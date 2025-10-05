@@ -18,7 +18,8 @@ const corsOptions = {
     'https://turbo-enigma-jw51.vercel.app',
     'https://turbo-enigma.vercel.app',
     'http://localhost:3000',
-    'http://localhost:3001'
+    'http://localhost:3001',
+    'https://design-center.netlify.app'
   ],
   credentials: true,
   optionsSuccessStatus: 200
