@@ -1,393 +1,516 @@
-const PDFDocument = require('pdfkit');
-const axios = require('axios');
+const path = require('path');
+const ejs = require('ejs');
+const puppeteer = require('puppeteer');
+const fetch = require('node-fetch');
+const { cldFetch } = require('./cloudinaryHelpers');
+const os = require('os');
 
-class PDFRenderer {
-  constructor() {
-    this.fonts = {
-      normal: 'Helvetica',
-      bold: 'Helvetica-Bold',
-      italic: 'Helvetica-Oblique'
-    };
-  }
-
-  async renderTemplateToPdf({ template, data, locale = 'es', currencyCode = 'EUR' }) {
-    try {
-      console.log(`📄 Generating PDF with template: ${template}`);
-      
-      switch (template) {
-        case 'dossier-express':
-          return await this.generateDossierExpress(data, locale, currencyCode);
-        case 'comparative-short':
-          return await this.generateComparativeShort(data, locale, currencyCode);
-        case 'simple-proposal':
-          return await this.generateSimpleProposal(data, locale, currencyCode);
-        default:
-          return await this.generateDossierExpress(data, locale, currencyCode);
-      }
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      throw new Error(`PDF generation failed: ${error.message}`);
-    }
-  }
-
-  async generateDossierExpress(data, locale, currencyCode) {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ 
-          margin: 50,
-          size: 'A4',
-          info: {
-            Title: `Propuesta - ${data.client.name}`,
-            Author: 'Sistema de Propuestas',
-            Creator: 'PDFKit'
-          }
-        });
-
-        const buffers = [];
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => resolve(Buffer.concat(buffers)));
-        doc.on('error', reject);
-
-        // Header
-        this.addHeader(doc, data);
-        
-        // Client Information
-        this.addClientSection(doc, data.client);
-        
-        // Introduction
-        this.addIntroduction(doc, data.intro);
-        
-        // Properties
-        this.addPropertiesSection(doc, data.items, currencyCode);
-        
-        // Footer
-        this.addFooter(doc, data);
-
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  async generateComparativeShort(data, locale, currencyCode) {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ 
-          margin: 40,
-          size: 'A4'
-        });
-
-        const buffers = [];
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => resolve(Buffer.concat(buffers)));
-        doc.on('error', reject);
-
-        // Title
-        doc.font(this.fonts.bold)
-           .fontSize(20)
-           .text('COMPARATIVA DE PROPIEDADES', { align: 'center' });
-        doc.moveDown(0.5);
-
-        // Client
-        doc.font(this.fonts.bold)
-           .fontSize(14)
-           .text(`Cliente: ${data.client.name}`);
-        doc.moveDown(0.5);
-
-        // Properties comparison table
-        this.addComparisonTable(doc, data.items, currencyCode);
-
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  async generateSimpleProposal(data, locale, currencyCode) {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ 
-          margin: 50,
-          size: 'A4'
-        });
-
-        const buffers = [];
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => resolve(Buffer.concat(buffers)));
-        doc.on('error', reject);
-
-        // Cover page
-        this.addCoverPage(doc, data);
-        doc.addPage();
-
-        // Table of contents would go here
-        this.addDetailedContent(doc, data, currencyCode);
-
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  addHeader(doc, data) {
-    // Add logo if available
-    if (data.theme?.logoUrl) {
-      // For now, we'll just add text. Image handling can be added later
-      doc.font(this.fonts.bold)
-         .fontSize(16)
-         .text('PROPUESTA COMERCIAL', { align: 'center' });
-    } else {
-      doc.font(this.fonts.bold)
-         .fontSize(16)
-         .text('PROPUESTA COMERCIAL', { align: 'center' });
-    }
-    
-    doc.moveDown(1);
-    
-    // Add date
-    const today = new Date().toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-    
-    doc.font(this.fonts.normal)
-       .fontSize(10)
-       .text(`Generado el: ${today}`, { align: 'right' });
-    
-    doc.moveDown(2);
-  }
-
-  addClientSection(doc, client) {
-    doc.font(this.fonts.bold)
-       .fontSize(14)
-       .text('INFORMACIÓN DEL CLIENTE');
-    
-    doc.moveDown(0.5);
-    
-    doc.font(this.fonts.normal)
-       .fontSize(11)
-       .text(`• Nombre: ${client.name}`);
-    
-    if (client.industry) {
-      doc.text(`• Industria: ${client.industry}`);
-    }
-    
-    if (client.contact?.company) {
-      doc.text(`• Empresa: ${client.contact.company}`);
-    }
-    
-    doc.moveDown(1);
-  }
-
-  addIntroduction(doc, intro) {
-    if (intro && intro.trim()) {
-      doc.font(this.fonts.bold)
-         .fontSize(12)
-         .text('INTRODUCCIÓN');
-      
-      doc.moveDown(0.5);
-      
-      doc.font(this.fonts.normal)
-         .fontSize(10)
-         .text(intro, { 
-           align: 'justify',
-           lineGap: 2
-         });
-      
-      doc.moveDown(1);
-    }
-  }
-
-  addPropertiesSection(doc, items, currencyCode) {
-    doc.font(this.fonts.bold)
-       .fontSize(14)
-       .text('PROPIEDADES RECOMENDADAS');
-    
-    doc.moveDown(1);
-
-    items.forEach((item, index) => {
-      // Property header
-      doc.font(this.fonts.bold)
-         .fontSize(12)
-         .text(`${index + 1}. ${item.title}`);
-      
-      doc.moveDown(0.3);
-
-      // Property details
-      doc.font(this.fonts.normal)
-         .fontSize(10);
-
-      if (item.location) {
-        doc.text(`📍 Ubicación: ${item.location}`);
-      }
-
-      if (item.price) {
-        const formattedPrice = new Intl.NumberFormat('es-ES', {
-          style: 'currency',
-          currency: currencyCode
-        }).format(item.price);
-        doc.text(`💰 Precio: ${formattedPrice}`);
-      }
-
-      if (item.keyFacts) {
-        doc.text(`⚡ Características: ${item.keyFacts}`);
-      }
-
-      doc.moveDown(0.2);
-
-      // Description
-      doc.text(`📝 Descripción: ${item.description}`, {
-        lineGap: 1.5
-      });
-
-      // Separator between properties
-      if (index < items.length - 1) {
-        doc.moveDown(0.5);
-        doc.moveTo(50, doc.y)
-            .lineTo(550, doc.y)
-            .strokeColor('#cccccc')
-            .stroke();
-        doc.moveDown(0.5);
-      }
-    });
-  }
-
-  addComparisonTable(doc, items, currencyCode) {
-    // Simple table implementation
-    items.forEach((item, index) => {
-      const y = doc.y;
-      
-      // Background for alternate rows
-      if (index % 2 === 0) {
-        doc.rect(50, y, 500, 60)
-           .fillColor('#f8f9fa')
-           .fill();
-      }
-
-      // Property title
-      doc.font(this.fonts.bold)
-         .fontSize(11)
-         .fillColor('black')
-         .text(item.title, 60, y + 10, { width: 300 });
-      
-      // Price
-      if (item.price) {
-        const formattedPrice = new Intl.NumberFormat('es-ES', {
-          style: 'currency',
-          currency: currencyCode
-        }).format(item.price);
-        
-        doc.text(formattedPrice, 370, y + 10, { width: 120, align: 'right' });
-      }
-      
-      // Key facts
-      if (item.keyFacts) {
-        doc.font(this.fonts.normal)
-           .fontSize(9)
-           .fillColor('#666666')
-           .text(item.keyFacts, 60, y + 30, { width: 430 });
-      }
-      
-      doc.y = y + 70;
-    });
-  }
-
-  addCoverPage(doc, data) {
-    doc.rect(0, 0, doc.page.width, doc.page.height)
-       .fillColor(data.theme?.primary || '#1f2937')
-       .fill();
-    
-    doc.fillColor('#ffffff')
-       .font(this.fonts.bold)
-       .fontSize(28)
-       .text('PROPUESTA COMERCIAL', 50, 200, { 
-         align: 'center',
-         width: doc.page.width - 100
-       });
-    
-    doc.fontSize(18)
-       .text(`Para: ${data.client.name}`, 50, 300, {
-         align: 'center',
-         width: doc.page.width - 100
-       });
-    
-    const today = new Date().toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-    
-    doc.fontSize(12)
-       .text(today, 50, 400, {
-         align: 'center',
-         width: doc.page.width - 100
-       });
-  }
-
-  addDetailedContent(doc, data, currencyCode) {
-    this.addClientSection(doc, data.client);
-    this.addIntroduction(doc, data.intro);
-    this.addPropertiesSection(doc, data.items, currencyCode);
-    
-    // Add contact information
-    if (data.client.contact) {
-      doc.addPage();
-      this.addContactSection(doc, data.client.contact);
-    }
-  }
-
-  addContactSection(doc, contact) {
-    doc.font(this.fonts.bold)
-       .fontSize(14)
-       .text('INFORMACIÓN DE CONTACTO');
-    
-    doc.moveDown(1);
-    
-    doc.font(this.fonts.normal)
-       .fontSize(11);
-    
-    if (contact.name) {
-      doc.text(`👤 ${contact.name}`);
-    }
-    
-    if (contact.email) {
-      doc.text(`📧 ${contact.email}`);
-    }
-    
-    if (contact.phone) {
-      doc.text(`📞 ${contact.phone}`);
-    }
-    
-    if (contact.company) {
-      doc.text(`🏢 ${contact.company}`);
-    }
-    
-    if (contact.address) {
-      doc.text(`📍 ${contact.address}`);
-    }
-  }
-
-  addFooter(doc, data) {
-    const pageHeight = doc.page.height;
-    const footerY = pageHeight - 50;
-    
-    doc.moveTo(50, footerY)
-       .lineTo(550, footerY)
-       .strokeColor('#cccccc')
-       .stroke();
-    
-    doc.font(this.fonts.normal)
-       .fontSize(8)
-       .fillColor('#666666')
-       .text('Documento generado automáticamente - Confidencial', 50, footerY + 10, {
-         align: 'center',
-         width: 500
-       });
+function currency(amount, currencyCode = 'EUR') {
+  try {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: currencyCode }).format(amount);
+  } catch {
+    return `${amount} ${currencyCode}`;
   }
 }
 
-module.exports = new PDFRenderer();
+
+function t(key, fallback) {
+  // Basic passthrough for now; integrate i18n later
+  return fallback || key;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function prefetchImages(urls, { timeoutMs = 8000 } = {}) {
+  const unique = Array.from(new Set((urls || []).filter(Boolean)));
+  await Promise.all(
+    unique.map(async (url) => {
+      try {
+        // We GET to warm Cloudinary fetch cache; ignore response body
+        const ctrl = new AbortController();
+        const id = setTimeout(() => ctrl.abort(), timeoutMs);
+        await fetch(url, { method: 'GET', signal: ctrl.signal });
+        clearTimeout(id);
+      } catch (_) {
+        // ignore prefetch errors; rendering may still succeed
+      }
+    })
+  );
+}
+
+async function renderWithRetries(renderFn, { retries = 2, backoffMs = 600 } = {}) {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await renderFn();
+    } catch (err) {
+      attempt += 1;
+      if (attempt > retries) throw err;
+      await sleep(backoffMs * attempt);
+    }
+  }
+}
+
+// Simple HTML to PDF fallback using basic HTML structure
+async function createSimpleHtmlPdf(data) {
+  const { client, items = [], intro = '' } = data;
+  
+  const simpleHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Proposal - ${client.name}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .client-info { margin-bottom: 20px; }
+        .item { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .item h3 { color: #333; }
+        .price { font-weight: bold; color: #007bff; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Propuesta Comercial</h1>
+        <h2>${client.name}</h2>
+      </div>
+      
+      <div class="client-info">
+        <p><strong>Cliente:</strong> ${client.name}</p>
+        ${client.industry ? `<p><strong>Sector:</strong> ${client.industry}</p>` : ''}
+        ${client.contact?.email ? `<p><strong>Email:</strong> ${client.contact.email}</p>` : ''}
+      </div>
+      
+      ${intro ? `<div class="intro"><p>${intro}</p></div>` : ''}
+      
+      <div class="items">
+        <h3>Servicios Propuestos:</h3>
+        ${items.map((item, index) => `
+          <div class="item">
+            <h3>${index + 1}. ${item.title || 'Servicio'}</h3>
+            ${item.description ? `<p>${item.description}</p>` : ''}
+            ${item.price ? `<p class="price">Precio: €${item.price}</p>` : ''}
+          </div>
+        `).join('')}
+      </div>
+      
+      <div class="footer" style="margin-top: 30px; text-align: center; color: #666;">
+        <p>Propuesta generada el ${new Date().toLocaleDateString('es-ES')}</p>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  return simpleHtml;
+}
+
+async function renderTemplateToPdf({ template, data, locale = 'es', currencyCode = 'EUR', prefetch = true, retries = 2 }) {
+  console.log(`[PDF] Starting PDF generation for template: ${template}`);
+  console.log(`[PDF] Data keys:`, Object.keys(data || {}));
+  console.log(`[PDF] Options:`, { locale, currencyCode, prefetch, retries });
+  
+  try {
+    const templatePath = path.join(__dirname, '..', 'templates', `${template}.ejs`);
+    console.log(`[PDF] Template path: ${templatePath}`);
+    
+    // Check if template file exists
+    const fs = require('fs');
+    if (!fs.existsSync(templatePath)) {
+      throw new Error(`Template file not found: ${templatePath}`);
+    }
+
+    // Preprocess data for Cloudinary images
+    const theme = data.theme || {};
+    const logoTransformed = theme.logoUrl ? cldFetch(theme.logoUrl, { width: 320, height: 120, crop: 'fit' }) : '';
+
+    const toArray = (val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      // Split by newline or comma
+      return String(val)
+        .split(/\r?\n|,/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    };
+
+    const items = (data.items || []).map((it) => ({
+      ...it,
+      keyFacts: toArray(it.keyFacts),
+      benefits: toArray(it.benefits),
+      performance: toArray(it.performance),
+      highlights: toArray(it.highlights),
+      _thumb: cldFetch(it.enhancedUrl || it.imageUrl, { width: 640, height: 360, crop: 'fill', gravity: 'auto' }),
+      _hero: cldFetch(it.enhancedUrl || it.imageUrl, { width: 1200, height: 640, crop: 'fill', gravity: 'auto' }),
+    }));
+
+    // Prefetch images to warm Cloudinary cache and reduce navigation stalls
+    if (prefetch) {
+      const urls = [logoTransformed, ...items.map((i) => i._thumb), ...items.map((i) => i._hero)];
+      console.log(`[PDF] Prefetching ${urls.length} images...`);
+      await prefetchImages(urls);
+      console.log(`[PDF] Image prefetching completed`);
+    }
+
+    console.log(`[PDF] Rendering EJS template...`);
+    let html;
+    try {
+      html = await ejs.renderFile(
+        templatePath,
+        {
+          ...data,
+          theme,
+          items,
+          locale,
+          currencyCode,
+          logoTransformed,
+          t,
+          currency,
+        },
+        { async: true }
+      );
+      console.log(`[PDF] EJS template rendered successfully, HTML length: ${html.length}`);
+    } catch (ejsError) {
+      console.error(`[PDF] EJS rendering failed:`, ejsError);
+      throw new Error(`Template rendering failed: ${ejsError.message}`);
+    }
+
+    const doRender = async () => {
+      let browser;
+      try {
+        console.log('[PDF] Launching Puppeteer browser...');
+        console.log('[PDF] Node version:', process.version);
+        console.log('[PDF] Platform:', process.platform);
+        console.log('[PDF] Architecture:', process.arch);
+        console.log('[PDF] Memory:', process.memoryUsage());
+
+        // Try different launch strategies for serverless environments
+        let launchOptions = {
+          headless: true,
+          timeout: 60000,
+          ignoreHTTPSErrors: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-software-rasterizer',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-features=TranslateUI',
+            '--disable-ipc-flooding-protection',
+            '--memory-pressure-off',
+            '--max_old_space_size=4096',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--no-first-run',
+            '--disable-default-apps',
+            '--disable-sync',
+            '--disable-translate',
+            '--hide-scrollbars',
+            '--metrics-recording-only',
+            '--mute-audio',
+            '--no-default-browser-check',
+            '--no-first-run',
+            '--safebrowsing-disable-auto-update',
+            // Increase shared memory
+            '--disable-dev-shm-usage',
+            // Font rendering
+            '--font-render-hinting=none',
+            // Memory optimization
+            '--memory-pressure-off',
+            '--max_old_space_size=4096'
+          ]
+        };
+
+        // Check if running on Render (common serverless indicators)
+        const isServerless = process.env.RENDER || process.env.VERCEL || process.env.NETLIFY || !process.env.HOME;
+        if (isServerless) {
+          console.log('[PDF] Detected serverless environment, using optimized config');
+          launchOptions.args.push(
+            '--single-process',
+            '--no-zygote',
+            '--disable-background-networking',
+            '--disable-client-side-phishing-detection',
+            '--disable-component-extensions-with-background-pages',
+            '--disable-hang-monitor',
+            '--disable-prompt-on-repost',
+            '--force-color-profile=srgb',
+            '--enable-automation',
+            '--disable-extensions',
+            '--disable-plugins',
+            '--virtual-time-budget=30000'
+          );
+          
+          // Increase timeout for serverless
+          launchOptions.timeout = 120000; // 2 minutes
+        }
+
+        // Try to find Chrome executable on various platforms
+        if (process.env.RENDER || process.env.VERCEL || process.env.NETLIFY || isServerless) {
+          console.log('[PDF] Running on serverless platform, attempting to find Chrome...');
+          
+          // Check for environment variable first (set by Dockerfile)
+          if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+            console.log(`[PDF] Using PUPPETEER_EXECUTABLE_PATH: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+            launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+          } else {
+            const possiblePaths = [
+              // Standard Linux Chrome installations
+              '/usr/bin/google-chrome',
+              '/usr/bin/google-chrome-stable',
+              '/usr/bin/chromium-browser',
+              '/usr/bin/chromium',
+              '/opt/google/chrome/chrome',
+              '/snap/bin/chromium',
+              '/usr/bin/google-chrome-unstable',
+              // Render.com specific paths
+              '/opt/render/project/src/node_modules/puppeteer/.local-chromium/linux-*/chrome-linux/chrome',
+              '/opt/render/project/src/node_modules/puppeteer/.local-chromium/linux-*/chrome-linux64/chrome',
+              '/opt/render/project/node_modules/puppeteer/.local-chromium/linux-*/chrome-linux/chrome',
+              '/opt/render/project/node_modules/puppeteer/.local-chromium/linux-*/chrome-linux64/chrome',
+              // Additional Render paths
+              '/usr/local/bin/chrome',
+              '/usr/local/bin/chromium',
+              '/usr/local/bin/google-chrome',
+              // Heroku buildpack paths
+              '/app/.chrome-for-testing/chrome-linux64/chrome',
+              '/app/.apt/usr/bin/google-chrome',
+              // macOS paths
+              '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+              // Windows paths
+              'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+              'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+            ];
+          
+            for (const chromePath of possiblePaths) {
+              try {
+                const fs = require('fs');
+                const path = require('path');
+                
+                // Handle glob patterns for Puppeteer's local Chromium
+                if (chromePath.includes('*')) {
+                  try {
+                    const glob = require('glob');
+                    const matches = glob.sync(chromePath);
+                    if (matches.length > 0 && fs.existsSync(matches[0])) {
+                      console.log(`[PDF] Found Chrome via glob at: ${matches[0]}`);
+                      launchOptions.executablePath = matches[0];
+                      break;
+                    }
+                  } catch (globError) {
+                    // Glob not available, skip glob patterns
+                    console.log('[PDF] Glob not available, skipping pattern:', chromePath);
+                  }
+                } else if (fs.existsSync(chromePath)) {
+                  console.log(`[PDF] Found Chrome at: ${chromePath}`);
+                  launchOptions.executablePath = chromePath;
+                  break;
+                }
+              } catch (e) {
+                // Continue searching
+              }
+            }
+            
+            // If no Chrome found, try to use bundled Chromium
+            if (!launchOptions.executablePath) {
+              console.log('[PDF] No Chrome found, attempting to use bundled Chromium...');
+              try {
+                // Try to get Puppeteer's bundled Chromium path
+                const puppeteerExecutablePath = puppeteer.executablePath();
+                if (puppeteerExecutablePath) {
+                  const fs = require('fs');
+                  if (fs.existsSync(puppeteerExecutablePath)) {
+                    launchOptions.executablePath = puppeteerExecutablePath;
+                    console.log(`[PDF] Using Puppeteer bundled Chromium at: ${launchOptions.executablePath}`);
+                  }
+                }
+              } catch (e) {
+                console.log('[PDF] Could not find bundled Chromium:', e.message);
+              }
+            }
+            
+            // Final fallback: try to install Chromium if not found
+            if (!launchOptions.executablePath) {
+              console.log('[PDF] No Chrome executable found, attempting to use default (may trigger Chromium download)');
+              // Try to force Puppeteer to download Chromium if needed
+              try {
+                const puppeteerExecutablePath = puppeteer.executablePath();
+                console.log('[PDF] Puppeteer default executable path:', puppeteerExecutablePath);
+                
+                // Verify the path exists
+                const fs = require('fs');
+                if (fs.existsSync(puppeteerExecutablePath)) {
+                  launchOptions.executablePath = puppeteerExecutablePath;
+                  console.log('[PDF] Using verified Puppeteer executable');
+                } else {
+                  console.log('[PDF] Puppeteer executable path does not exist, will try without executablePath');
+                }
+              } catch (e) {
+                console.log('[PDF] Could not get Puppeteer executable path:', e.message);
+                // Don't set executablePath, let Puppeteer handle it
+              }
+            }
+          }
+        }
+
+        console.log('[PDF] Final launch options:', JSON.stringify(launchOptions, null, 2));
+
+        // Multiple launch attempts with different strategies
+        let browser;
+        let launchError;
+
+        // Strategy 1: Try with full options
+        try {
+          console.log('[PDF] Attempting browser launch with full options...');
+          browser = await puppeteer.launch(launchOptions);
+          console.log('[PDF] Browser launched successfully with full options');
+        } catch (launchError) {
+          console.log('[PDF] Full options launch failed:', launchError.message);
+          
+          // Strategy 2: Try with minimal options
+          try {
+            console.log('[PDF] Attempting browser launch with minimal options...');
+            const minimalOptions = {
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox'],
+              timeout: 30000
+            };
+            if (launchOptions.executablePath) {
+              minimalOptions.executablePath = launchOptions.executablePath;
+            }
+            browser = await puppeteer.launch(minimalOptions);
+            console.log('[PDF] Browser launched successfully with minimal options');
+          } catch (minimalError) {
+            console.log('[PDF] Minimal options launch failed:', minimalError.message);
+            
+            // Strategy 3: Try ultra-minimal (no executablePath)
+            try {
+              console.log('[PDF] Attempting browser launch with ultra-minimal options...');
+              browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox'],
+                timeout: 15000
+              });
+              console.log('[PDF] Browser launched successfully with ultra-minimal options');
+            } catch (ultraMinimalError) {
+              console.log('[PDF] Ultra-minimal launch failed:', ultraMinimalError.message);
+              throw new Error(`All browser launch strategies failed. Last error: ${ultraMinimalError.message}`);
+            }
+          }
+        }
+
+        // Log browser version for debugging
+        const version = await browser.version();
+        console.log(`[PDF] Browser version: ${version}`);
+
+        try {
+          const page = await browser.newPage();
+          
+          // Set viewport and other page options
+          await page.setViewport({ width: 1200, height: 800 });
+          
+          // Set content and wait for it to load
+          console.log('[PDF] Setting page content...');
+          await page.setContent(html, { 
+            waitUntil: 'networkidle0', 
+            timeout: 60000 
+          });
+          
+          // Brief wait for any remaining async operations
+          await sleep(2000);
+          
+          console.log('[PDF] Generating PDF...');
+          const pdf = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+            timeout: 60000
+          });
+          
+          await browser.close();
+          console.log(`[PDF] PDF generated successfully: ${pdf.length} bytes`);
+          return pdf;
+        } catch (e) {
+          if (browser) {
+            try { 
+              await browser.close(); 
+            } catch (closeError) {
+              console.log('[PDF] Error closing browser:', closeError.message);
+            }
+          }
+          throw e;
+        }
+
+        let errorMessage = 'PDF generation failed';
+        if (e.message.includes('Navigation timeout')) {
+          errorMessage = 'PDF generation timed out during page load';
+        } else if (e.message.includes('Protocol error')) {
+          errorMessage = 'Browser protocol error during PDF generation';
+        } else if (e.message.includes('Target closed')) {
+          errorMessage = 'Browser target closed unexpectedly';
+        }
+
+        throw new Error(`${errorMessage}: ${e.message}`);
+      } catch (e) {
+        console.error('[PDF] Browser launch or PDF generation failed:', e);
+        throw e;
+      }
+    };
+
+    // Try main render with retries
+    try {
+      return await renderWithRetries(doRender, { retries });
+    } catch (mainError) {
+      console.error('[PDF] Main render failed, attempting simple HTML fallback:', mainError);
+      
+      // Last resort: use simple HTML with minimal Puppeteer options
+      try {
+        const simpleHtml = await createSimpleHtmlPdf(data);
+        
+        const simpleFallback = async () => {
+          let browser;
+          try {
+            console.log('[PDF] Launching browser for simple fallback...');
+            browser = await puppeteer.launch({
+              headless: true,
+              timeout: 30000,
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+            });
+            
+            const page = await browser.newPage();
+            await page.setContent(simpleHtml, { waitUntil: 'domcontentloaded', timeout: 15000 });
+            await sleep(1000); // Brief stabilization
+            
+            const pdf = await page.pdf({
+              format: 'A4',
+              printBackground: true,
+              margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
+            });
+            
+            await browser.close();
+            console.log(`[PDF] Simple fallback successful: ${pdf.length} bytes`);
+            return pdf;
+          } catch (e) {
+            if (browser) {
+              try { await browser.close(); } catch {}
+            }
+            throw e;
+          }
+        };
+        
+        return await simpleFallback();
+      } catch (fallbackError) {
+        console.error('[PDF] Simple fallback also failed:', fallbackError);
+        throw new Error(`All PDF generation methods failed. Main: ${mainError.message}. Fallback: ${fallbackError.message}`);
+      }
+    }
+    
+  } catch (outerError) {
+    console.error('[PDF] Outer function error:', outerError);
+    throw new Error(`PDF generation failed: ${outerError.message}`);
+  }
+}
+
+module.exports = { renderTemplateToPdf };
