@@ -126,7 +126,7 @@ app.get('/api/health', (req, res) => {
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ 
-    message: 'Backend is working!',
+    message: 'Backend is working!ddddddddddddddd',
     timestamp: new Date().toISOString()
   });
 });
