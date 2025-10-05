@@ -22,7 +22,7 @@ app.use(cors({
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
-      'https://your-app.netlify.app', // ✅ Replace with your actual Netlify domain
+      'https://design-center.netlify.app', // ✅ Replace with your actual Netlify domain
       'http://localhost:3000',
       'http://localhost:3001'
     ];
