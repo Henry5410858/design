@@ -36,7 +36,7 @@ const triggerDownload = (blob: Blob, filename: string) => {
           link.click();
           setTimeout(() => {
             URL.revokeObjectURL(url);
-          }, 500);
+          }, 5000);
         }, 10);
       });
     });
