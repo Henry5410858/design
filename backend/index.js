@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
-const corsMiddleware = require('./middleware/cors');
+const cors = require('cors'); // ✅ ADDED - Replace your custom CORS middleware
 require('dotenv').config();
 
 // Import routes
@@ -15,12 +15,37 @@ const proposalRoutes = require('./routes/proposals');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// ✅ UPDATED: Enhanced CORS configuration for Netlify + Render
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://your-app.netlify.app', // ✅ Replace with your actual Netlify domain
+      'http://localhost:3000',
+      'http://localhost:3001'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('🚫 CORS blocked for origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
-
-app.use(corsMiddleware);
-// Increase body parser limits to accommodate large form-data JSON fields and images
+// ✅ UPDATED: Increase body parser limits for large PDF requests
 app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb', parameterLimit: 100000 }));
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '50mb', 
+  parameterLimit: 100000 
+}));
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -119,7 +144,8 @@ app.get('/api/health', (req, res) => {
       maxDelay
     },
     environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0'
+    version: '1.0.0',
+    cors: 'Enabled for Netlify + Localhost'
   });
 });
 
@@ -131,6 +157,15 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+  res.json({ 
+    message: 'CORS is working! Your frontend can connect to this backend.',
+    timestamp: new Date().toISOString(),
+    allowedOrigins: ['https://your-app.netlify.app', 'http://localhost:3000']
+  });
+});
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({ 
@@ -138,10 +173,12 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
+      corsTest: '/api/cors-test',
       templates: '/api/templates',
       auth: '/api/auth',
       brandKit: '/api/brand-kit',
-      canva: '/api/canva'
+      canva: '/api/canva',
+      proposals: '/api/proposals'
     }
   });
 });
@@ -165,4 +202,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://0.0.0.0:${PORT}/api/health`);
+  console.log(`🌍 CORS enabled for: Netlify + Localhost`);
 });
