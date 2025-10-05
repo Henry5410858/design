@@ -251,6 +251,7 @@ export default function ProposalPage() {
       if (response.ok) {
         const blob = await response.blob();
         const filename = `propuesta-${client.name}-${Date.now()}.pdf`;
+        console.log("Response.blob: ", blob, " ",filename)
         triggerDownload(blob, filename);
         startTransition(() => safeAdd('PDF generado exitosamente', 'success'));
       } else throw new Error('Error al generar el PDF');
