@@ -27,7 +27,7 @@ app.use(cors({
       'http://localhost:3001'
     ];
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.some(allowed => origin === allowed)) {
       callback(null, true);
     } else {
       console.log('🚫 CORS blocked for origin:', origin);
@@ -46,7 +46,26 @@ app.use(express.urlencoded({
   limit: '50mb', 
   parameterLimit: 100000 
 }));
-
+app.use(express.json({ 
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
+// ✅ INCREASE payload limits for large PDFs
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '50mb',
+  parameterLimit: 1000000 
+}));
+// ✅ Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  if (req.method === 'POST' && req.body) {
+    console.log('Request body size:', JSON.stringify(req.body).length, 'bytes');
+  }
+  next();
+});
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -162,7 +181,7 @@ app.get('/api/cors-test', (req, res) => {
   res.json({ 
     message: 'CORS is working! Your frontend can connect to this backend.',
     timestamp: new Date().toISOString(),
-    allowedOrigins: ['https://your-app.netlify.app', 'http://localhost:3000']
+    allowedOrigins: ['https://design-center.netlify.app', 'http://localhost:3000']
   });
 });
 

@@ -93,21 +93,32 @@ router.post('/enhance-intro', auth, async (req, res) => {
 
 // Main PDF generation endpoint
 router.post('/generate', auth, premium, upload.any(), async (req, res) => {
-  console.log('📦 PDF generation request received');
+  console.log('📦 PDF generation request received - ENHANCED');
   
   try {
-    // Validate request
+    // Enhanced validation
     if (!req.body || Object.keys(req.body).length === 0) {
-      return res.status(400).json({ message: 'Empty request body' });
+      console.log('❌ Empty request body received');
+      return res.status(400).json({ 
+        message: 'Empty request body',
+        details: 'No data received from frontend'
+      });
     }
 
-    // Parse JSON fields with error handling
+    console.log('📋 Request body keys:', Object.keys(req.body));
+    console.log('📁 Files received:', req.files?.length || 0);
+
+    // Parse JSON fields with better error handling
     const parseJSON = (key, fallback) => {
-      if (!req.body[key]) return fallback;
+      if (!req.body[key]) {
+        console.log(`⚠️ Missing field: ${key}, using fallback`);
+        return fallback;
+      }
       try {
         return JSON.parse(req.body[key]);
       } catch (parseError) {
-        console.error(`JSON parse error for ${key}:`, parseError);
+        console.error(`❌ JSON parse error for ${key}:`, parseError);
+        console.log(`📝 Raw value for ${key}:`, req.body[key]);
         return fallback;
       }
     };
@@ -118,6 +129,10 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
     const contact = parseJSON('contact', {});
     const template = req.body?.template || 'dossier-express';
     const introText = req.body?.introText || '';
+
+    console.log('👤 Client:', client.name);
+    console.log('📦 Items count:', items.length);
+    console.log('🎨 Template:', template);
 
     // Validate required fields
     if (!client?.name?.trim()) {
@@ -166,6 +181,7 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
         return item; // Continue with original item if upload fails
       }
     }));
+    
 
     // Generate or use provided intro
     let aiIntro;
