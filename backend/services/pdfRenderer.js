@@ -1,139 +1,76 @@
-const puppeteer = require('puppeteer-core');
-const chromium = require('chrome-aws-lambda');
+const PDFDocument = require('pdfkit');
 
-class PDFRenderer {
+class SimplePDFRenderer {
   static async generatePDF(proposalData, template = 'dossier-express') {
-    let browser = null;
-    
     try {
-      // Environment detection
-      const isRender = process.env.RENDER === 'true';
-      const isProduction = process.env.NODE_ENV === 'production';
-
-      // Browser configuration for Render
-      const browserOptions = {
-        headless: true,
-        defaultViewport: { width: 1200, height: 1697 }, // A4 ratio
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--disable-web-security',
-          '--font-render-hinting=none'
-        ]
-      };
-
-      if (isRender || isProduction) {
-        // Render.com specific configuration
-        browserOptions.executablePath = await chromium.executablePath;
-        browserOptions.args = [
-          ...browserOptions.args,
-          '--single-process',
-          '--no-zygote',
-          '--max-old-space-size=256'
-        ];
-      } else {
-        // Local development
-        browserOptions.executablePath = puppeteer.executablePath();
-      }
-
-      browser = await puppeteer.launch(browserOptions);
-      const page = await browser.newPage();
-
-      // Generate HTML content
-      const htmlContent = this.generateHTML(proposalData, template);
+      console.log('📄 Generating PDF with simple renderer...');
       
-      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+      // Create a PDF document
+      const doc = new PDFDocument({ margin: 50 });
+      const chunks = [];
       
-      // Generate PDF
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '0.5in',
-          right: '0.5in',
-          bottom: '0.5in',
-          left: '0.5in'
-        }
+      return new Promise((resolve, reject) => {
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        // Add content to PDF
+        this.addContentToPDF(doc, proposalData, template);
+        
+        doc.end();
       });
-
-      await browser.close();
-      return pdfBuffer;
-
+      
     } catch (error) {
-      if (browser) {
-        await browser.close();
-      }
-      console.error('PDF Generation Error:', error);
+      console.error('❌ Simple PDF generation error:', error);
       throw new Error(`PDF generation failed: ${error.message}`);
     }
   }
 
-  static generateHTML(proposalData, template) {
-    // Your existing HTML generation logic
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px;
-            color: #333;
-          }
-          .header { 
-            text-align: center; 
-            margin-bottom: 30px;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 20px;
-          }
-          .client-info {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-          }
-          .property-item {
-            margin-bottom: 15px;
-            padding: 15px;
-            border-left: 4px solid #007bff;
-            background: #fff;
-          }
-          @media print {
-            body { margin: 0; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Design Proposal</h1>
-          <p>Generated for ${proposalData.client?.name || 'Client'}</p>
-        </div>
-        
-        <div class="client-info">
-          <h3>Client Information</h3>
-          <p><strong>Name:</strong> ${proposalData.client?.name || 'N/A'}</p>
-          <p><strong>Email:</strong> ${proposalData.client?.email || 'N/A'}</p>
-          <p><strong>Phone:</strong> ${proposalData.client?.phone || 'N/A'}</p>
-        </div>
+  static addContentToPDF(doc, proposalData, template) {
+    const { client, items, introduction } = proposalData;
 
-        <div class="properties">
-          <h3>Properties</h3>
-          ${proposalData.items?.map(item => `
-            <div class="property-item">
-              <h4>${item.title || 'Property'}</h4>
-              <p>${item.description || 'No description provided'}</p>
-              ${item.price ? `<p><strong>Price: $${item.price.toLocaleString()}</strong></p>` : ''}
-            </div>
-          `).join('') || '<p>No properties listed</p>'}
-        </div>
-      </body>
-      </html>
-    `;
+    // Header
+    doc.fontSize(20).font('Helvetica-Bold').text('DESIGN PROPOSAL', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).font('Helvetica').text(`Generated for: ${client?.name || 'Client'}`, { align: 'center' });
+    doc.moveDown(2);
+
+    // Introduction
+    if (introduction) {
+      doc.fontSize(10).text('Introduction:', { underline: true });
+      doc.fontSize(9).text(introduction);
+      doc.moveDown();
+    }
+
+    // Client Information
+    doc.fontSize(10).text('CLIENT INFORMATION', { underline: true });
+    doc.fontSize(9);
+    doc.text(`Name: ${client?.name || 'N/A'}`);
+    if (client?.email) doc.text(`Email: ${client.email}`);
+    if (client?.phone) doc.text(`Phone: ${client.phone}`);
+    doc.moveDown();
+
+    // Properties/Items
+    doc.fontSize(10).text('PROPERTIES', { underline: true });
+    doc.moveDown(0.5);
+
+    items?.forEach((item, index) => {
+      doc.fontSize(9).font('Helvetica-Bold').text(`${index + 1}. ${item.title || 'Property'}`);
+      doc.font('Helvetica');
+      doc.text(`Description: ${item.description || 'No description provided'}`);
+      if (item.location) doc.text(`Location: ${item.location}`);
+      if (item.price) doc.text(`Price: $${item.price.toLocaleString()}`);
+      doc.moveDown();
+    });
+
+    // Footer
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'center' });
+  }
+
+  static renderTemplateToPdf(options) {
+    // For compatibility with your existing code
+    return this.generatePDF(options.data, options.template);
   }
 }
 
-module.exports = PDFRenderer;
+module.exports = SimplePDFRenderer;

@@ -20,7 +20,7 @@ app.use(cors(corsOptions));
 // GET /api/test
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Backend is working!',
+    message: 'Backend is working!123',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     version: '1.0.0'

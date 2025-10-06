@@ -5,9 +5,8 @@ const cloudinary = require('../config/cloudinary');
 const auth = require('../middleware/auth');
 const premium = require('../middleware/premium');
 const { generateIntro } = require('../services/aiCopy');
-const pdfRenderer = require('../services/pdfRenderer');
 const { uploadPdf } = require('../services/cloudinaryHelpers');
-
+const pdfRenderer = require('../services/pdfRenderer');
 const router = express.Router();
 
 // CORS configuration
