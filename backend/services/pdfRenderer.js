@@ -16,41 +16,10 @@ const http = require('http');
 const https = require('https');
 
 class SimplePDFRenderer {
-  // Available templates
-  static templates = [
-    { id: 'dossier-express', name: 'Dossier Express', pages: 1, description: 'Resumen ejecutivo de 1 página' },
-    { id: 'comparative-short', name: 'Comparativa Corta', pages: 2, description: '2-3 propiedades, 2 páginas' },
-    { id: 'simple-proposal', name: 'Propuesta Simple', pages: '4-6', description: '4-6 páginas con detalles completos' },
-  ];
-
-  // Get template by ID
-  static getTemplate(templateId) {
-    return this.templates.find(t => t.id === templateId) || this.templates[0];
-  }
-
-  // Get all templates
-  static getTemplates() {
-    return this.templates;
-  }
-
-  // Validate template ID
-  static isValidTemplate(templateId) {
-    return this.templates.some(t => t.id === templateId);
-  }
-
   // Public entry
   static async generatePDF(proposalData = {}, template = 'dossier-express') {
     try {
       console.log('📄 Generating PDF (improved renderer)...');
-
-      // Validate template
-      if (!this.isValidTemplate(template)) {
-        console.warn(`⚠️ Invalid template "${template}", falling back to default`);
-        template = 'dossier-express';
-      }
-
-      const templateInfo = this.getTemplate(template);
-      console.log(`📋 Using template: ${templateInfo.name} (${templateInfo.pages} pages)`);
 
       // Preprocess: normalize fields and preload images
       const normalized = await this._preprocessProposalData(proposalData);
