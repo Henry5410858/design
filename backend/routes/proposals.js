@@ -14,7 +14,7 @@ const router = express.Router();
 router.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = [
-      'https://your-app.netlify.app',
+      'https://design-center.netlify.app',
       'http://localhost:3000',
       'http://localhost:3001'
     ];

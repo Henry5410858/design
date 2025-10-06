@@ -1,0 +1,22 @@
+# backend/render.yaml
+services:
+  - type: web
+    name: design-center-backend
+    env: node
+    plan: free
+    region: oregon  # or choose closest to your users
+    buildCommand: |
+      npm install
+      npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromDatabase:
+          name: design-center-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+    healthCheckPath: /api/health
+    autoDeploy: true

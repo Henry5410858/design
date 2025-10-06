@@ -117,7 +117,7 @@ After deploying to your chosen platform:
 
 ```bash
 # Replace with your actual backend URL
-curl -X POST https://your-backend-url.railway.app/api/proposals/generate \
+curl -X POST https://design-center.onrender.com/api/proposals/generate \
   -H "Content-Type: application/json" \
   -d '{"client":{"name":"Test Client"},"items":[{"title":"Test Property","description":"Test Description"}]}'
 ```
@@ -133,7 +133,7 @@ NODE_ENV=production
 
 ### Frontend (Update after backend deployment)
 ```bash
-NEXT_PUBLIC_API_URL=https://your-backend-url.railway.app
+NEXT_PUBLIC_API_URL=https://design-center.netlify.app
 ```
 
 ## PDF Generation Features

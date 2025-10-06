@@ -1,393 +1,139 @@
-const PDFDocument = require('pdfkit');
-const axios = require('axios');
+const puppeteer = require('puppeteer-core');
+const chromium = require('chrome-aws-lambda');
 
 class PDFRenderer {
-  constructor() {
-    this.fonts = {
-      normal: 'Helvetica',
-      bold: 'Helvetica-Bold',
-      italic: 'Helvetica-Oblique'
-    };
-  }
-
-  async renderTemplateToPdf({ template, data, locale = 'es', currencyCode = 'EUR' }) {
+  static async generatePDF(proposalData, template = 'dossier-express') {
+    let browser = null;
+    
     try {
-      console.log(`📄 Generating PDF with template: ${template}`);
-      
-      switch (template) {
-        case 'dossier-express':
-          return await this.generateDossierExpress(data, locale, currencyCode);
-        case 'comparative-short':
-          return await this.generateComparativeShort(data, locale, currencyCode);
-        case 'simple-proposal':
-          return await this.generateSimpleProposal(data, locale, currencyCode);
-        default:
-          return await this.generateDossierExpress(data, locale, currencyCode);
+      // Environment detection
+      const isRender = process.env.RENDER === 'true';
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      // Browser configuration for Render
+      const browserOptions = {
+        headless: true,
+        defaultViewport: { width: 1200, height: 1697 }, // A4 ratio
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--font-render-hinting=none'
+        ]
+      };
+
+      if (isRender || isProduction) {
+        // Render.com specific configuration
+        browserOptions.executablePath = await chromium.executablePath;
+        browserOptions.args = [
+          ...browserOptions.args,
+          '--single-process',
+          '--no-zygote',
+          '--max-old-space-size=256'
+        ];
+      } else {
+        // Local development
+        browserOptions.executablePath = puppeteer.executablePath();
       }
+
+      browser = await puppeteer.launch(browserOptions);
+      const page = await browser.newPage();
+
+      // Generate HTML content
+      const htmlContent = this.generateHTML(proposalData, template);
+      
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+      
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '0.5in',
+          right: '0.5in',
+          bottom: '0.5in',
+          left: '0.5in'
+        }
+      });
+
+      await browser.close();
+      return pdfBuffer;
+
     } catch (error) {
-      console.error('PDF generation error:', error);
+      if (browser) {
+        await browser.close();
+      }
+      console.error('PDF Generation Error:', error);
       throw new Error(`PDF generation failed: ${error.message}`);
     }
   }
 
-  async generateDossierExpress(data, locale, currencyCode) {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ 
-          margin: 50,
-          size: 'A4',
-          info: {
-            Title: `Propuesta - ${data.client.name}`,
-            Author: 'Sistema de Propuestas',
-            Creator: 'PDFKit'
+  static generateHTML(proposalData, template) {
+    // Your existing HTML generation logic
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px;
+            color: #333;
           }
-        });
-
-        const buffers = [];
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => resolve(Buffer.concat(buffers)));
-        doc.on('error', reject);
-
-        // Header
-        this.addHeader(doc, data);
+          .header { 
+            text-align: center; 
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+          }
+          .client-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+          }
+          .property-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            background: #fff;
+          }
+          @media print {
+            body { margin: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Design Proposal</h1>
+          <p>Generated for ${proposalData.client?.name || 'Client'}</p>
+        </div>
         
-        // Client Information
-        this.addClientSection(doc, data.client);
-        
-        // Introduction
-        this.addIntroduction(doc, data.intro);
-        
-        // Properties
-        this.addPropertiesSection(doc, data.items, currencyCode);
-        
-        // Footer
-        this.addFooter(doc, data);
+        <div class="client-info">
+          <h3>Client Information</h3>
+          <p><strong>Name:</strong> ${proposalData.client?.name || 'N/A'}</p>
+          <p><strong>Email:</strong> ${proposalData.client?.email || 'N/A'}</p>
+          <p><strong>Phone:</strong> ${proposalData.client?.phone || 'N/A'}</p>
+        </div>
 
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  async generateComparativeShort(data, locale, currencyCode) {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ 
-          margin: 40,
-          size: 'A4'
-        });
-
-        const buffers = [];
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => resolve(Buffer.concat(buffers)));
-        doc.on('error', reject);
-
-        // Title
-        doc.font(this.fonts.bold)
-           .fontSize(20)
-           .text('COMPARATIVA DE PROPIEDADES', { align: 'center' });
-        doc.moveDown(0.5);
-
-        // Client
-        doc.font(this.fonts.bold)
-           .fontSize(14)
-           .text(`Cliente: ${data.client.name}`);
-        doc.moveDown(0.5);
-
-        // Properties comparison table
-        this.addComparisonTable(doc, data.items, currencyCode);
-
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  async generateSimpleProposal(data, locale, currencyCode) {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ 
-          margin: 50,
-          size: 'A4'
-        });
-
-        const buffers = [];
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => resolve(Buffer.concat(buffers)));
-        doc.on('error', reject);
-
-        // Cover page
-        this.addCoverPage(doc, data);
-        doc.addPage();
-
-        // Table of contents would go here
-        this.addDetailedContent(doc, data, currencyCode);
-
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  addHeader(doc, data) {
-    // Add logo if available
-    if (data.theme?.logoUrl) {
-      // For now, we'll just add text. Image handling can be added later
-      doc.font(this.fonts.bold)
-         .fontSize(16)
-         .text('PROPUESTA COMERCIAL', { align: 'center' });
-    } else {
-      doc.font(this.fonts.bold)
-         .fontSize(16)
-         .text('PROPUESTA COMERCIAL', { align: 'center' });
-    }
-    
-    doc.moveDown(1);
-    
-    // Add date
-    const today = new Date().toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-    
-    doc.font(this.fonts.normal)
-       .fontSize(10)
-       .text(`Generado el: ${today}`, { align: 'right' });
-    
-    doc.moveDown(2);
-  }
-
-  addClientSection(doc, client) {
-    doc.font(this.fonts.bold)
-       .fontSize(14)
-       .text('INFORMACIÓN DEL CLIENTE');
-    
-    doc.moveDown(0.5);
-    
-    doc.font(this.fonts.normal)
-       .fontSize(11)
-       .text(`• Nombre: ${client.name}`);
-    
-    if (client.industry) {
-      doc.text(`• Industria: ${client.industry}`);
-    }
-    
-    if (client.contact?.company) {
-      doc.text(`• Empresa: ${client.contact.company}`);
-    }
-    
-    doc.moveDown(1);
-  }
-
-  addIntroduction(doc, intro) {
-    if (intro && intro.trim()) {
-      doc.font(this.fonts.bold)
-         .fontSize(12)
-         .text('INTRODUCCIÓN');
-      
-      doc.moveDown(0.5);
-      
-      doc.font(this.fonts.normal)
-         .fontSize(10)
-         .text(intro, { 
-           align: 'justify',
-           lineGap: 2
-         });
-      
-      doc.moveDown(1);
-    }
-  }
-
-  addPropertiesSection(doc, items, currencyCode) {
-    doc.font(this.fonts.bold)
-       .fontSize(14)
-       .text('PROPIEDADES RECOMENDADAS');
-    
-    doc.moveDown(1);
-
-    items.forEach((item, index) => {
-      // Property header
-      doc.font(this.fonts.bold)
-         .fontSize(12)
-         .text(`${index + 1}. ${item.title}`);
-      
-      doc.moveDown(0.3);
-
-      // Property details
-      doc.font(this.fonts.normal)
-         .fontSize(10);
-
-      if (item.location) {
-        doc.text(`📍 Ubicación: ${item.location}`);
-      }
-
-      if (item.price) {
-        const formattedPrice = new Intl.NumberFormat('es-ES', {
-          style: 'currency',
-          currency: currencyCode
-        }).format(item.price);
-        doc.text(`💰 Precio: ${formattedPrice}`);
-      }
-
-      if (item.keyFacts) {
-        doc.text(`⚡ Características: ${item.keyFacts}`);
-      }
-
-      doc.moveDown(0.2);
-
-      // Description
-      doc.text(`📝 Descripción: ${item.description}`, {
-        lineGap: 1.5
-      });
-
-      // Separator between properties
-      if (index < items.length - 1) {
-        doc.moveDown(0.5);
-        doc.moveTo(50, doc.y)
-            .lineTo(550, doc.y)
-            .strokeColor('#cccccc')
-            .stroke();
-        doc.moveDown(0.5);
-      }
-    });
-  }
-
-  addComparisonTable(doc, items, currencyCode) {
-    // Simple table implementation
-    items.forEach((item, index) => {
-      const y = doc.y;
-      
-      // Background for alternate rows
-      if (index % 2 === 0) {
-        doc.rect(50, y, 500, 60)
-           .fillColor('#f8f9fa')
-           .fill();
-      }
-
-      // Property title
-      doc.font(this.fonts.bold)
-         .fontSize(11)
-         .fillColor('black')
-         .text(item.title, 60, y + 10, { width: 300 });
-      
-      // Price
-      if (item.price) {
-        const formattedPrice = new Intl.NumberFormat('es-ES', {
-          style: 'currency',
-          currency: currencyCode
-        }).format(item.price);
-        
-        doc.text(formattedPrice, 370, y + 10, { width: 120, align: 'right' });
-      }
-      
-      // Key facts
-      if (item.keyFacts) {
-        doc.font(this.fonts.normal)
-           .fontSize(9)
-           .fillColor('#666666')
-           .text(item.keyFacts, 60, y + 30, { width: 430 });
-      }
-      
-      doc.y = y + 70;
-    });
-  }
-
-  addCoverPage(doc, data) {
-    doc.rect(0, 0, doc.page.width, doc.page.height)
-       .fillColor(data.theme?.primary || '#1f2937')
-       .fill();
-    
-    doc.fillColor('#ffffff')
-       .font(this.fonts.bold)
-       .fontSize(28)
-       .text('PROPUESTA COMERCIAL', 50, 200, { 
-         align: 'center',
-         width: doc.page.width - 100
-       });
-    
-    doc.fontSize(18)
-       .text(`Para: ${data.client.name}`, 50, 300, {
-         align: 'center',
-         width: doc.page.width - 100
-       });
-    
-    const today = new Date().toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-    
-    doc.fontSize(12)
-       .text(today, 50, 400, {
-         align: 'center',
-         width: doc.page.width - 100
-       });
-  }
-
-  addDetailedContent(doc, data, currencyCode) {
-    this.addClientSection(doc, data.client);
-    this.addIntroduction(doc, data.intro);
-    this.addPropertiesSection(doc, data.items, currencyCode);
-    
-    // Add contact information
-    if (data.client.contact) {
-      doc.addPage();
-      this.addContactSection(doc, data.client.contact);
-    }
-  }
-
-  addContactSection(doc, contact) {
-    doc.font(this.fonts.bold)
-       .fontSize(14)
-       .text('INFORMACIÓN DE CONTACTO');
-    
-    doc.moveDown(1);
-    
-    doc.font(this.fonts.normal)
-       .fontSize(11);
-    
-    if (contact.name) {
-      doc.text(`👤 ${contact.name}`);
-    }
-    
-    if (contact.email) {
-      doc.text(`📧 ${contact.email}`);
-    }
-    
-    if (contact.phone) {
-      doc.text(`📞 ${contact.phone}`);
-    }
-    
-    if (contact.company) {
-      doc.text(`🏢 ${contact.company}`);
-    }
-    
-    if (contact.address) {
-      doc.text(`📍 ${contact.address}`);
-    }
-  }
-
-  addFooter(doc, data) {
-    const pageHeight = doc.page.height;
-    const footerY = pageHeight - 50;
-    
-    doc.moveTo(50, footerY)
-       .lineTo(550, footerY)
-       .strokeColor('#cccccc')
-       .stroke();
-    
-    doc.font(this.fonts.normal)
-       .fontSize(8)
-       .fillColor('#666666')
-       .text('Documento generado automáticamente - Confidencial', 50, footerY + 10, {
-         align: 'center',
-         width: 500
-       });
+        <div class="properties">
+          <h3>Properties</h3>
+          ${proposalData.items?.map(item => `
+            <div class="property-item">
+              <h4>${item.title || 'Property'}</h4>
+              <p>${item.description || 'No description provided'}</p>
+              ${item.price ? `<p><strong>Price: $${item.price.toLocaleString()}</strong></p>` : ''}
+            </div>
+          `).join('') || '<p>No properties listed</p>'}
+        </div>
+      </body>
+      </html>
+    `;
   }
 }
 
-module.exports = new PDFRenderer();
+module.exports = PDFRenderer;

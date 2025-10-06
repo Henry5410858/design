@@ -171,11 +171,42 @@ app.get('/api/health', (req, res) => {
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ 
-    message: 'Backend is working!123123',
+    message: 'Backend is working!909090',
     timestamp: new Date().toISOString()
   });
 });
 
+const cors = require('cors');
+
+const corsOptions = {
+  origin: [
+    'https://design-center.netlify.app',
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+// Health check endpoint for Render
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    service: 'Design Center Backend'
+  });
+});
+
+// Simple test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'Backend is working!',
+    backend: 'Render.com',
+    frontend: 'https://design-center.netlify.app'
+  });
+});
+app.use(cors(corsOptions));
 // CORS test endpoint
 app.get('/api/cors-test', (req, res) => {
   res.json({ 
