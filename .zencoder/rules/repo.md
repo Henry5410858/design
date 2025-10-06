@@ -271,7 +271,7 @@ npm run clean && npm install
 npm run init-db
 
 # Check service health
-curl http://localhost:4000/health
+curl https://design-center.onrender.com/health
 curl http://localhost:3000/api/health
 ```
 
