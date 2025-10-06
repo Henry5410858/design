@@ -6,12 +6,48 @@ require('dotenv').config();
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const proposalRoutes = require('./routes/proposals');
 const templateRoutes = require('./routes/templates');
 const brandKitRoutes = require('./routes/brandKit');
 const canvaRoutes = require('./routes/canva');
 const imageRoutes = require('./routes/images');
 const proposalRoutes = require('./routes/proposals');
+app.use('/api/auth', authRoutes);
+app.use('/api/proposals', proposalRoutes); // This line is crucial
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    service: 'Design Center Backend'
+  });
+});
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Design Center Backend API',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      proposals: '/api/proposals',
+      health: '/api/health'
+    }
+  });
+});
 
+// Handle 404 - Route not found
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Route not found',
+    path: req.originalUrl,
+    availableEndpoints: [
+      'GET /api/health',
+      'POST /api/auth/signup',
+      'POST /api/auth/signin',
+      'POST /api/proposals/generate',
+      'GET /api/proposals/health'
+    ]
+  });
+});
 const app = express();
 const PORT = process.env.PORT || 4000;
 
