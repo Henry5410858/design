@@ -2974,203 +2974,362 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   };
   
   // Save canvas state to history
-  const saveCanvasToHistory = useCallback(() => {
-    if (canvas) {
+ // FIXED: Save canvas state to history
+const saveCanvasToHistory = useCallback(() => {
+  if (canvas) {
+    console.log('💾 Saving canvas state to history...');
+    
+    try {
       // Get the current state of all objects from the Fabric.js canvas
       const canvasObjects = canvas.getObjects();
-      const canvasState = canvas.toJSON();
       
-      // Convert Fabric.js objects to our EditorObject format
+      // Convert Fabric.js objects to our EditorObject format with proper image handling
       const currentObjects: EditorObject[] = canvasObjects.map((obj: fabric.Object) => {
-                  // For path objects (like waves), preserve the path data
-          if (obj.type === 'path') {
-            const pathObj = obj as fabric.Path;
-            console.log('🔍 saveCanvasToHistory - Path object found:', {
-              type: pathObj.type,
-              path: pathObj.path,
-              hasPath: !!pathObj.path,
-              pathLength: pathObj.path ? pathObj.path.length : 0
-            });
-            return {
-              id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
-              type: 'path' as const,  // Keep as 'path' type for proper identification
-              x: obj.left || 0,
-              y: obj.top || 0,
-              width: obj.width || 100,
-              height: obj.height || 100,
-              content: '',
-              color: (obj as any).fill || '#000000',
-              fontSize: 16,
-              fontFamily: 'Arial',
-              rotation: obj.angle || 0,
-              zIndex: (obj as any).zIndex || 0,
-              opacity: obj.opacity || 1,
-              stroke: (obj as any).stroke || 'transparent',
-              strokeWidth: (obj as any).strokeWidth || 0,
-              strokeLineCap: (obj as any).strokeLineCap || 'butt',
-              strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
-              strokeDashArray: (obj as any).strokeDashArray || null,
-              strokeDashOffset: (obj as any).strokeDashOffset || 0,
-              strokeUniform: (obj as any).strokeUniform || false,
-              strokeMiterLimit: (obj as any).strokeMiterLimit || 4,
-              shadow: (obj as any).shadow || null,
-              fillRule: (obj as any).fillRule || 'nonzero',
-              paintFirst: (obj as any).paintFirst || 'fill',
-              globalCompositeOperation: (obj as any).globalCompositeOperation || 'source-over',
-              skewX: (obj as any).skewX || 0,
-              skewY: (obj as any).strokeY || 0,
-              flipX: (obj as any).flipX || false,
-              flipY: (obj as any).flipY || false,
-              // Preserve path-specific data
-              pathData: pathObj.path,
-              isPath: true,
-              // Preserve gradient properties
-              gradientType: (pathObj as any).gradientType || null,
-              gradientColors: (pathObj as any).gradientColors || null
-            };
-          }
-          
-          // For triangle objects, preserve all properties exactly
-          if (obj.type === 'triangle') {
-            const triangleObj = obj as fabric.Triangle;
-            console.log('🔍 saveCanvasToHistory - Triangle object found:', {
-              type: triangleObj.type,
-              left: triangleObj.left,
-              top: triangleObj.top,
-              width: triangleObj.width,
-              height: triangleObj.height,
-              fill: triangleObj.fill,
-              stroke: triangleObj.stroke,
-              strokeWidth: triangleObj.strokeWidth
-            });
-            return {
-              id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
-              type: 'triangle' as const,  // Keep as 'triangle' type for proper identification
-              x: obj.left || 0,
-              y: obj.top || 0,
-              width: obj.width || 100,
-              height: obj.height || 100,
-              content: '',
-              color: (obj as any).fill || '#000000',
-              fontSize: 16,
-              fontFamily: 'Arial',
-              rotation: obj.angle || 0,
-              zIndex: (obj as any).zIndex || 0,
-              opacity: obj.opacity || 1,
-              stroke: (obj as any).stroke || 'transparent',
-              strokeWidth: (obj as any).strokeWidth || 0,
-              strokeLineCap: (obj as any).strokeLineCap || 'butt',
-              strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
-              strokeDashArray: (obj as any).strokeDashArray || null,
-              strokeDashOffset: (obj as any).strokeDashOffset || 0,
-              strokeUniform: (obj as any).strokeUniform || false,
-              strokeMiterLimit: (obj as any).strokeMiterLimit || 4,
-              shadow: (obj as any).shadow || null,
-              fillRule: (obj as any).fillRule || 'nonzero',
-              paintFirst: (obj as any).paintFirst || 'fill',
-              globalCompositeOperation: (obj as any).globalCompositeOperation || 'source-over',
-              skewX: (obj as any).skewX || 0,
-              skewY: (obj as any).skewY || 0,
-              flipX: (obj as any).flipX || false,
-              flipY: (obj as any).flipY || false,
-              // Preserve gradient properties
-              gradientType: (triangleObj as any).gradientType || null,
-              gradientColors: (triangleObj as any).gradientColors || null
-            };
-          }
-          
-          // For text objects, preserve all properties exactly
-          if (obj.type === 'text' || obj.type === 'i-text') {
-            const textObj = obj as fabric.IText;
-            console.log('🔍 saveCanvasToHistory - Text object found:', {
-              type: textObj.type,
-              text: textObj.text,
-              fontSize: textObj.fontSize,
-              fontFamily: textObj.fontFamily,
-              fontWeight: textObj.fontWeight,
-              fontStyle: textObj.fontStyle,
-              fill: textObj.fill,
-              stroke: textObj.stroke,
-              strokeWidth: textObj.strokeWidth
-            });
-            return {
-              id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
-              type: 'text' as const,  // Keep as 'text' type for proper identification
-              x: obj.left || 0,
-              y: obj.top || 0,
-              width: obj.width || 100,
-              height: obj.height || 100,
-              content: textObj.text || '',
-              color: (obj as any).fill || '#000000',
-              fontSize: textObj.fontSize || 16,
-              fontFamily: textObj.fontFamily || 'Arial',
-              fontWeight: textObj.fontWeight || 'normal',
-              fontStyle: textObj.fontStyle || 'normal',
-              textAlign: textObj.textAlign || 'left',
-              rotation: obj.angle || 0,
-              zIndex: (obj as any).zIndex || 0,
-              opacity: obj.opacity || 1,
-              stroke: (obj as any).stroke || 'transparent',
-              strokeWidth: (obj as any).strokeWidth || 0,
-              strokeLineCap: (obj as any).strokeLineCap || 'butt',
-              strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
-              strokeDashArray: (obj as any).strokeDashArray || null,
-              strokeDashOffset: (obj as any).strokeDashOffset || 0,
-              strokeUniform: (obj as any).strokeUniform || false,
-              strokeMiterLimit: (obj as any).strokeMiterLimit || 4,
-              shadow: (obj as any).shadow || null,
-              fillRule: (obj as any).fillRule || 'nonzero',
-              paintFirst: (obj as any).paintFirst || 'fill',
-              globalCompositeOperation: (obj as any).globalCompositeOperation || 'source-over',
-              skewX: (obj as any).skewX || 0,
-              skewY: (obj as any).skewY || 0,
-              flipX: (obj as any).flipX || false,
-              flipY: (obj as any).flipY || false,
-              // Preserve gradient properties for text
-              gradientType: (textObj as any).gradientType || null,
-              gradientColors: (textObj as any).gradientColors || null
-            };
-          }
-        
-        return {
-        id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
-        type: (obj.type === 'text' || obj.type === 'i-text' ? 'text' : 
-               obj.type === 'image' ? 'image' : 
-                 obj.type === 'placeholder' ? 'placeholder' : 
-                 obj.type === 'path' ? 'path' : 'shape') as 'text' | 'image' | 'shape' | 'placeholder' | 'path',
-        x: obj.left || 0,
-        y: obj.top || 0,
-        width: obj.width || 100,
-        height: obj.height || 100,
-        content: (obj as any).text || '',
-        color: (obj as any).fill || '#000000',
-        fontSize: (obj as any).fontSize || 16,
-        fontFamily: (obj as any).fontFamily || 'Arial',
-        rotation: obj.angle || 0,
-        zIndex: (obj as any).zIndex || 0,
-        opacity: obj.opacity || 1,
-        stroke: (obj as any).stroke || 'transparent',
-        strokeWidth: (obj as any).strokeWidth || 0,
-        strokeLineCap: (obj as any).strokeLineCap || 'butt',
-        strokeLineJoin: (obj as any).strokeLineJoin || 'miter',
-          shadow: (obj as any).shadow || null,
-          isPath: false
+        // Skip background objects in history
+        if ((obj as any).isBackground) {
+          return null;
+        }
+
+        const baseObject: EditorObject = {
+          id: (obj as any).id || `obj_${Date.now()}_${Math.random()}`,
+          type: (obj.type === 'text' || obj.type === 'i-text' ? 'text' : 
+                 obj.type === 'image' ? 'image' : 
+                 obj.type === 'path' ? 'path' : 'shape') as 'text' | 'image' | 'shape' | 'path',
+          x: obj.left || 0,
+          y: obj.top || 0,
+          width: obj.width || 100,
+          height: obj.height || 100,
+          rotation: obj.angle || 0,
+          opacity: obj.opacity || 1,
+          stroke: (obj as any).stroke || 'transparent',
+          strokeWidth: (obj as any).strokeWidth || 0,
+          zIndex: (obj as any).zIndex || 0
         };
-      });
-      
-      const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push({
+
+        // Handle different object types
+        if (obj.type === 'text' || obj.type === 'i-text') {
+          const textObj = obj as fabric.IText;
+          return {
+            ...baseObject,
+            content: textObj.text || '',
+            fontSize: textObj.fontSize || 16,
+            fontFamily: textObj.fontFamily || 'Arial',
+            color: getSafeColorValue(textObj.fill),
+            fontWeight: textObj.fontWeight || 'normal',
+            fontStyle: textObj.fontStyle || 'normal',
+            textAlign: textObj.textAlign || 'left'
+          };
+        } else if (obj.type === 'image') {
+          const imageObj = obj as fabric.Image;
+          const src = (imageObj as any).src || (imageObj as any).getSrc?.();
+          
+          // Only save image objects that have a valid source
+          if (src && src !== backgroundImage) {
+            return {
+              ...baseObject,
+              src: src,
+              color: '#000000' // Default color for images
+            };
+          }
+          return null; // Skip invalid image objects
+        } else if (obj.type === 'path') {
+          const pathObj = obj as fabric.Path;
+          return {
+            ...baseObject,
+            pathData: pathObj.path || '',
+            isPath: true,
+            color: getSafeColorValue(pathObj.fill)
+          };
+        } else {
+          // Shape objects (rect, circle, triangle, etc.)
+          return {
+            ...baseObject,
+            color: getSafeColorValue(obj.fill),
+            shape: obj.type === 'circle' ? 'circle' : 
+                   obj.type === 'triangle' ? 'triangle' : 'rectangle'
+          };
+        }
+      }).filter(Boolean) as EditorObject[]; // Remove null entries
+
+      const newHistoryState: HistoryState = {
         objects: currentObjects,
         backgroundColor: backgroundColor,
         backgroundImage: backgroundImage
-      });
+      };
+
+      console.log(`💾 History state saved: ${currentObjects.length} objects`);
+
+      // Update history
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(newHistoryState);
+      
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
       
       // Update the React state to match the canvas state
       setObjects(currentObjects);
+
+    } catch (error) {
+      console.error('❌ Error saving canvas to history:', error);
     }
-  }, [canvas, history, historyIndex, backgroundColor, backgroundImage]);
+  }
+}, [canvas, history, historyIndex, backgroundColor, backgroundImage]);
+
+// FIXED: Undo function
+const undo = useCallback(() => {
+  if (historyIndex > 0 && canvas) {
+    console.log('↩️ Undo triggered, history index:', historyIndex);
+    
+    const newIndex = historyIndex - 1;
+    const state = history[newIndex];
+    
+    // Clear canvas but preserve background
+    const backgroundObjects = canvas.getObjects().filter(obj => (obj as any).isBackground);
+    canvas.clear();
+    
+    // Restore background objects
+    backgroundObjects.forEach(obj => canvas.add(obj));
+    
+    // Restore background
+    setBackgroundColor(state.backgroundColor);
+    setBackgroundImage(state.backgroundImage || null);
+    canvas.backgroundColor = state.backgroundColor;
+    
+    // Restore objects to canvas with proper image handling
+    state.objects.forEach((obj: EditorObject) => {
+      try {
+        if (obj.type === 'text') {
+          const text = new fabric.IText(obj.content || 'Texto', {
+            left: obj.x,
+            top: obj.y,
+            fontSize: obj.fontSize || 16,
+            fontFamily: obj.fontFamily || 'Arial',
+            fill: obj.color || '#000000',
+            opacity: obj.opacity || 1,
+            selectable: true,
+            editable: true
+          });
+          if (obj.rotation) text.set('angle', obj.rotation);
+          canvas.add(text);
+          
+        } else if (obj.type === 'image' && obj.src) {
+          // Handle image objects with proper loading
+          const imgElement = new Image();
+          imgElement.crossOrigin = 'anonymous';
+          imgElement.onload = () => {
+            const fabricImage = new fabric.Image(imgElement, {
+              left: obj.x,
+              top: obj.y,
+              scaleX: (obj.width || 100) / imgElement.naturalWidth,
+              scaleY: (obj.height || 100) / imgElement.naturalHeight,
+              opacity: obj.opacity || 1,
+              selectable: true,
+              evented: true
+            });
+            if (obj.rotation) fabricImage.set('angle', obj.rotation);
+            canvas.add(fabricImage);
+            canvas.renderAll();
+          };
+          imgElement.onerror = () => {
+            console.warn('⚠️ Failed to load image for undo:', obj.src);
+          };
+          imgElement.src = obj.src;
+          
+        } else if (obj.type === 'path' && (obj as any).isPath) {
+          // Handle path objects (waves)
+          const path = new fabric.Path((obj as any).pathData || '', {
+            left: obj.x,
+            top: obj.y,
+            fill: obj.color || '#cccccc',
+            opacity: obj.opacity || 1,
+            selectable: true,
+            evented: true
+          });
+          if (obj.rotation) path.set('angle', obj.rotation);
+          canvas.add(path);
+          
+        } else {
+          // Handle shape objects
+          let shape: fabric.Object;
+          
+          if (obj.shape === 'circle') {
+            shape = new fabric.Circle({
+              left: obj.x,
+              top: obj.y,
+              radius: (obj.width || 100) / 2,
+              fill: obj.color || '#3b82f6',
+              opacity: obj.opacity || 1,
+              selectable: true,
+              evented: true
+            });
+          } else if (obj.shape === 'triangle') {
+            shape = new fabric.Triangle({
+              left: obj.x,
+              top: obj.y,
+              width: obj.width || 100,
+              height: obj.height || 100,
+              fill: obj.color || '#3b82f6',
+              opacity: obj.opacity || 1,
+              selectable: true,
+              evented: true
+            });
+          } else {
+            // Default to rectangle
+            shape = new fabric.Rect({
+              left: obj.x,
+              top: obj.y,
+              width: obj.width || 100,
+              height: obj.height || 100,
+              fill: obj.color || '#3b82f6',
+              opacity: obj.opacity || 1,
+              selectable: true,
+              evented: true
+            });
+          }
+          
+          if (obj.rotation) shape.set('angle', obj.rotation);
+          canvas.add(shape);
+        }
+      } catch (error) {
+        console.error('❌ Error restoring object in undo:', error, obj);
+      }
+    });
+    
+    canvas.renderAll();
+    setObjects(state.objects);
+    setHistoryIndex(newIndex);
+    
+    console.log('✅ Undo completed, new history index:', newIndex);
+  }
+}, [history, historyIndex, canvas]);
+
+// FIXED: Redo function
+const redo = useCallback(() => {
+  if (historyIndex < history.length - 1 && canvas) {
+    console.log('↪️ Redo triggered, history index:', historyIndex);
+    
+    const newIndex = historyIndex + 1;
+    const state = history[newIndex];
+    
+    // Clear canvas but preserve background
+    const backgroundObjects = canvas.getObjects().filter(obj => (obj as any).isBackground);
+    canvas.clear();
+    
+    // Restore background objects
+    backgroundObjects.forEach(obj => canvas.add(obj));
+    
+    // Restore background
+    setBackgroundColor(state.backgroundColor);
+    setBackgroundImage(state.backgroundImage || null);
+    canvas.backgroundColor = state.backgroundColor;
+    
+    // Restore objects to canvas with proper image handling
+    state.objects.forEach((obj: EditorObject) => {
+      try {
+        if (obj.type === 'text') {
+          const text = new fabric.IText(obj.content || 'Texto', {
+            left: obj.x,
+            top: obj.y,
+            fontSize: obj.fontSize || 16,
+            fontFamily: obj.fontFamily || 'Arial',
+            fill: obj.color || '#000000',
+            opacity: obj.opacity || 1,
+            selectable: true,
+            editable: true
+          });
+          if (obj.rotation) text.set('angle', obj.rotation);
+          canvas.add(text);
+          
+        } else if (obj.type === 'image' && obj.src) {
+          // Handle image objects with proper loading
+          const imgElement = new Image();
+          imgElement.crossOrigin = 'anonymous';
+          imgElement.onload = () => {
+            const fabricImage = new fabric.Image(imgElement, {
+              left: obj.x,
+              top: obj.y,
+              scaleX: (obj.width || 100) / imgElement.naturalWidth,
+              scaleY: (obj.height || 100) / imgElement.naturalHeight,
+              opacity: obj.opacity || 1,
+              selectable: true,
+              evented: true
+            });
+            if (obj.rotation) fabricImage.set('angle', obj.rotation);
+            canvas.add(fabricImage);
+            canvas.renderAll();
+          };
+          imgElement.onerror = () => {
+            console.warn('⚠️ Failed to load image for redo:', obj.src);
+          };
+          imgElement.src = obj.src;
+          
+        } else if (obj.type === 'path' && (obj as any).isPath) {
+          // Handle path objects (waves)
+          const path = new fabric.Path((obj as any).pathData || '', {
+            left: obj.x,
+            top: obj.y,
+            fill: obj.color || '#cccccc',
+            opacity: obj.opacity || 1,
+            selectable: true,
+            evented: true
+          });
+          if (obj.rotation) path.set('angle', obj.rotation);
+          canvas.add(path);
+          
+        } else {
+          // Handle shape objects
+          let shape: fabric.Object;
+          
+          if (obj.shape === 'circle') {
+            shape = new fabric.Circle({
+              left: obj.x,
+              top: obj.y,
+              radius: (obj.width || 100) / 2,
+              fill: obj.color || '#3b82f6',
+              opacity: obj.opacity || 1,
+              selectable: true,
+              evented: true
+            });
+          } else if (obj.shape === 'triangle') {
+            shape = new fabric.Triangle({
+              left: obj.x,
+              top: obj.y,
+              width: obj.width || 100,
+              height: obj.height || 100,
+              fill: obj.color || '#3b82f6',
+              opacity: obj.opacity || 1,
+              selectable: true,
+              evented: true
+            });
+          } else {
+            // Default to rectangle
+            shape = new fabric.Rect({
+              left: obj.x,
+              top: obj.y,
+              width: obj.width || 100,
+              height: obj.height || 100,
+              fill: obj.color || '#3b82f6',
+              opacity: obj.opacity || 1,
+              selectable: true,
+              evented: true
+            });
+          }
+          
+          if (obj.rotation) shape.set('angle', obj.rotation);
+          canvas.add(shape);
+        }
+      } catch (error) {
+        console.error('❌ Error restoring object in redo:', error, obj);
+      }
+    });
+    
+    canvas.renderAll();
+    setObjects(state.objects);
+    setHistoryIndex(newIndex);
+    
+    console.log('✅ Redo completed, new history index:', newIndex);
+  }
+}, [history, historyIndex, canvas]);
   
   // Get current canvas dimensions
   const getCurrentCanvasSize = (): CanvasSize => {
@@ -3424,166 +3583,10 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   }, [history, historyIndex]);
   
   // Undo function
-  const undo = useCallback(() => {
-    if (historyIndex > 0 && canvas) {
-      const newIndex = historyIndex - 1;
-      const state = history[newIndex];
-      
-      // Clear canvas and restore objects
-      canvas.clear();
-      
-      // Restore background
-      setBackgroundColor(state.backgroundColor);
-      setBackgroundImage(state.backgroundImage || null);
-      
-      // Restore objects to canvas with all their properties
-      state.objects.forEach((obj: EditorObject) => {
-        let fabricObj: fabric.Object;
-        
-        if (obj.type === 'text') {
-          fabricObj = new fabric.IText(obj.content || 'Texto', {
-            left: obj.x,
-            top: obj.y,
-            fontSize: obj.fontSize || 16,
-            fontFamily: obj.fontFamily || 'Arial',
-            fill: obj.color || '#000000',
-            opacity: obj.opacity || 1
-          });
-        } else if (obj.type === 'image') {
-          fabricObj = new fabric.Rect({
-            left: obj.x,
-            top: obj.y,
-            width: obj.width || 100,
-            height: obj.height || 100,
-            fill: obj.color || '#000000',
-            opacity: obj.opacity || 1,
-            stroke: obj.stroke || 'transparent',
-            strokeWidth: obj.strokeWidth || 0,
-            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
-            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
-          });
-        } else if ((obj as any).isPath && (obj as any).pathData) {
-          // Restore path objects (like waves) with their original path data
-          fabricObj = new fabric.Path((obj as any).pathData, {
-            left: obj.x,
-            top: obj.y,
-            fill: obj.color || '#000000',
-            opacity: obj.opacity || 1,
-            stroke: obj.stroke || 'transparent',
-            strokeWidth: obj.strokeWidth || 0,
-            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
-            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
-          });
-        } else {
-          // Regular shape
-          fabricObj = new fabric.Rect({
-            left: obj.x,
-            top: obj.y,
-            width: obj.width || 100,
-            height: obj.height || 100,
-            fill: obj.color || '#000000',
-            opacity: obj.opacity || 1,
-            stroke: obj.stroke || 'transparent',
-            strokeWidth: obj.strokeWidth || 0,
-            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
-            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
-          });
-        }
-        
-        // Set additional properties
-        if (obj.rotation) fabricObj.set('angle', obj.rotation);
-        if (obj.shadow) fabricObj.set('shadow', obj.shadow);
-        (fabricObj as any).id = obj.id;
-        
-        canvas.add(fabricObj);
-      });
-      
-      canvas.renderAll();
-      setObjects(state.objects);
-      setHistoryIndex(newIndex);
-    }
-  }, [history, historyIndex, canvas]);
+ 
   
   // Redo function
-  const redo = useCallback(() => {
-    if (historyIndex < history.length - 1 && canvas) {
-      const newIndex = historyIndex + 1;
-      const state = history[newIndex];
-      
-      // Clear canvas and restore objects
-      canvas.clear();
-      
-      // Restore background
-      setBackgroundColor(state.backgroundColor);
-      setBackgroundImage(state.backgroundImage || null);
-      
-      // Restore objects to canvas with all their properties
-      state.objects.forEach((obj: EditorObject) => {
-        let fabricObj: fabric.Object;
-        
-        if (obj.type === 'text') {
-          fabricObj = new fabric.IText(obj.content || 'Texto', {
-            left: obj.x,
-            top: obj.y,
-            fontSize: obj.fontSize || 16,
-            fontFamily: obj.fontFamily || 'Arial',
-            fill: obj.color || '#000000',
-            opacity: obj.opacity || 1
-          });
-        } else if (obj.type === 'image') {
-          fabricObj = new fabric.Rect({
-            left: obj.x,
-            top: obj.y,
-            width: obj.width || 100,
-            height: obj.height || 100,
-            fill: obj.color || '#000000',
-            opacity: obj.opacity || 1,
-            stroke: obj.stroke || 'transparent',
-            strokeWidth: obj.strokeWidth || 0,
-            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
-            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
-          });
-        } else if ((obj as any).isPath && (obj as any).pathData) {
-          // Restore path objects (like waves) with their original path data
-          fabricObj = new fabric.Path((obj as any).pathData, {
-            left: obj.x,
-            top: obj.y,
-            fill: obj.color || '#000000',
-            opacity: obj.opacity || 1,
-            stroke: obj.stroke || 'transparent',
-            strokeWidth: obj.strokeWidth || 0,
-            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
-            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
-          });
-        } else {
-          // Regular shape
-          fabricObj = new fabric.Rect({
-            left: obj.x,
-            top: obj.y,
-            width: obj.width || 100,
-            height: obj.height || 100,
-            fill: obj.color || '#000000',
-            opacity: obj.opacity || 1,
-            stroke: obj.stroke || 'transparent',
-            strokeWidth: obj.strokeWidth || 0,
-            strokeLineCap: (obj.strokeLineCap as any) || 'butt',
-            strokeLineJoin: (obj.strokeLineJoin as any) || 'miter'
-          });
-        }
-        
-        // Set additional properties
-        if (obj.rotation) fabricObj.set('angle', obj.rotation);
-        if (obj.shadow) fabricObj.set('shadow', obj.shadow);
-        (fabricObj as any).id = obj.id;
-        
-        canvas.add(fabricObj);
-      });
-      
-      canvas.renderAll();
-      setObjects(state.objects);
-      setHistoryIndex(newIndex);
-    }
-  }, [history, historyIndex, canvas]);
+  
   
   // Helper function to ensure objects are within canvas boundaries
   const ensureObjectInBounds = (obj: fabric.Object, canvas: fabric.Canvas) => {
@@ -3803,168 +3806,132 @@ export default function UnifiedEditor({ id, editorType = 'flyer', templateKey }:
   };
   
   // Simple and reliable image upload function
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('🚀 handleImageUpload called!');
-    console.log('📄 Event:', e);
-    console.log('📁 Files:', e.target.files);
+ // FIXED: Enhanced image addition with proper history saving
+const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  console.log('🚀 handleImageUpload called!');
+  
+  const file = e.target.files?.[0];
+  if (!file) {
+    console.log('❌ No file selected');
+    return;
+  }
+  
+  console.log('✅ File selected:', file.name, file.type, file.size);
+  
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    alert('Por favor selecciona un archivo de imagen válido.');
+    return;
+  }
+  
+  // Validate file size (max 200MB)
+  if (file.size > 200 * 1024 * 1024) {
+    alert('El archivo es demasiado grande. Máximo 200MB permitido.');
+    return;
+  }
+  
+  if (!canvas) {
+    console.error('Canvas is not ready');
+    alert('El canvas no está listo. Espera un momento e intenta nuevamente.');
+    return;
+  }
+  
+  console.log('Canvas is ready, processing image...');
+  
+  const reader = new FileReader();
+  
+  reader.onload = (event) => {
+    const imageUrl = event.target?.result as string;
+    console.log('File read successfully, creating image object...');
     
-    const file = e.target.files?.[0];
-    if (!file) {
-      console.log('❌ No file selected');
-      return;
-    }
-    
-    console.log('✅ File selected:', file.name, file.type, file.size);
-    
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor selecciona un archivo de imagen válido.');
-      return;
-    }
-    
-    // Validate file size (max 200MB)
-    if (file.size > 200 * 1024 * 1024) {
-      alert('El archivo es demasiado grande. Máximo 200MB permitido.');
-      return;
-    }
-    
-    if (!canvas) {
-      console.error('Canvas is not ready');
-      alert('El canvas no está listo. Espera un momento e intenta nuevamente.');
-      return;
-    }
-    
-    console.log('Canvas is ready, processing image...');
-    
-    // Create a simple loading indicator
-    const loadingText = new fabric.IText('Cargando imagen...', {
-      left: 100,
-      top: 100,
-      fontSize: 16,
-      fill: '#666',
-      selectable: false
-    });
-    
-    canvas.add(loadingText);
-    canvas.renderAll();
-    
-    const reader = new FileReader();
-    
-    reader.onload = (event) => {
-      const imageUrl = event.target?.result as string;
-      console.log('File read successfully, creating background image...');
+    // Create a new Image object
+    const imgElement = new Image();
+    imgElement.onload = () => {
+      console.log('Image loaded, creating Fabric image object...');
       
-      // Remove loading text
-      canvas.remove(loadingText);
+      // Create Fabric.js image from the loaded image
+      const fabricImage = new fabric.Image(imgElement);
       
-      // Create a new Image object
-      const imgElement = new Image();
-      imgElement.onload = () => {
-        console.log('Image loaded, creating Fabric background object...');
+      // Set properties for a regular, interactive image object
+      fabricImage.set({
+        left: canvas.getWidth() / 2,
+        top: canvas.getHeight() / 2,
+        originX: 'center',
+        originY: 'center',
+        selectable: true,
+        evented: true,
+        lockMovementX: false,
+        lockMovementY: false,
+        lockRotation: false,
+        lockScalingX: false,
+        lockScalingY: false,
+        cornerStyle: 'circle',
+        cornerColor: '#007bff',
+        cornerSize: 8,
+        transparentCorners: false,
+        // Store the source for history
+        src: imageUrl
+      });
+      
+      // Scale image to reasonable size (max 300px width or height)
+      const maxSize = 300;
+      if (fabricImage.width && fabricImage.height) {
+        const imageWidth = fabricImage.width;
+        const imageHeight = fabricImage.height;
         
-        // Create Fabric.js image from the loaded image
-        const fabricImage = new fabric.Image(imgElement);
+        // Calculate scale to fit within maxSize while maintaining aspect ratio
+        const scale = Math.min(maxSize / imageWidth, maxSize / imageHeight);
         
-        // Set properties for a regular, interactive image object
         fabricImage.set({
-          left: canvas.getWidth() / 2,
-          top: canvas.getHeight() / 2,
-          originX: 'center',
-          originY: 'center',
-          selectable: true,    // Image should be selectable
-          evented: true,       // Image should trigger events
-          lockMovementX: false, // Image should be movable
-          lockMovementY: false,
-          lockRotation: false,  // Image should be rotatable
-          lockScalingX: false,  // Image should be scalable
-          lockScalingY: false,
-          cornerStyle: 'circle',
-          cornerColor: '#007bff',
-          cornerSize: 8,
-          transparentCorners: false
+          scaleX: scale,
+          scaleY: scale
         });
         
-        // Scale image to reasonable size (max 300px width or height)
-        const maxSize = 300;
-        if (fabricImage.width && fabricImage.height) {
-          const imageWidth = fabricImage.width;
-          const imageHeight = fabricImage.height;
-          
-          // Calculate scale to fit within maxSize while maintaining aspect ratio
-          const scale = Math.min(maxSize / imageWidth, maxSize / imageHeight);
-          
-          fabricImage.set({
-            scaleX: scale,
-            scaleY: scale
-          });
-          
-          console.log(`Image scaled to fit within ${maxSize}px: scale ${scale}`);
-        }
-        
-        // Add image to canvas
-        canvas.add(fabricImage);
-        
-        // Center the image on canvas using Fabric.js methods
-        fabricImage.set({
-          left: canvas.getWidth() / 2,
-          top: canvas.getHeight() / 2,
-          originX: 'center',
-          originY: 'center'
-        });
-        
-        // Make it the active object
-        canvas.setActiveObject(fabricImage);
-        
-        // Render the canvas
-        canvas.renderAll();
-        
-        // Save to history
-        if (typeof saveCanvasToHistory === 'function') {
-          saveCanvasToHistory();
-        }
-        
-        console.log('✅ Image added successfully');
-        console.log('🎨 Canvas objects after adding image:', canvas.getObjects());
-        console.log('📏 Canvas dimensions:', canvas.getWidth(), 'x', canvas.getHeight());
-        
-        // Offer AI enhancement
-        const shouldEnhance = confirm('✨ ¿Te gustaría mejorar DRAMÁTICAMENTE esta imagen con IA?\n\n🎨 Mejoras aplicadas:\n• Brillo +60%\n• Nitidez +400%\n• Saturación +150%\n• Contraste +40%\n\n¡La diferencia será muy notable!');
-        if (shouldEnhance) {
-          enhanceImageWithAI(imageUrl).then((result) => {
-            if (result.success && 'enhancedImageUrl' in result && result.enhancedImageUrl) {
-              handleImageEnhanced(imageUrl, result.enhancedImageUrl);
-            } else {
-              console.error('AI enhancement failed:', result.error);
-              alert('No se pudo mejorar la imagen. Usando imagen original.');
-            }
-          });
-        }
-        
-        // Clear the file input for future uploads
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        
-
-      };
+        console.log(`Image scaled to fit within ${maxSize}px: scale ${scale}`);
+      }
       
-      imgElement.onerror = () => {
-        canvas.remove(loadingText);
-        canvas.renderAll();
-        alert('Error al cargar la imagen. Intenta con otro archivo.');
-      };
+      // Add image to canvas
+      canvas.add(fabricImage);
       
-      imgElement.src = imageUrl;
-    };
-    
-    reader.onerror = () => {
-      canvas.remove(loadingText);
+      // Center the image on canvas using Fabric.js methods
+      fabricImage.set({
+        left: canvas.getWidth() / 2,
+        top: canvas.getHeight() / 2,
+        originX: 'center',
+        originY: 'center'
+      });
+      
+      // Make it the active object
+      canvas.setActiveObject(fabricImage);
+      
+      // Render the canvas
       canvas.renderAll();
-      alert('Error al leer el archivo. Intenta nuevamente.');
+      
+      // Save to history
+      saveCanvasToHistory();
+      
+      console.log('✅ Image added successfully');
+      console.log('🎨 Canvas objects after adding image:', canvas.getObjects());
+      
+      // Clear the file input for future uploads
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     };
     
-    reader.readAsDataURL(file);
+    imgElement.onerror = () => {
+      alert('Error al cargar la imagen. Intenta con otro archivo.');
+    };
+    
+    imgElement.src = imageUrl;
   };
+  
+  reader.onerror = () => {
+    alert('Error al leer el archivo. Intenta nuevamente.');
+  };
+  
+  reader.readAsDataURL(file);
+};
   
   // Enhanced shape addition with Fabric.js
   const addShape = (shapeType: string) => {

@@ -1,14 +1,3 @@
-// pdfrenderer.js
-// Robust PDF renderer for proposals: handles images (data URLs, uploaded buffers, remote URLs),
-// brand/logo, multiple templates, multi-page layout, and graceful fallbacks.
-//
-// Exports: SimplePDFRenderer.generatePDF(proposalData, template)
-// - proposalData: { client, items, introduction|introText, theme, contact, ... }
-// - items: array of { title, description, location, price, keyFacts, imageUrl (dataURL or remote URL) }
-//   or items may already include imageBuffer (Buffer) or imagePath (server path).
-//
-// Returns: Promise<Buffer>
-
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
@@ -17,9 +6,9 @@ const https = require('https');
 
 class SimplePDFRenderer {
   // Public entry
-  static async generatePDF(proposalData = {}, template = 'dossier-express') {
+  static async generatePDF(proposalData = {}, template = 'custom-proposal') {
     try {
-      console.log('📄 Generating PDF (improved renderer)...');
+      console.log('📄 Generating PDF (custom proposal template)...');
 
       // Preprocess: normalize fields and preload images
       const normalized = await this._preprocessProposalData(proposalData);
@@ -118,7 +107,7 @@ class SimplePDFRenderer {
     return data;
   }
 
-  // fetch a remote URL or decode a data URL and return Buffer
+  // Fetch a remote URL or decode a data URL and return Buffer
   static _fetchImageAsBuffer(urlOrData) {
     return new Promise((resolve, reject) => {
       try {
@@ -184,15 +173,11 @@ class SimplePDFRenderer {
 
     // Template-specific renderers
     switch (template) {
-      case 'comparative-short':
-        this._renderComparativeShort(doc, { client, items, introduction, contact, theme, primaryColor, secondaryColor, textColor, logoBuffer: proposalData._logoBuffer });
+      case 'custom-proposal':
+        this._renderCustomProposal(doc, { client, items, introduction, contact, theme, primaryColor, secondaryColor, textColor, logoBuffer: proposalData._logoBuffer });
         break;
-      case 'simple-proposal':
-        this._renderSimpleProposal(doc, { client, items, introduction, contact, theme, primaryColor, secondaryColor, textColor, logoBuffer: proposalData._logoBuffer });
-        break;
-      case 'dossier-express':
       default:
-        this._renderDossierExpress(doc, { client, items, introduction, contact, theme, primaryColor, secondaryColor, textColor, logoBuffer: proposalData._logoBuffer });
+        this._renderCustomProposal(doc, { client, items, introduction, contact, theme, primaryColor, secondaryColor, textColor, logoBuffer: proposalData._logoBuffer });
         break;
     }
 
@@ -239,231 +224,77 @@ class SimplePDFRenderer {
 
   // ---------- Template renderers ----------
 
-  static _renderComparativeShort(doc, ctx) {
-    // 2-3 properties, 2 pages target
+  static _renderCustomProposal(doc, ctx) {
     const { client, items, introduction, contact, primaryColor, logoBuffer } = ctx;
 
     this._drawHeader(doc, client, primaryColor, logoBuffer);
 
-    // Intro + client block
+    // Información del Cliente
     doc.moveDown(0.5);
-    doc.fontSize(12).font('Helvetica-Bold').fillColor(primaryColor).text('INTRODUCCIÓN');
-    doc.moveDown(0.2);
-    doc.fontSize(10).font('Helvetica').fillColor('#333333').text(introduction || 'Introducción no proporcionada.', { align: 'justify', lineGap: 2 });
-
-    doc.moveDown(0.6);
-    doc.fontSize(12).font('Helvetica-Bold').fillColor(primaryColor).text('INFORMACIÓN DEL CLIENTE');
+    doc.fontSize(12).font('Helvetica-Bold').fillColor(primaryColor).text('Información del Cliente');
     doc.moveDown(0.2);
     doc.fontSize(10).font('Helvetica').fillColor('#333333');
     if (client && client.name) doc.text(`Nombre: ${client.name}`);
     if (client && client.industry) doc.text(`Sector: ${client.industry}`);
 
-    doc.addPage(); // go to page 2 for properties
+    doc.addPage();
     doc.y = 40;
 
-    doc.fontSize(12).font('Helvetica-Bold').fillColor(primaryColor).text('COMPARATIVA DE PROPIEDADES');
+    // Introducción
+    doc.fontSize(12).font('Helvetica-Bold').fillColor(primaryColor).text('Introducción');
+    doc.moveDown(0.2);
+    doc.fontSize(10).font('Helvetica').fillColor('#333333').text(introduction || 'Introducción no proporcionada.', { align: 'justify', lineGap: 2 });
+
+    // Propiedades/Producto
+    doc.addPage();
+    doc.y = 40;
+    doc.fontSize(12).font('Helvetica-Bold').fillColor(primaryColor).text('Propiedades/Producto');
     doc.moveDown(0.5);
 
-    // Show up to 3 properties, side-by-side if possible
-    const visibleItems = items.slice(0, 3);
-    const containerPadding = 10;
-    const pageW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const colW = Math.floor(pageW / visibleItems.length);
+    const visibleItems = items.slice(0, 3); // Show up to 3 items
 
     visibleItems.forEach((item, idx) => {
-      const x = doc.page.margins.left + idx * colW;
+      const x = doc.page.margins.left + idx * (doc.page.width - doc.page.margins.left * 2) / visibleItems.length;
       let y = doc.y;
 
       // Image area
       const imgHeight = 110;
       if (item._imageBuffer) {
         try {
-          doc.image(item._imageBuffer, x + containerPadding, y, { fit: [colW - containerPadding * 2, imgHeight], align: 'center' });
+          doc.image(item._imageBuffer, x, y, { fit: [doc.page.width / 3, imgHeight], align: 'center' });
         } catch (err) {
           // ignore
         }
       } else {
-        // placeholder box
-        doc.rect(x + containerPadding, y, colW - containerPadding * 2, imgHeight).stroke('#e0e0e0');
+        doc.rect(x, y, doc.page.width / 3, imgHeight).stroke('#e0e0e0');
       }
 
       y += imgHeight + 8;
 
       // Title
-      doc.fontSize(11).font('Helvetica-Bold').fillColor(primaryColor).text(item.title || '—', x + containerPadding, y, { width: colW - containerPadding * 2 });
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(primaryColor).text(item.title || '—', x, y);
       y += 16;
 
-      // Key facts, location, price
-      doc.fontSize(9).font('Helvetica').fillColor('#333333');
-      if (item.location) doc.text(`📍 ${item.location}`, x + containerPadding, y, { width: colW - containerPadding * 2 });
-      if (item.price !== undefined) doc.text(`💰 ${this._formatCurrency(item.price)}`, x + containerPadding, doc.y, { width: colW - containerPadding * 2 });
-      if (item.keyFacts) doc.text(item.keyFacts, x + containerPadding, doc.y + 4, { width: colW - containerPadding * 2 });
+      // Description
+      if (item.description) doc.fontSize(8).text(item.description, x, y, { width: doc.page.width / 3, ellipsis: true });
 
-      // small description
-      if (item.description) {
-        doc.fontSize(8).text(item.description, x + containerPadding, doc.y + 6, { width: colW - containerPadding * 2, ellipsis: true });
-      }
-      // set top to original y for next column not to jump
-      doc.y = 40 + imgHeight + 80; // make sure we keep consistent baseline
+      doc.y = y + 50; // Adjust the position for the next item
     });
 
+    // Información de Contacto
     doc.addPage();
     doc.y = 40;
-    doc.fontSize(10).font('Helvetica').fillColor('#666666').text('Gracias por considerar nuestra propuesta. Para más información, contacte al equipo.', { align: 'center' });
-  }
-
-  static _renderSimpleProposal(doc, ctx) {
-    // 4-6 pages layout: cover + items + details + contact
-    const { client, items, introduction, contact, primaryColor, logoBuffer } = ctx;
-
-    this._drawHeader(doc, client, primaryColor, logoBuffer);
+    doc.fontSize(12).font('Helvetica-Bold').fillColor(primaryColor).text('Información de Contacto');
     doc.moveDown(0.5);
-
-    // Cover: client intro
-    doc.fontSize(14).font('Helvetica-Bold').fillColor(primaryColor).text(client.name || 'Cliente', { align: 'left' });
-    doc.moveDown(0.3);
-    doc.fontSize(11).font('Helvetica').fillColor('#333333').text(introduction || 'Introducción no proporcionada.', { align: 'justify', lineGap: 2 });
-
-    doc.addPage();
-    doc.y = 40;
-    doc.fontSize(12).font('Helvetica-Bold').fillColor(primaryColor).text('PROPIEDADES DESTACADAS');
-    doc.moveDown(0.5);
-
-    // For each property show image left, text right
-    const visibleItems = items.slice(0, 6); // show up to 6
-    visibleItems.forEach((item, idx) => {
-      // Add page if necessary
-      if (doc.y > doc.page.height - 200) {
-        doc.addPage();
-        doc.y = 40;
-      }
-
-      const imageBoxH = 120;
-      const startX = doc.page.margins.left;
-      const imageBoxW = 160;
-      const textBoxW = doc.page.width - doc.page.margins.left - doc.page.margins.right - imageBoxW - 20;
-
-      // draw container
-      // image
-      if (item._imageBuffer) {
-        try {
-          doc.image(item._imageBuffer, startX, doc.y, { fit: [imageBoxW, imageBoxH], align: 'center', valign: 'top' });
-        } catch (err) {
-          // fallback to rectangle
-          doc.rect(startX, doc.y, imageBoxW, imageBoxH).stroke('#e0e0e0');
-        }
-      } else {
-        doc.rect(startX, doc.y, imageBoxW, imageBoxH).stroke('#e0e0e0');
-      }
-
-      // text block
-      const textX = startX + imageBoxW + 12;
-      let textY = doc.y;
-      doc.fontSize(11).font('Helvetica-Bold').fillColor(primaryColor).text(item.title || 'Sin título', textX, textY, { width: textBoxW });
-      textY += 16;
-      doc.fontSize(9).font('Helvetica').fillColor('#333333');
-      if (item.location) doc.text(`📍 ${item.location}`, textX, textY);
-      if (item.price !== undefined) doc.text(`💰 ${this._formatCurrency(item.price)}`, textX, doc.y);
-      if (item.keyFacts) {
-        doc.moveDown(0.5);
-        doc.fontSize(9).text(item.keyFacts, textX, doc.y, { width: textBoxW });
-      }
-      if (item.description) {
-        doc.moveDown(0.3);
-        doc.fontSize(9).text(item.description, textX, doc.y, { width: textBoxW, lineGap: 2 });
-      }
-
-      // move doc.y past the box
-      doc.y = doc.y + imageBoxH + 16;
-    });
-
-    // Contact & closing
-    doc.addPage();
-    doc.y = 40;
-    doc.fontSize(12).font('Helvetica-Bold').fillColor(primaryColor).text('CONTACTO');
-    doc.moveDown(0.4);
     doc.fontSize(10).font('Helvetica').fillColor('#333333');
     if (contact.name) doc.text(`Nombre: ${contact.name}`);
     if (contact.email) doc.text(`Email: ${contact.email}`);
     if (contact.phone) doc.text(`Teléfono: ${contact.phone}`);
     if (contact.company) doc.text(`Empresa: ${contact.company}`);
     if (contact.website) doc.text(`Web: ${contact.website}`);
-
+    
     doc.moveDown(1);
     doc.fontSize(9).fillColor('#666666').text(`Propuesta generada el ${new Date().toLocaleDateString('es-ES')}`, { align: 'center' });
-  }
-
-  static _renderDossierExpress(doc, ctx) {
-    // 1-page executive summary: cover + one or two properties at most
-    const { client, items, introduction, contact, primaryColor, logoBuffer } = ctx;
-
-    this._drawHeader(doc, client, primaryColor, logoBuffer);
-    doc.moveDown(0.5);
-
-    // Left column: intro + client
-    const leftX = doc.page.margins.left;
-    const leftW = (doc.page.width - doc.page.margins.left - doc.page.margins.right) * 0.55;
-    const rightX = leftX + leftW + 12;
-    const rightW = doc.page.width - doc.page.margins.right - rightX;
-
-    // Intro
-    doc.fontSize(11).font('Helvetica-Bold').fillColor(primaryColor).text('RESUMEN EJECUTIVO', leftX, doc.y, { width: leftW });
-    doc.moveDown(0.3);
-    doc.fontSize(9).font('Helvetica').fillColor('#333333').text(introduction || 'Introducción no proporcionada.', leftX, doc.y, { width: leftW, lineGap: 2 });
-
-    // Client info
-    doc.moveDown(0.6);
-    doc.fontSize(10).font('Helvetica-Bold').fillColor(primaryColor).text('CLIENTE', leftX, doc.y);
-    doc.moveDown(0.2);
-    doc.fontSize(9).font('Helvetica').fillColor('#333333');
-    if (client.name) doc.text(`Nombre: ${client.name}`, { width: leftW });
-    if (client.industry) doc.text(`Sector: ${client.industry}`, { width: leftW });
-
-    // Right column: top property (if any)
-    const firstItem = items[0];
-    if (firstItem) {
-      // Image top right
-      const imgTop = doc.page.margins.top + 20;
-      const imgH = 160;
-      try {
-        if (firstItem._imageBuffer) {
-          doc.image(firstItem._imageBuffer, rightX, imgTop, { fit: [rightW, imgH], align: 'center' });
-        } else {
-          doc.rect(rightX, imgTop, rightW, imgH).stroke('#e0e0e0');
-        }
-      } catch (err) {
-        doc.rect(rightX, imgTop, rightW, imgH).stroke('#e0e0e0');
-      }
-
-      // Text under image
-      const underY = imgTop + imgH + 8;
-      doc.fontSize(11).font('Helvetica-Bold').fillColor(primaryColor).text(firstItem.title || 'Sin título', rightX, underY, { width: rightW });
-      doc.moveDown(0.2);
-      doc.fontSize(9).font('Helvetica').fillColor('#333333');
-      if (firstItem.location) doc.text(`📍 ${firstItem.location}`, { width: rightW });
-      if (firstItem.price !== undefined) doc.text(`💰 ${this._formatCurrency(firstItem.price)}`, { width: rightW });
-      if (firstItem.keyFacts) doc.moveDown(0.2) && doc.text(firstItem.keyFacts, { width: rightW });
-    }
-
-    // Footer contact
-    doc.moveTo(doc.page.margins.left, doc.page.height - 100).lineTo(doc.page.width - doc.page.margins.right, doc.page.height - 100).strokeColor('#e0e0e0').lineWidth(1).stroke();
-
-    doc.fontSize(9).font('Helvetica').fillColor('#333333').text('Contacto:', doc.page.margins.left, doc.page.height - 88);
-    if (contact.name) doc.text(contact.name, doc.page.margins.left + 60, doc.page.height - 88);
-    if (contact.email) doc.text(`Email: ${contact.email}`, doc.page.margins.left, doc.page.height - 72);
-    if (contact.phone) doc.text(`Tel: ${contact.phone}`, doc.page.margins.left, doc.page.height - 58);
-
-    doc.fontSize(8).fillColor('#666666').text('Este documento es una versión ejecutiva de la propuesta.', doc.page.margins.left, doc.page.height - 40, { align: 'left' });
-  }
-
-  // ---------- Helpers ----------
-
-  static _formatCurrency(amount, currencyCode = 'EUR') {
-    try {
-      return new Intl.NumberFormat('es-ES', { style: 'currency', currency: currencyCode }).format(Number(amount));
-    } catch {
-      return `${amount} ${currencyCode}`;
-    }
   }
 
   static _addPageNumbers(doc) {
@@ -476,9 +307,12 @@ class SimplePDFRenderer {
     }
   }
 
-  // Backwards compatibility wrapper
-  static renderTemplateToPdf(options) {
-    return this.generatePDF(options.data, options.template);
+  static _formatCurrency(amount, currencyCode = 'EUR') {
+    try {
+      return new Intl.NumberFormat('es-ES', { style: 'currency', currency: currencyCode }).format(Number(amount));
+    } catch {
+      return `${amount} ${currencyCode}`;
+    }
   }
 }
 

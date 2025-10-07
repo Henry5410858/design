@@ -204,7 +204,7 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
     console.log(`🔄 Generating PDF with template: ${template}`);
     
     // Generate PDF
-    const pdfBuffer = await pdfRenderer.renderTemplateToPdf({
+    const pdfBuffer = await pdfRenderer.generatePDF({
       template,
       data: { client, items: uploadedItems, theme, intro: aiIntro },
       locale: 'es',
@@ -269,7 +269,7 @@ router.post('/render', auth, premium, async (req, res) => {
       valueProps: client.valueProps 
     });
 
-    const pdfBuffer = await pdfRenderer.renderTemplateToPdf({
+    const pdfBuffer = await pdfRenderer.generatePDF({
       template,
       data: { client, items, theme, intro: aiIntro },
       locale,
