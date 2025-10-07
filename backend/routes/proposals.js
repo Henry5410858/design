@@ -33,8 +33,10 @@ router.use(cors({
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB per file
-    files: 10
+    fileSize: 10 * 1024 * 1024,  // Max 10 MB per file
+    fieldSize: 10 * 1024 * 1024, // Max 10 MB per text field (e.g. JSON like "items")
+    files: 10,                   // Max 10 uploaded files
+    fields: 20                   // Max 20 non-file fields
   }
 });
 
