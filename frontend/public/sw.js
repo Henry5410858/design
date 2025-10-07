@@ -3,9 +3,9 @@
  * Offline functionality, caching, and push notifications
  */
 
-const CACHE_NAME = 'diseñopro-v1759615160630';
-const STATIC_CACHE = 'diseñopro-static-v1759615160630';
-const DYNAMIC_CACHE = 'diseñopro-dynamic-v1759615160630';
+const CACHE_NAME = 'diseñopro-v1759842823599';
+const STATIC_CACHE = 'diseñopro-static-v1759842823599';
+const DYNAMIC_CACHE = 'diseñopro-dynamic-v1759842823599';
 
 // Assets to cache immediately (HTML routes removed)
 const STATIC_ASSETS = [

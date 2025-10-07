@@ -407,10 +407,11 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     window.open(canvaUrl, '_blank');
   };
 
-  // Ensure templates is always an array and filter safely
+  // Ensure templates is always an array and provide fallback samples when API returns none
   const safeTemplates = Array.isArray(templates) ? templates : [];
+  const effectiveTemplates = safeTemplates.length > 0 ? safeTemplates : sampleTemplates;
   
-  const filteredTemplates = safeTemplates.filter(template => {
+  const filteredTemplates = effectiveTemplates.filter(template => {
     const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
     const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          template.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -526,6 +527,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                     template.category === 'documents' ? <FilePdf size={16} className="text-white" /> :
                     template.category === 'banners' ? <Stack size={16} className="text-white" /> :
                     template.category === 'badges' ? <ImageIcon size={16} className="text-white" /> :
+                    template.category === 'social-posts' ? <ImageIcon size={16} className="text-white" /> :
                     <ImageIcon size={16} className="text-white" />}
                 </div>
                 <span className="text-xs font-medium">{template.name}</span>
@@ -541,6 +543,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                   template.category === 'documents' ? <FilePdf size={24} className="text-gray-600" /> :
                   template.category === 'banners' ? <Stack size={24} className="text-gray-600" /> :
                   template.category === 'badges' ? <ImageIcon size={24} className="text-gray-600" /> :
+                  template.category === 'social-posts' ? <ImageIcon size={24} className="text-gray-600" /> :
                   <ImageIcon size={24} className="text-gray-600" />}
               </div>
               <span className="text-sm font-medium text-gray-700">{template.name}</span>
@@ -783,9 +786,13 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             No se encontraron templates
           </h3>
-          <p className="text-gray-600">
-            Intenta ajustar los filtros o la búsqueda
-          </p>
+          <p className="text-gray-600 mb-6">Intenta ajustar los filtros o la búsqueda</p>
+          {/* Show sample templates as fallback grid to avoid empty UI */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {sampleTemplates
+              .filter(t => selectedCategory === 'all' || t.category === selectedCategory)
+              .map(t => renderTemplateCard(t))}
+          </div>
         </div>
       )}
     </div>

@@ -53,7 +53,8 @@ const templateTypes: TemplateType[] = [
     label: 'Folleto / Documento Simple de 1 Página',
     icon: '📚',
     description: 'Formato A4 (300 DPI) - folletos y documentos'
-  }
+  },
+  
 ];
 
 const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClose }) => {

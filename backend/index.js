@@ -18,16 +18,13 @@ const PORT = process.env.PORT || 4000;
 // ✅ UPDATED: Enhanced CORS configuration for Netlify + Render
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
     const allowedOrigins = [
-      'https://design-center.netlify.app', // ✅ Replace with your actual Netlify domain
+      'https://design-center.netlify.app',
       'http://localhost:3000',
       'http://localhost:3001'
     ];
-    
-    if (allowedOrigins.some(allowed => origin === allowed)) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log('🚫 CORS blocked for origin:', origin);
@@ -35,10 +32,10 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-
+app.options('*', cors());
 // ✅ UPDATED: Increase body parser limits for large PDF requests
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ 

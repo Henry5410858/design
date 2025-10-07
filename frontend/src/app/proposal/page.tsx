@@ -333,7 +333,7 @@ export default function ProposalPage() {
       : 'Unknown error occurred';
 
   startTransition(() => safeAdd('Error al generar el PDF: ' + message, 'error'));
-}finally {
+} finally {
       startTransition(() => setIsGenerating(false));
     }
   }, [client, properties, contact, brandTheme, selectedTemplate, introText, safeAdd]);
