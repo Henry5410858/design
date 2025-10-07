@@ -325,8 +325,15 @@ export default function ProposalPage() {
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
-      startTransition(() => safeAdd('Error al generar el PDF: ' + error.message, 'error'));
-    } finally {
+      const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+      ? error
+      : 'Unknown error occurred';
+
+  startTransition(() => safeAdd('Error al generar el PDF: ' + message, 'error'));
+}finally {
       startTransition(() => setIsGenerating(false));
     }
   }, [client, properties, contact, brandTheme, selectedTemplate, introText, safeAdd]);
