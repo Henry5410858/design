@@ -130,6 +130,7 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
     const contact = parseJSON('contact', {});
     const template = req.body?.template || 'dossier-express';
     const introText = req.body?.introText || '';
+    const options = parseJSON('options', {});
 
     console.log('👤 Client:', client.name);
     console.log('📦 Items count:', items.length);
@@ -208,9 +209,9 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
     // Generate PDF
     const pdfBuffer = await pdfRenderer.generatePDF({
       template,
-      data: { client, items: uploadedItems, theme, intro: aiIntro },
+      data: { client, items: uploadedItems, theme, intro: aiIntro, options },
       locale: 'es',
-      currencyCode: 'EUR',
+      currencyCode: options?.currencyCode || 'EUR',
     });
 
     console.log(`✅ PDF generated successfully: ${pdfBuffer.length} bytes`);

@@ -172,6 +172,10 @@ export default function ProposalPage() {
     primary: '#1f2937',
     secondary: '#6366f1'
   });
+  // Pricing and options
+  const [inputCurrency, setInputCurrency] = useState<'EUR' | 'USD' | 'ARS'>('EUR');
+  const [outputCurrency, setOutputCurrency] = useState<'EUR' | 'USD' | 'ARS'>('EUR');
+  const [durationDays, setDurationDays] = useState<number | ''>('');
 
   useEffect(() => {
     const html = document.documentElement;
@@ -298,6 +302,14 @@ export default function ProposalPage() {
         introText
       );
 
+      // Append options for currency/display and duration
+      formData.append('options', JSON.stringify({
+        currencyCode: inputCurrency,
+        outputCurrency,
+        convertPrices: outputCurrency !== inputCurrency,
+        durationDays: typeof durationDays === 'number' ? durationDays : undefined
+      }));
+
       console.log('Generating PDF with template:', selectedTemplate);
       console.log('Client:', client);
       console.log('Properties:', properties);
@@ -382,13 +394,19 @@ export default function ProposalPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Industria
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={client.industry}
                     onChange={(e) => setClient(prev => ({ ...prev, industry: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-                    placeholder="Ej: Inmobiliaria, Retail, etc."
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent bg-white"
+                  >
+                    <option value="">Seleccionar industria</option>
+                    <option value="Inmobiliaria">Inmobiliaria</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Tecnología">Tecnología</option>
+                    <option value="Servicios">Servicios</option>
+                    <option value="Construcción">Construcción</option>
+                    <option value="Otro">Otro</option>
+                  </select>
                 </div>
               </div>
 
@@ -577,6 +595,45 @@ export default function ProposalPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Pricing options */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Moneda de entrada</label>
+                  <select
+                    value={inputCurrency}
+                    onChange={(e) => setInputCurrency(e.target.value as 'EUR' | 'USD' | 'ARS')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent bg-white"
+                  >
+                    <option value="EUR">EUR (€)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="ARS">ARS ($)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mostrar en</label>
+                  <select
+                    value={outputCurrency}
+                    onChange={(e) => setOutputCurrency(e.target.value as 'EUR' | 'USD' | 'ARS')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent bg-white"
+                  >
+                    <option value="EUR">EUR (€)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="ARS">ARS ($)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duración de la propuesta (días)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={durationDays}
+                    onChange={(e) => setDurationDays(e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                    placeholder="Opcional"
+                  />
+                </div>
               </div>
             </div>
 

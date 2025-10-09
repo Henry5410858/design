@@ -54,6 +54,12 @@ class PDFRenderer {
         this.preloadedLogoBuffer = preloadResult.logoBuffer || null;
         this.preloadedItems = preloadResult.itemsWithBuffers || data.items || [];
 
+        // Currency options
+        this.currency = (data.options && data.options.outputCurrency) || 'EUR';
+        this.inputCurrency = (data.options && data.options.currencyCode) || 'EUR';
+        this.convertPrices = Boolean(data.options && data.options.convertPrices);
+        this.durationDays = data.options && data.options.durationDays;
+
         // Generate content based on template
         switch (data.template) {
           case 'comparative-short':
@@ -203,6 +209,23 @@ class PDFRenderer {
 
     // Ensure we maintain expected y position for next line
     this.doc.y = Math.max(this.doc.y, y + lineHeight);
+  }
+
+  // Convert and format price for display
+  getDisplayPrice(value) {
+    const rates = {
+      EUR: 1,
+      USD: 1.08, // simple static rate; replace with live rates if needed
+      ARS: 1000 // placeholder; adjust as necessary or plug in a provider
+    };
+    const symbolMap = { EUR: '€', USD: '$', ARS: '$' };
+    const inEur = this.inputCurrency && rates[this.inputCurrency] ? value / rates[this.inputCurrency] : value;
+    const out = this.convertPrices && this.currency && rates[this.currency]
+      ? inEur * rates[this.currency]
+      : (this.currency === this.inputCurrency ? value : inEur);
+    const amount = Math.round(out).toLocaleString('es-ES');
+    const symbol = symbolMap[this.currency || 'EUR'] || '€';
+    return { amount, symbol };
   }
 
   // Add header to PDF
@@ -450,7 +473,8 @@ class PDFRenderer {
       }
       
       if (property.price) {
-        details.push(`Precio: €${property.price.toLocaleString()}`);
+        const { amount, symbol } = this.getDisplayPrice(property.price);
+        details.push(`Precio: ${symbol}${amount}`);
       }
       
       if (property.keyFacts) {
@@ -500,6 +524,16 @@ class PDFRenderer {
           align: 'justify',
           width: 500
         });
+
+      // Optional duration note
+      if (this.durationDays && Number(this.durationDays) > 0) {
+        this.doc.moveDown();
+        this.doc
+          .fillColor('#6B7280')
+          .fontSize(10)
+          .font('Helvetica-Oblique')
+          .text(`Validez de la propuesta: ${this.durationDays} días`, 50, this.doc.y, { width: 500 });
+      }
     });
 
     // Contact page
@@ -654,7 +688,8 @@ async function generatePDF({ template, data }) {
     items: data?.items || [],
     theme: data?.theme || {},
     introText: data?.intro || '',
-    contact: (data?.client && data.client.contact) ? data.client.contact : (data?.contact || {})
+    contact: (data?.client && data.client.contact) ? data.client.contact : (data?.contact || {}),
+    options: data?.options || {}
   };
   return renderer.generateProposal(mappedPayload);
 }

@@ -8,6 +8,7 @@
     "build:production": "node scripts/force-cache-invalidation.js && next build",
     "start": "next start",
     "lint": "next lint",
+    "build-for-apk": "next build",
     "cache-bust": "node scripts/force-cache-invalidation.js"
   },
   "dependencies": {
