@@ -137,6 +137,10 @@ router.put('/', auth, async (req, res) => {
 // Update specific brand kit properties
 router.patch('/', auth, async (req, res) => {
   try {
+    console.log('🔍 BrandKit PATCH request received');
+    console.log('🔍 User ID:', req.user.userId || req.user.id);
+    console.log('🔍 Request body:', req.body);
+    
     const updateData = {};
     
     // Only update provided fields
@@ -146,7 +150,71 @@ router.patch('/', auth, async (req, res) => {
       }
     });
 
-    const brandKit = await BrandKit.updateByUserId(req.user.userId || req.user.id, updateData);
+    console.log('🔍 Update data:', updateData);
+    
+    // Check database connection health
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      console.error('❌ Database connection not ready, state:', mongoose.connection.readyState);
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection not available',
+        error: 'Connection not ready'
+      });
+    }
+    
+    // Check logo data size if logo is being updated
+    if (updateData.logo && updateData.logo.data) {
+      const logoSize = updateData.logo.data.length;
+      console.log('🔍 Logo data size:', logoSize, 'bytes');
+      if (logoSize > 5 * 1024 * 1024) { // 5MB limit
+        return res.status(400).json({
+          success: false,
+          message: 'Logo file is too large. Maximum size is 5MB.',
+          error: 'File too large'
+        });
+      }
+    }
+    
+    // Retry logic for database operations with large data
+    let brandKit = null;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries && !brandKit) {
+      try {
+        console.log(`🔍 Attempting brand kit update (attempt ${retryCount + 1}/${maxRetries})`);
+        brandKit = await BrandKit.updateByUserId(req.user.userId || req.user.id, updateData);
+        console.log('🔍 Brand kit updated successfully:', brandKit ? 'Yes' : 'No');
+        break;
+      } catch (error) {
+        retryCount++;
+        console.error(`❌ Brand kit update attempt ${retryCount} failed:`, error.message);
+        
+        if (retryCount >= maxRetries) {
+          console.error('❌ All retry attempts failed');
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to update brand kit after multiple attempts',
+            error: 'Database operation failed'
+          });
+        }
+        
+        // Wait before retry (exponential backoff)
+        const waitTime = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+    
+    if (!brandKit) {
+      console.error('❌ Brand kit update returned null after all retries');
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update brand kit',
+        error: 'Database update failed'
+      });
+    }
 
     res.json({
       success: true,
@@ -167,11 +235,12 @@ router.patch('/', auth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error patching brand kit:', error);
+    console.error('❌ Error patching brand kit:', error);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Error updating brand kit',
-      error: error.message
+      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message
     });
   }
 });

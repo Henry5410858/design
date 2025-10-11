@@ -55,7 +55,6 @@ interface PropertyItem {
 
 interface ClientInfo {
   name: string;
-  industry?: string;
   valueProps?: string[];
 }
 
@@ -75,9 +74,9 @@ interface BrandTheme {
 }
 
 const TEMPLATE_OPTIONS = [
+  { id: 'dossier-express', name: 'Propuesta Optimizada', description: '1 página con logo, imagen y detalles clave', icon: '📋' },
   { id: 'comparative-short', name: 'Comparativa Corta', description: '2-3 propiedades, 2 páginas', icon: '📊' },
-  { id: 'simple-proposal', name: 'Propuesta Simple', description: '4-6 páginas con fotos y detalles', icon: '📄' },
-  { id: 'dossier-express', name: 'Dossier Express', description: 'Resumen ejecutivo de 1 página', icon: '📋' }
+  { id: 'simple-proposal', name: 'Propuesta Detallada', description: '4-6 páginas con fotos y detalles', icon: '📄' }
 ];
 
 // ✅ Build PDF payload only from React state (not DOM)
@@ -94,7 +93,6 @@ const prepareProposalPayload = (
   // Add all client information
   formData.append('client', JSON.stringify({
     name: client.name,
-    industry: client.industry,
     valueProps: client.valueProps
   }));
 
@@ -145,7 +143,6 @@ export default function ProposalPage() {
 
   const [client, setClient] = useState<ClientInfo>({ 
     name: '', 
-    industry: '', 
     valueProps: [''] 
   });
   const [introText, setIntroText] = useState('');
@@ -167,14 +164,14 @@ export default function ProposalPage() {
     address: '',
     website: ''
   });
-  const [selectedTemplate, setSelectedTemplate] = useState('comparative-short');
+  const [selectedTemplate, setSelectedTemplate] = useState('dossier-express');
   const [brandTheme, setBrandTheme] = useState<BrandTheme>({
     primary: '#1f2937',
     secondary: '#6366f1'
   });
   // Pricing and options
-  const [inputCurrency, setInputCurrency] = useState<'EUR' | 'USD' | 'ARS'>('EUR');
-  const [outputCurrency, setOutputCurrency] = useState<'EUR' | 'USD' | 'ARS'>('EUR');
+  const [inputCurrency, setInputCurrency] = useState<'USD' | 'ARS'>('USD');
+  const [outputCurrency, setOutputCurrency] = useState<'USD' | 'ARS'>('USD');
   const [durationDays, setDurationDays] = useState<number | ''>('');
 
   useEffect(() => {
@@ -189,21 +186,34 @@ export default function ProposalPage() {
     };
   }, []);
 
-  // Load brand kit
+  // Load brand kit and test authentication
   useEffect(() => {
     const loadBrandKit = async () => {
       if (!user?.id) return;
       try {
+        // Test authentication first
+        console.log('🔍 Testing authentication...');
+        const authTestResponse = await fetch(`${API_ENDPOINTS.PROPOSAL_GENERATE.replace('/generate', '/test')}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        console.log('🔍 Auth test response:', authTestResponse.status, authTestResponse.statusText);
+        
+        if (!authTestResponse.ok) {
+          console.error('❌ Authentication test failed:', authTestResponse.status, authTestResponse.statusText);
+          return;
+        }
+        
         const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (response.ok) {
-          const brandKit = await response.json();
-          if (brandKit) {
+          const data = await response.json();
+          if (data.success && data.brandKit) {
+            const brandKit = data.brandKit;
             setBrandTheme({
               primary: brandKit.primaryColor || '#1f2937',
               secondary: brandKit.secondaryColor || '#6366f1',
-              logoUrl: brandKit.logoUrl
+              logoUrl: brandKit.logo?.data || null
             });
           }
         }
@@ -253,16 +263,32 @@ export default function ProposalPage() {
     }
     setIsEnhancing(true);
     try {
+      const token = localStorage.getItem('token');
+      console.log('🔑 Token for AI enhancement:', token ? 'Present' : 'Missing');
+      
+      // Test AI endpoint first
+      console.log('🔍 Testing AI endpoint...');
+      const aiTestResponse = await fetch(`${API_ENDPOINTS.PROPOSAL_ENHANCE_INTRO.replace('/enhance-intro', '/test-ai')}`, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Bearer ${token}` 
+        }
+      });
+      console.log('🔍 AI test response:', aiTestResponse.status, aiTestResponse.statusText);
+      
+      if (!aiTestResponse.ok) {
+        throw new Error(`AI endpoint test failed: ${aiTestResponse.status} ${aiTestResponse.statusText}`);
+      }
+      
       const response = await fetch(API_ENDPOINTS.PROPOSAL_ENHANCE_INTRO, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           text: introText,
           clientName: client.name,
-          industry: client.industry,
           valueProps: client.valueProps?.filter(v => v.trim())
         })
       });
@@ -292,6 +318,19 @@ export default function ProposalPage() {
 
     setIsGenerating(true);
     try {
+      // Test backend connection first
+      console.log('🔍 Testing backend connection...');
+      const testResponse = await fetch(`${API_ENDPOINTS.PROPOSAL_GENERATE.replace('/generate', '/test')}`, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        }
+      });
+      console.log('🔍 Backend test response:', testResponse.status, testResponse.statusText);
+      
+      if (!testResponse.ok) {
+        throw new Error(`Backend connection failed: ${testResponse.status} ${testResponse.statusText}`);
+      }
       // Prepare all data for PDF generation
       const formData = prepareProposalPayload(
         client, 
@@ -316,10 +355,13 @@ export default function ProposalPage() {
       console.log('Contact:', contact);
       console.log('Intro text:', introText);
 
+      const token = localStorage.getItem('token');
+      console.log('🔑 Token for PDF generation:', token ? 'Present' : 'Missing');
+      
       const response = await fetch(API_ENDPOINTS.PROPOSAL_GENERATE, {
         method: 'POST',
         headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          'Authorization': `Bearer ${token}` 
         },
         body: formData
       });
@@ -390,24 +432,6 @@ export default function ProposalPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Industria
-                  </label>
-                  <select
-                    value={client.industry}
-                    onChange={(e) => setClient(prev => ({ ...prev, industry: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent bg-white"
-                  >
-                    <option value="">Seleccionar industria</option>
-                    <option value="Inmobiliaria">Inmobiliaria</option>
-                    <option value="Retail">Retail</option>
-                    <option value="Tecnología">Tecnología</option>
-                    <option value="Servicios">Servicios</option>
-                    <option value="Construcción">Construcción</option>
-                    <option value="Otro">Otro</option>
-                  </select>
-                </div>
               </div>
 
               {/* Value Propositions */}
@@ -599,31 +623,29 @@ export default function ProposalPage() {
 
               {/* Pricing options */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <div>
+                <div className="flex flex-col">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Moneda de entrada</label>
                   <select
                     value={inputCurrency}
-                    onChange={(e) => setInputCurrency(e.target.value as 'EUR' | 'USD' | 'ARS')}
+                    onChange={(e) => setInputCurrency(e.target.value as 'USD' | 'ARS')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent bg-white"
                   >
-                    <option value="EUR">EUR (€)</option>
                     <option value="USD">USD ($)</option>
                     <option value="ARS">ARS ($)</option>
                   </select>
                 </div>
-                <div>
+                <div className="flex flex-col">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Mostrar en</label>
                   <select
                     value={outputCurrency}
-                    onChange={(e) => setOutputCurrency(e.target.value as 'EUR' | 'USD' | 'ARS')}
+                    onChange={(e) => setOutputCurrency(e.target.value as 'USD' | 'ARS')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent bg-white"
                   >
-                    <option value="EUR">EUR (€)</option>
                     <option value="USD">USD ($)</option>
                     <option value="ARS">ARS ($)</option>
                   </select>
                 </div>
-                <div>
+                <div className="flex flex-col">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Duración de la propuesta (días)</label>
                   <input
                     type="number"

@@ -78,19 +78,24 @@ BrandKitSchema.statics.getByUserId = function(userId) {
   return this.findOne({ userId }).populate('userId', 'username email');
 };
 
-// Method to update brand kit - SECURE
+// Method to update brand kit - SECURE with timeout handling
 BrandKitSchema.statics.updateByUserId = function(userId, updateData) {
   if (!userId) {
     throw new Error('User ID is required for security');
   }
+  
+  // Set a longer timeout for large data operations
+  const options = { 
+    new: true, 
+    upsert: true, // Create if doesn't exist
+    runValidators: true,
+    maxTimeMS: 120000 // 2 minutes timeout for large logo data
+  };
+  
   return this.findOneAndUpdate(
     { userId }, 
     updateData, 
-    { 
-      new: true, 
-      upsert: true, // Create if doesn't exist
-      runValidators: true 
-    }
+    options
   );
 };
 

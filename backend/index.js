@@ -84,13 +84,21 @@ const connectWithRetry = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
 
-      // Timeouts (tuned for quicker feedback and reconnects)
-      connectTimeoutMS: 20000,
-      socketTimeoutMS: 45000,
-
-      // Driver server selection timeout (fail fast, we handle retries)
-      serverSelectionTimeoutMS: 20000,
+      // Increased timeouts for large data operations
+      connectTimeoutMS: 60000,      // 60 seconds for initial connection
+      socketTimeoutMS: 120000,      // 2 minutes for socket operations
+      serverSelectionTimeoutMS: 30000, // 30 seconds for server selection
       heartbeatFrequencyMS: 10000,
+      
+      // Connection pool settings for better performance
+      maxPoolSize: 10,              // Maximum number of connections
+      minPoolSize: 2,               // Minimum number of connections
+      maxIdleTimeMS: 30000,         // Close connections after 30 seconds of inactivity
+      waitQueueTimeoutMS: 30000,    // Wait up to 30 seconds for a connection
+      
+      // Retry settings
+      retryWrites: true,
+      retryReads: true,
     });
     retryCount = 0;
     console.log('✅ MongoDB connected successfully');

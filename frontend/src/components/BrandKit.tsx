@@ -129,6 +129,9 @@ const BrandKit: React.FC = React.memo(() => {
   const handleLogoUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Show loading state
+      console.log('🔄 Starting logo upload process...');
+      
       const reader = new FileReader();
       reader.onload = async (e) => {
         const result = e.target?.result as string;
@@ -149,6 +152,7 @@ const BrandKit: React.FC = React.memo(() => {
             size: file.size
           };
 
+          console.log('🔄 Uploading logo to server...');
           const response = await fetch(API_ENDPOINTS.BRAND_KIT, {
             method: 'PATCH',
             headers: {
@@ -159,12 +163,30 @@ const BrandKit: React.FC = React.memo(() => {
           });
 
           if (!response.ok) {
-            console.error('Failed to save logo:', response.statusText);
+            console.error('❌ Failed to save logo:', response.statusText);
+            const errorData = await response.json();
+            console.error('❌ Error details:', errorData);
+            alert('Error al guardar el logo. Por favor, intenta de nuevo.');
           } else {
-            console.log('Logo saved successfully');
+            const responseData = await response.json();
+            console.log('✅ Logo saved successfully:', responseData);
+            // Update the brand kit state with the new logo
+            if (responseData.success && responseData.brandKit) {
+              setBrandKit(prev => ({
+                ...prev,
+                logo: responseData.brandKit.logo
+              }));
+              // Show success message
+              console.log('✅ Logo uploaded and saved successfully!');
+              alert('Logo guardado exitosamente!');
+            } else {
+              console.error('❌ Logo save response missing success or brandKit data');
+              alert('Error al procesar la respuesta del servidor.');
+            }
           }
         } catch (error) {
           console.error('Error saving logo:', error);
+          alert('Error de conexión. Por favor, verifica tu conexión a internet e intenta de nuevo.');
         }
       };
       reader.readAsDataURL(file);

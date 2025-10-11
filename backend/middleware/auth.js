@@ -17,6 +17,7 @@ module.exports = function (req, res, next) {
     // Attach decoded payload to request
     req.user = {
       id: decoded.id,
+      userId: decoded.id, // Add userId for compatibility
       username: decoded.username,
       plan: decoded.plan || 'Gratis', // default plan if missing
       role: decoded.role || 'user',

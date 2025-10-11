@@ -9,6 +9,46 @@ const { uploadPdf } = require('../services/cloudinaryHelpers');
 const pdfRenderer = require('../services/pdfRenderer');
 const router = express.Router();
 
+// Test endpoint to verify connection and auth
+router.get('/test', auth, (req, res) => {
+  console.log('🧪 Test endpoint called');
+  console.log('🔑 User from auth middleware:', req.user);
+  res.json({ 
+    success: true, 
+    message: 'Proposals API is working',
+    user: req.user,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Test endpoint for AI enhancement
+router.get('/test-ai', auth, async (req, res) => {
+  console.log('🤖 AI test endpoint called');
+  console.log('🔑 User from auth middleware:', req.user);
+  
+  try {
+    const testIntro = await generateIntro({ 
+      clientName: 'Test Client', 
+      valueProps: ['Test Value'] 
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'AI enhancement is working',
+      testIntro,
+      user: req.user,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ AI test failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'AI enhancement test failed',
+      error: error.message 
+    });
+  }
+});
+
 // CORS configuration
 router.use(cors({
   origin: function (origin, callback) {
@@ -65,7 +105,7 @@ router.get('/templates', auth, (req, res) => {
 router.post('/ai/intro', auth, async (req, res) => {
   try {
     const { clientName, industry, valueProps } = req.body || {};
-    const text = await generateIntro({ clientName, industry, valueProps });
+    const text = await generateIntro({ clientName, valueProps });
     res.json({ text });
   } catch (error) {
     console.error('AI intro generation failed:', error);
@@ -78,13 +118,21 @@ router.post('/ai/intro', auth, async (req, res) => {
 
 // Enhance intro text
 router.post('/enhance-intro', auth, async (req, res) => {
+  console.log('🤖 AI intro enhancement request received');
+  console.log('🔑 User from auth middleware:', req.user);
+  console.log('📝 Request body:', req.body);
+  
   try {
-    const { text = '', clientName, industry, valueProps } = req.body || {};
-    const generated = await generateIntro({ clientName, industry, valueProps });
+    const { text = '', clientName, valueProps } = req.body || {};
+    console.log('📝 Processing:', { text: text?.substring(0, 50), clientName, valueProps });
+    
+    const generated = await generateIntro({ clientName, valueProps });
     const enhancedText = text ? `${text.trim()}\n\n${generated}` : generated;
+    
+    console.log('✅ AI intro enhancement successful');
     res.json({ enhancedText });
   } catch (error) {
-    console.error('AI intro enhancement failed:', error);
+    console.error('❌ AI intro enhancement failed:', error);
     res.status(500).json({ 
       message: 'AI intro enhancement failed', 
       error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message 
@@ -95,6 +143,10 @@ router.post('/enhance-intro', auth, async (req, res) => {
 // Main PDF generation endpoint
 router.post('/generate', auth, premium, upload.any(), async (req, res) => {
   console.log('📦 PDF generation request received - ENHANCED');
+  console.log('🔑 User from auth middleware:', req.user);
+  console.log('🔑 User ID:', req.user?.id || req.user?.userId);
+  console.log('🔑 User plan:', req.user?.plan);
+  console.log('🔑 Premium bypass allowed:', process.env.ALLOW_PDF_NON_PREMIUM === 'true' || process.env.NODE_ENV !== 'production');
   
   try {
     // Enhanced validation
@@ -194,7 +246,6 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
       console.log('🤖 Generating AI intro');
       aiIntro = await generateIntro({ 
         clientName: client.name, 
-        industry: client.industry, 
         valueProps: client.valueProps 
       });
     }
@@ -209,9 +260,17 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
     // Generate PDF
     const pdfBuffer = await pdfRenderer.generatePDF({
       template,
-      data: { client, items: uploadedItems, theme, intro: aiIntro, options },
+      data: { 
+        client, 
+        items: uploadedItems, 
+        theme, 
+        intro: aiIntro, 
+        options,
+        userId: req.user.id, // Pass user ID for brand kit logo retrieval
+        contact: { ...client.contact, ...contact } // Ensure contact info is passed
+      },
       locale: 'es',
-      currencyCode: options?.currencyCode || 'EUR',
+      currencyCode: options?.currencyCode || 'USD', // Default to USD instead of EUR
     });
 
     console.log(`✅ PDF generated successfully: ${pdfBuffer.length} bytes`);
@@ -268,7 +327,6 @@ router.post('/render', auth, premium, async (req, res) => {
 
     const aiIntro = await generateIntro({ 
       clientName: client.name, 
-      industry: client.industry, 
       valueProps: client.valueProps 
     });
 
