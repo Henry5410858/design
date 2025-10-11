@@ -11,14 +11,32 @@ class PDFRenderer {
   sanitizeText(input) {
     if (!input) return '';
     const str = String(input);
-    // Replace non-breaking spaces and control chars
+    
+    // Remove specific problematic characters and clean text
     return str
-      .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
-      .replace(/[\u0000-\u001F\u007F]/g, '')
       .replace(/[Ø=ÜÍ]/g, '') // Remove specific problematic characters
+      .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, ' ') // Replace non-breaking spaces
+      .replace(/[\u0000-\u001F\u007F]/g, '') // Remove control characters
       .replace(/[^\x20-\x7E\u00C0-\u017F\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\u00C1\u00C9\u00CD\u00D3\u00DA\u00E1\u00E9\u00ED\u00F3\u00FA]/g, '') // Keep only safe characters including Spanish accents
       .replace(/\s+/g, ' ') // Replace multiple spaces with single space
       .trim();
+  }
+
+  // Helper to check if content will fit on current page
+  checkPageSpace(requiredHeight) {
+    const currentY = this.doc.y;
+    const pageHeight = this.doc.page.height;
+    const bottomMargin = 50; // Space for page numbers
+    return (currentY + requiredHeight) < (pageHeight - bottomMargin);
+  }
+
+  // Helper to add new page if needed
+  addPageIfNeeded(requiredHeight) {
+    if (!this.checkPageSpace(requiredHeight)) {
+      this.doc.addPage();
+      return true; // Page was added
+    }
+    return false; // No page added
   }
 
   // Main method to generate PDF
@@ -44,7 +62,7 @@ class PDFRenderer {
         });
 
         const chunks = [];
-        
+
         this.doc.on('data', (chunk) => chunks.push(chunk));
         this.doc.on('end', () => {
           const pdfBuffer = Buffer.concat(chunks);
@@ -66,6 +84,8 @@ class PDFRenderer {
         // Generate content based on template
         switch (data.template) {
           case 'comparative-short':
+            console.log('Raw client name:', data.client.name);
+            console.log('Sanitized client name:', this.sanitizeText(data.client.name));
             this.generateComparativeShort({ ...data, items: this.preloadedItems });
             break;
           case 'simple-proposal':
@@ -138,7 +158,7 @@ class PDFRenderer {
     // Load logo - check both theme.logoUrl and brand kit logo data
     let logoUrl = data?.theme?.logoUrl;
     console.log('🔍 Logo loading - theme.logoUrl:', logoUrl ? 'Present' : 'Missing');
-    
+
     // If no logoUrl in theme, try to get brand kit logo from user
     if (!logoUrl && data?.userId) {
       try {
@@ -156,10 +176,10 @@ class PDFRenderer {
         console.log('❌ Could not fetch brand kit logo:', error.message);
       }
     }
-    
+
     console.log('🔍 Final logoUrl:', logoUrl ? 'Present' : 'Missing');
     let logoBuffer = null;
-    
+
     if (logoUrl) {
       // Check if it's a base64 data URL
       if (logoUrl.startsWith('data:image/')) {
@@ -177,7 +197,7 @@ class PDFRenderer {
         console.log('🔍 Logo loaded from URL:', logoBuffer ? 'Success' : 'Failed');
       }
     }
-    
+
     console.log('🔍 Final logo buffer:', logoBuffer ? 'Success' : 'Failed');
 
     // Load property images
@@ -207,7 +227,7 @@ class PDFRenderer {
           .fontSize(9)
           .text(text, 40, pageHeight - 40, { width: pageWidth - 80, align: 'right' });
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Apply brand colors and styling
@@ -264,15 +284,15 @@ class PDFRenderer {
       ARS: 1000  // 1 USD = 1000 ARS (approximate, adjust as needed)
     };
     const symbolMap = { USD: '$', EUR: '€', ARS: '$' };
-    
+
     // Convert input to USD first
     const inUsd = this.inputCurrency && rates[this.inputCurrency] ? value / rates[this.inputCurrency] : value;
-    
+
     // Convert to output currency
     const out = this.convertPrices && this.currency && rates[this.currency]
       ? inUsd * rates[this.currency]
       : (this.currency === this.inputCurrency ? value : inUsd);
-    
+
     const amount = Math.round(out).toLocaleString('es-ES');
     const symbol = symbolMap[this.currency || 'USD'] || '$';
     return { amount, symbol };
@@ -300,7 +320,7 @@ class PDFRenderer {
   // Add footer with page numbers
   addFooter() {
     const pageNumber = this.doc.bufferedPageRange().count;
-    
+
     this.doc.page.margins = { bottom: 50 };
     this.doc
       .fontSize(10)
@@ -331,11 +351,11 @@ class PDFRenderer {
     if (this.preloadedLogoBuffer) {
       try {
         const logoHeight = 40;
-        this.doc.image(this.preloadedLogoBuffer, marginLeft + 10, 60, { 
-          height: logoHeight, 
-          fit: [0, logoHeight] 
+        this.doc.image(this.preloadedLogoBuffer, marginLeft + 10, 60, {
+          height: logoHeight,
+          fit: [0, logoHeight]
         });
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Company name and title
@@ -374,13 +394,13 @@ class PDFRenderer {
           .lineWidth(1)
           .stroke()
           .restore();
-        
-        this.doc.image(data.items[0]._imageBuffer, imageX + 2, imageY + 2, { 
-          width: imageWidth - 4, 
-          height: imageHeight - 4, 
-          fit: [imageWidth - 4, imageHeight - 4] 
+
+        this.doc.image(data.items[0]._imageBuffer, imageX + 2, imageY + 2, {
+          width: imageWidth - 4,
+          height: imageHeight - 4,
+          fit: [imageWidth - 4, imageHeight - 4]
         });
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Property details (right side)
@@ -396,13 +416,13 @@ class PDFRenderer {
         .text(this.sanitizeText(firstProperty.title || ''), detailsX, detailsY);
 
       detailsY += 20;
-      
+
       if (firstProperty.location) {
         this.doc
           .fillColor('#666666')
           .fontSize(10)
           .font('Helvetica')
-          .text(`📍 ${this.sanitizeText(firstProperty.location)}`, detailsX, detailsY);
+          .text(`📍 Ubicación: ${this.sanitizeText(firstProperty.location)}`, detailsX, detailsY);
         detailsY += 15;
       }
 
@@ -431,36 +451,45 @@ class PDFRenderer {
       }
     }
 
-    // Brief introduction text
+    // Brief introduction text with dynamic sizing
     const introY = Math.max(y + imageHeight + 20, detailsY + 40);
     this.drawSectionHeader('Introducción', marginLeft, introY, contentWidth);
-    
-    const introText = data.introText || 
+
+    const introText = data.introText ||
       `Presentamos esta propuesta especialmente preparada para ${data.client.name}.`;
-    
+
+    // Calculate text height to determine if we need a new page
+    const textHeight = this.doc.heightOfString(this.sanitizeText(introText), {
+      align: 'justify',
+      width: contentWidth - 24
+    });
+
+    // Check if we need a new page for the introduction
+    this.addPageIfNeeded(textHeight + 100);
+
     this.doc
       .fillColor('#333333')
       .fontSize(11)
       .font('Helvetica')
-      .text(this.sanitizeText(introText), marginLeft + 12, introY + 26, {
+      .text(this.sanitizeText(introText), marginLeft + 12, this.doc.y + 10, {
         align: 'justify',
         width: contentWidth - 24
       });
 
     // Price and key details section
-    const priceY = introY + 80;
+    const priceY = this.doc.y + 20;
     this.drawSectionHeader('Detalles Clave', marginLeft, priceY, contentWidth);
-    
+
     let priceDetailsY = priceY + 26;
     if (firstProperty) {
       this.drawLabelValue('Propiedad', this.sanitizeText(firstProperty.title || ''), marginLeft + 12, priceDetailsY);
       priceDetailsY += 16;
-      
+
       if (firstProperty.location) {
         this.drawLabelValue('Ubicación', this.sanitizeText(firstProperty.location), marginLeft + 12, priceDetailsY);
         priceDetailsY += 16;
       }
-      
+
       if (firstProperty.price) {
         const { amount, symbol } = this.getDisplayPrice(firstProperty.price);
         this.drawLabelValue('Precio', `${symbol}${amount}`, marginLeft + 12, priceDetailsY);
@@ -471,10 +500,10 @@ class PDFRenderer {
     // Contact section (bottom)
     const contactY = Math.max(priceDetailsY + 20, 650);
     this.drawSectionHeader('Contacto', marginLeft, contactY, contentWidth);
-    
+
     const contact = data.contact || {};
     let contactYPos = contactY + 26;
-    
+
     if (contact.name) {
       this.drawLabelValue('Nombre', this.sanitizeText(contact.name), marginLeft + 12, contactYPos);
       contactYPos += 16;
@@ -510,190 +539,11 @@ class PDFRenderer {
     if (this.preloadedLogoBuffer) {
       try {
         const logoHeight = 40;
-        this.doc.image(this.preloadedLogoBuffer, marginLeft + 10, 60, { 
-          height: logoHeight, 
-          fit: [0, logoHeight] 
+        this.doc.image(this.preloadedLogoBuffer, marginLeft + 10, 60, {
+          height: logoHeight,
+          fit: [0, logoHeight]
         });
-      } catch (_) {}
-    }
-
-    // Company name and title
-    this.doc
-      .fillColor('#ffffff')
-      .fontSize(18)
-      .font('Helvetica-Bold')
-      .text('Propuesta Comercial', marginLeft + 120, 65, { width: contentWidth - 130 });
-
-      this.doc
-        .fillColor('#ffffff')
-        .fontSize(12)
-        .font('Helvetica')
-      .text(`Para: ${this.sanitizeText(data.client.name)}`, marginLeft + 120, 85, { width: contentWidth - 130 });
-
-    // Client details section
-    let y = 130;
-    this.drawSectionHeader('Información del Cliente', marginLeft, y, contentWidth);
-    y += 26;
-
-    this.drawLabelValue('Cliente', this.sanitizeText(data.client.name || ''), marginLeft + 12, y);
-    y += 20;
-
-    // Main property image (left side)
-    const imageWidth = 200;
-    const imageHeight = 150;
-    const imageX = marginLeft + 12;
-    const imageY = y;
-
-    if (data.items?.[0]?._imageBuffer) {
-      try {
-        this.doc
-          .save()
-          .rect(imageX, imageY, imageWidth, imageHeight)
-          .strokeColor('#E5E7EB')
-          .lineWidth(1)
-          .stroke()
-          .restore();
-        
-        this.doc.image(data.items[0]._imageBuffer, imageX + 2, imageY + 2, { 
-          width: imageWidth - 4, 
-          height: imageHeight - 4, 
-          fit: [imageWidth - 4, imageHeight - 4] 
-        });
-      } catch (_) {}
-    }
-
-    // Property details (right side)
-    const detailsX = imageX + imageWidth + 20;
-    let detailsY = y;
-    const firstProperty = data.items?.[0];
-
-    if (firstProperty) {
-      this.doc
-        .fillColor(this.brandTheme.primary)
-        .fontSize(14)
-        .font('Helvetica-Bold')
-        .text(this.sanitizeText(firstProperty.title || ''), detailsX, detailsY);
-
-      detailsY += 20;
-      
-      if (firstProperty.location) {
-      this.doc
-        .fillColor('#666666')
-          .fontSize(10)
-        .font('Helvetica')
-          .text(`📍 ${this.sanitizeText(firstProperty.location)}`, detailsX, detailsY);
-        detailsY += 15;
-      }
-
-      if (firstProperty.price) {
-        const { amount, symbol } = this.getDisplayPrice(firstProperty.price);
-        this.doc
-          .fillColor(this.brandTheme.secondary)
-          .fontSize(16)
-          .font('Helvetica-Bold')
-          .text(`${symbol}${amount}`, detailsX, detailsY);
-        detailsY += 20;
-      }
-
-      if (firstProperty.keyFacts) {
-        this.doc
-          .fillColor('#333333')
-          .fontSize(10)
-          .font('Helvetica')
-          .text('Características:', detailsX, detailsY);
-        detailsY += 12;
-      this.doc
-        .fillColor('#666666')
-          .fontSize(9)
-        .font('Helvetica')
-          .text(this.sanitizeText(firstProperty.keyFacts), detailsX, detailsY, { width: 200 });
-      }
-    }
-
-    // Brief introduction text
-    const introY = Math.max(y + imageHeight + 20, detailsY + 40);
-    this.drawSectionHeader('Introducción', marginLeft, introY, contentWidth);
-    
-    const introText = data.introText || 
-      `Presentamos esta propuesta especialmente preparada para ${data.client.name}.`;
-
-    this.doc
-      .fillColor('#333333')
-      .fontSize(11)
-      .font('Helvetica')
-      .text(this.sanitizeText(introText), marginLeft + 12, introY + 26, {
-        align: 'justify',
-        width: contentWidth - 24
-      });
-
-    // Price and key details section
-    const priceY = introY + 80;
-    this.drawSectionHeader('Detalles Clave', marginLeft, priceY, contentWidth);
-    
-    let priceDetailsY = priceY + 26;
-    if (firstProperty) {
-      this.drawLabelValue('Propiedad', this.sanitizeText(firstProperty.title || ''), marginLeft + 12, priceDetailsY);
-      priceDetailsY += 16;
-      
-      if (firstProperty.location) {
-        this.drawLabelValue('Ubicación', this.sanitizeText(firstProperty.location), marginLeft + 12, priceDetailsY);
-        priceDetailsY += 16;
-      }
-      
-      if (firstProperty.price) {
-        const { amount, symbol } = this.getDisplayPrice(firstProperty.price);
-        this.drawLabelValue('Precio', `${symbol}${amount}`, marginLeft + 12, priceDetailsY);
-        priceDetailsY += 16;
-      }
-    }
-
-    // Contact section (bottom)
-    const contactY = Math.max(priceDetailsY + 20, 650);
-    this.drawSectionHeader('Contacto', marginLeft, contactY, contentWidth);
-    
-    const contact = data.contact || {};
-    let contactYPos = contactY + 26;
-    
-    if (contact.name) {
-      this.drawLabelValue('Nombre', this.sanitizeText(contact.name), marginLeft + 12, contactYPos);
-      contactYPos += 16;
-    }
-    if (contact.email) {
-      this.drawLabelValue('Email', this.sanitizeText(contact.email), marginLeft + 12, contactYPos);
-      contactYPos += 16;
-    }
-    if (contact.phone) {
-      this.drawLabelValue('Teléfono', this.sanitizeText(contact.phone), marginLeft + 12, contactYPos);
-      contactYPos += 16;
-    }
-    if (contact.company) {
-      this.drawLabelValue('Empresa', this.sanitizeText(contact.company), marginLeft + 12, contactYPos);
-    }
-  }
-
-  // Template 3: Dossier Express (1-page executive summary) - OPTIMIZED
-  generateDossierExpress(data) {
-    const pageWidth = this.doc.page.width;
-    const marginLeft = 40;
-    const marginRight = 40;
-    const contentWidth = pageWidth - marginLeft - marginRight;
-
-    // Header with logo and company name
-    this.doc
-      .save()
-      .rect(marginLeft, 50, contentWidth, 60)
-      .fill(this.brandTheme.primary)
-      .restore();
-
-    // Add logo in top left if available
-    if (this.preloadedLogoBuffer) {
-      try {
-        const logoHeight = 40;
-        this.doc.image(this.preloadedLogoBuffer, marginLeft + 10, 60, { 
-          height: logoHeight, 
-          fit: [0, logoHeight] 
-        });
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Company name and title
@@ -732,13 +582,13 @@ class PDFRenderer {
           .lineWidth(1)
           .stroke()
           .restore();
-        
-        this.doc.image(data.items[0]._imageBuffer, imageX + 2, imageY + 2, { 
-          width: imageWidth - 4, 
-          height: imageHeight - 4, 
-          fit: [imageWidth - 4, imageHeight - 4] 
+
+        this.doc.image(data.items[0]._imageBuffer, imageX + 2, imageY + 2, {
+          width: imageWidth - 4,
+          height: imageHeight - 4,
+          fit: [imageWidth - 4, imageHeight - 4]
         });
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Property details (right side)
@@ -754,13 +604,13 @@ class PDFRenderer {
         .text(this.sanitizeText(firstProperty.title || ''), detailsX, detailsY);
 
       detailsY += 20;
-      
+
       if (firstProperty.location) {
         this.doc
           .fillColor('#666666')
           .fontSize(10)
           .font('Helvetica')
-          .text(`📍 ${this.sanitizeText(firstProperty.location)}`, detailsX, detailsY);
+          .text(`📍 Ubicación: ${this.sanitizeText(firstProperty.location)}`, detailsX, detailsY);
         detailsY += 15;
       }
 
@@ -789,36 +639,45 @@ class PDFRenderer {
       }
     }
 
-    // Brief introduction text
+    // Brief introduction text with dynamic sizing
     const introY = Math.max(y + imageHeight + 20, detailsY + 40);
     this.drawSectionHeader('Introducción', marginLeft, introY, contentWidth);
-    
-    const introText = data.introText || 
+
+    const introText = data.introText ||
       `Presentamos esta propuesta especialmente preparada para ${data.client.name}.`;
-    
+
+    // Calculate text height to determine if we need a new page
+    const textHeight = this.doc.heightOfString(this.sanitizeText(introText), {
+      align: 'justify',
+      width: contentWidth - 24
+    });
+
+    // Check if we need a new page for the introduction
+    this.addPageIfNeeded(textHeight + 100);
+
     this.doc
       .fillColor('#333333')
       .fontSize(11)
       .font('Helvetica')
-      .text(this.sanitizeText(introText), marginLeft + 12, introY + 26, {
+      .text(this.sanitizeText(introText), marginLeft + 12, this.doc.y + 10, {
         align: 'justify',
         width: contentWidth - 24
       });
 
     // Price and key details section
-    const priceY = introY + 80;
+    const priceY = this.doc.y + 20;
     this.drawSectionHeader('Detalles Clave', marginLeft, priceY, contentWidth);
-    
+
     let priceDetailsY = priceY + 26;
     if (firstProperty) {
       this.drawLabelValue('Propiedad', this.sanitizeText(firstProperty.title || ''), marginLeft + 12, priceDetailsY);
       priceDetailsY += 16;
-      
+
       if (firstProperty.location) {
         this.drawLabelValue('Ubicación', this.sanitizeText(firstProperty.location), marginLeft + 12, priceDetailsY);
         priceDetailsY += 16;
       }
-      
+
       if (firstProperty.price) {
         const { amount, symbol } = this.getDisplayPrice(firstProperty.price);
         this.drawLabelValue('Precio', `${symbol}${amount}`, marginLeft + 12, priceDetailsY);
@@ -829,10 +688,217 @@ class PDFRenderer {
     // Contact section (bottom)
     const contactY = Math.max(priceDetailsY + 20, 650);
     this.drawSectionHeader('Contacto', marginLeft, contactY, contentWidth);
-    
+
     const contact = data.contact || {};
     let contactYPos = contactY + 26;
-    
+
+    if (contact.name) {
+      this.drawLabelValue('Nombre', this.sanitizeText(contact.name), marginLeft + 12, contactYPos);
+      contactYPos += 16;
+    }
+    if (contact.email) {
+      this.drawLabelValue('Email', this.sanitizeText(contact.email), marginLeft + 12, contactYPos);
+      contactYPos += 16;
+    }
+    if (contact.phone) {
+      this.drawLabelValue('Teléfono', this.sanitizeText(contact.phone), marginLeft + 12, contactYPos);
+      contactYPos += 16;
+    }
+    if (contact.company) {
+      this.drawLabelValue('Empresa', this.sanitizeText(contact.company), marginLeft + 12, contactYPos);
+    }
+  }
+
+  // Template 3: Dossier Express (1-2 page executive summary) - OPTIMIZED
+  generateDossierExpress(data) {
+    const pageWidth = this.doc.page.width;
+    const marginLeft = 40;
+    const marginRight = 40;
+    const contentWidth = pageWidth - marginLeft - marginRight;
+
+    // Header with logo and company name
+    this.doc
+      .save()
+      .rect(marginLeft, 50, contentWidth, 60)
+      .fill(this.brandTheme.primary)
+      .restore();
+
+    // Add logo in top left if available
+    if (this.preloadedLogoBuffer) {
+      try {
+        const logoHeight = 40;
+        this.doc.image(this.preloadedLogoBuffer, marginLeft + 10, 60, {
+          height: logoHeight,
+          fit: [0, logoHeight]
+        });
+      } catch (_) { }
+    }
+
+    // Company name and title
+    this.doc
+      .fillColor('#ffffff')
+      .fontSize(18)
+      .font('Helvetica-Bold')
+      .text('Propuesta Comercial', marginLeft + 120, 65, { width: contentWidth - 130 });
+
+    this.doc
+      .fillColor('#ffffff')
+      .fontSize(12)
+      .font('Helvetica')
+      .text(`Para: ${this.sanitizeText(data.client.name)}`, marginLeft + 120, 85, { width: contentWidth - 130 });
+
+    // Client details section
+    let y = 130;
+    this.drawSectionHeader('Información del Cliente', marginLeft, y, contentWidth);
+    y += 26;
+
+    this.drawLabelValue('Cliente', this.sanitizeText(data.client.name || ''), marginLeft + 12, y);
+    y += 20;
+
+    // Main property image (left side)
+    const imageWidth = 200;
+    const imageHeight = 150;
+    const imageX = marginLeft + 12;
+    const imageY = y;
+
+    if (data.items?.[0]?._imageBuffer) {
+      try {
+        this.doc
+          .save()
+          .rect(imageX, imageY, imageWidth, imageHeight)
+          .strokeColor('#E5E7EB')
+          .lineWidth(1)
+          .stroke()
+          .restore();
+
+        this.doc.image(data.items[0]._imageBuffer, imageX + 2, imageY + 2, {
+          width: imageWidth - 4,
+          height: imageHeight - 4,
+          fit: [imageWidth - 4, imageHeight - 4]
+        });
+      } catch (_) { }
+    }
+
+    // Property details (right side)
+    const detailsX = imageX + imageWidth + 20;
+    let detailsY = y;
+    const firstProperty = data.items?.[0];
+
+    if (firstProperty) {
+      this.doc
+        .fillColor(this.brandTheme.primary)
+        .fontSize(14)
+        .font('Helvetica-Bold')
+        .text(this.sanitizeText(firstProperty.title || ''), detailsX, detailsY);
+
+      detailsY += 20;
+
+      if (firstProperty.location) {
+        this.doc
+          .fillColor('#666666')
+          .fontSize(10)
+          .font('Helvetica')
+          .text(`📍 Ubicación: ${this.sanitizeText(firstProperty.location)}`, detailsX, detailsY);
+        detailsY += 15;
+      }
+
+      if (firstProperty.price) {
+        const { amount, symbol } = this.getDisplayPrice(firstProperty.price);
+        this.doc
+          .fillColor(this.brandTheme.secondary)
+          .fontSize(16)
+          .font('Helvetica-Bold')
+          .text(`${symbol}${amount}`, detailsX, detailsY);
+        detailsY += 20;
+      }
+
+      if (firstProperty.keyFacts) {
+        this.doc
+          .fillColor('#333333')
+          .fontSize(10)
+          .font('Helvetica')
+          .text('Características:', detailsX, detailsY);
+        detailsY += 12;
+        this.doc
+          .fillColor('#666666')
+          .fontSize(9)
+          .font('Helvetica')
+          .text(this.sanitizeText(firstProperty.keyFacts), detailsX, detailsY, { width: 200 });
+      }
+    }
+
+    // Brief introduction text - Dynamic height with page break support
+    const introY = Math.max(y + imageHeight + 20, detailsY + 40);
+    this.drawSectionHeader('Introducción', marginLeft, introY, contentWidth);
+
+    const introText = data.introText ||
+      `Presentamos esta propuesta especialmente preparada para ${data.client.name}.`;
+
+    // Calculate text height to determine if we need a new page
+    const textHeight = this.doc.heightOfString(this.sanitizeText(introText), {
+      align: 'justify',
+      width: contentWidth - 24
+    });
+
+    // Check if we need a new page for the introduction
+    this.addPageIfNeeded(textHeight + 100);
+
+    this.doc
+      .fillColor('#333333')
+      .fontSize(11)
+      .font('Helvetica')
+      .text(this.sanitizeText(introText), marginLeft + 12, this.doc.y + 10, {
+        align: 'justify',
+        width: contentWidth - 24
+      });
+
+    // Price and key details section - Dynamic positioning
+    const priceY = this.doc.y + 20;
+    this.drawSectionHeader('Detalles Clave', marginLeft, priceY, contentWidth);
+
+    let priceDetailsY = priceY + 26;
+    if (firstProperty) {
+      this.drawLabelValue('Propiedad', this.sanitizeText(firstProperty.title || ''), marginLeft + 12, priceDetailsY);
+      priceDetailsY += 16;
+
+      if (firstProperty.location) {
+        this.drawLabelValue('Ubicación', this.sanitizeText(firstProperty.location), marginLeft + 12, priceDetailsY);
+        priceDetailsY += 16;
+      }
+
+      if (firstProperty.price) {
+        const { amount, symbol } = this.getDisplayPrice(firstProperty.price);
+        this.drawLabelValue('Precio', `${symbol}${amount}`, marginLeft + 12, priceDetailsY);
+        priceDetailsY += 16;
+      }
+    }
+
+    // Add description section if available
+    if (firstProperty && firstProperty.description) {
+      const descY = this.doc.y + 20;
+      this.addPageIfNeeded(100); // Ensure space for description
+
+      this.drawSectionHeader('Descripción', marginLeft, descY, contentWidth);
+
+      this.doc
+        .fillColor('#333333')
+        .fontSize(11)
+        .font('Helvetica')
+        .text(this.sanitizeText(firstProperty.description), marginLeft + 12, descY + 26, {
+          align: 'justify',
+          width: contentWidth - 24
+        });
+    }
+
+    // Contact section - Dynamic positioning with page break support
+    const contactY = this.doc.y + 20;
+    this.addPageIfNeeded(100); // Ensure space for contact section
+
+    this.drawSectionHeader('Contacto', marginLeft, contactY, contentWidth);
+
+    const contact = data.contact || {};
+    let contactYPos = contactY + 26;
+
     if (contact.name) {
       this.drawLabelValue('Nombre', this.sanitizeText(contact.name), marginLeft + 12, contactYPos);
       contactYPos += 16;
@@ -863,12 +929,12 @@ class PDFRenderer {
         .fontSize(14)
         .font('Helvetica-Bold')
         .text('Contacto:', 50, this.doc.y);
-      
+
       this.doc.moveDown(0.5);
     }
 
     const contactInfo = [];
-    
+
     if (contact.name) contactInfo.push(`Nombre: ${this.sanitizeText(contact.name)}`);
     if (contact.email) contactInfo.push(`Email: ${this.sanitizeText(contact.email)}`);
     if (contact.phone) contactInfo.push(`Teléfono: ${this.sanitizeText(contact.phone)}`);
@@ -882,7 +948,7 @@ class PDFRenderer {
         .fontSize(detailed ? 11 : 10)
         .font('Helvetica')
         .text(info, detailed ? 50 : 70, this.doc.y);
-      
+
       this.doc.moveDown(0.5);
     });
   }

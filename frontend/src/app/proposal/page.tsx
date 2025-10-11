@@ -170,7 +170,6 @@ export default function ProposalPage() {
     secondary: '#6366f1'
   });
   // Pricing and options
-  const [inputCurrency, setInputCurrency] = useState<'USD' | 'ARS'>('USD');
   const [outputCurrency, setOutputCurrency] = useState<'USD' | 'ARS'>('USD');
   const [durationDays, setDurationDays] = useState<number | ''>('');
 
@@ -343,9 +342,9 @@ export default function ProposalPage() {
 
       // Append options for currency/display and duration
       formData.append('options', JSON.stringify({
-        currencyCode: inputCurrency,
+        currencyCode: outputCurrency,
         outputCurrency,
-        convertPrices: outputCurrency !== inputCurrency,
+        convertPrices: false,
         durationDays: typeof durationDays === 'number' ? durationDays : undefined
       }));
 
@@ -622,18 +621,7 @@ export default function ProposalPage() {
               </div>
 
               {/* Pricing options */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <div className="flex flex-col">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Moneda de entrada</label>
-                  <select
-                    value={inputCurrency}
-                    onChange={(e) => setInputCurrency(e.target.value as 'USD' | 'ARS')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent bg-white"
-                  >
-                    <option value="USD">USD ($)</option>
-                    <option value="ARS">ARS ($)</option>
-                  </select>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 <div className="flex flex-col">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Mostrar en</label>
                   <select
