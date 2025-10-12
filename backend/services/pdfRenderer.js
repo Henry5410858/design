@@ -467,29 +467,29 @@ generateComparativeShort(data) {
   }
 
   // Add LupaProp logo at far right edge of header - CORRECTED POSITIONING
-  const logoHeight = 60;
-  const logoWidth = 200;
-  const rightMargin = 10; // Small margin from right edge
+  // const logoHeight = 60;
+  // const logoWidth = 200;
+  // const rightMargin = 10; // Small margin from right edge
 
-  // CORRECT CALCULATION: Position from page right edge minus logo width and margin
-  const logoX = pageWidth - logoWidth - rightMargin + 110;
-  const logoY = 55; // Lowered position
+  // // CORRECT CALCULATION: Position from page right edge minus logo width and margin
+  // const logoX = pageWidth - logoWidth - rightMargin + 110;
+  // const logoY = 55; // Lowered position
   
-  if (this.lupapropLogoBuffer) {
-    try {
-      this.doc.image(this.lupapropLogoBuffer, logoX, logoY, {
-        height: logoHeight,
-        width: logoWidth,
-        fit: [logoWidth, logoHeight]
-      });
-    } catch (error) {
-      // Fallback to text logo
-      this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
-    }
-  } else {
-    // Draw text-based LupaProp logo
-    this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
-  }
+  // if (this.lupapropLogoBuffer) {
+  //   try {
+  //     this.doc.image(this.lupapropLogoBuffer, logoX, logoY, {
+  //       height: logoHeight,
+  //       width: logoWidth,
+  //       fit: [logoWidth, logoHeight]
+  //     });
+  //   } catch (error) {
+  //     // Fallback to text logo
+  //     this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
+  //   }
+  // } else {
+  //   // Draw text-based LupaProp logo
+  //   this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
+  // }
 
   // Company name and title - adjusted for much larger logos
   this.doc
@@ -671,29 +671,29 @@ generateComparativeShort(data) {
       } catch (_) { }
     }
 
-    // Add LupaProp logo at far right edge of header - FIXED POSITIONING
-    const logoHeight = 60;
-    const logoWidth = 200;
-    const rightMargin = 10; // Small margin from right edge
-    // Calculate logoX based on page right edge for consistent positioning
-    const logoX = pageWidth - logoWidth - rightMargin +110;
-    const logoY = 55; // Lowered position
+    // // Add LupaProp logo at far right edge of header - FIXED POSITIONING
+    // const logoHeight = 60;
+    // const logoWidth = 200;
+    // const rightMargin = 10; // Small margin from right edge
+    // // Calculate logoX based on page right edge for consistent positioning
+    // const logoX = pageWidth - logoWidth - rightMargin +110;
+    // const logoY = 55; // Lowered position
 
-    if (this.lupapropLogoBuffer) {
-      try {
-        this.doc.image(this.lupapropLogoBuffer, logoX, logoY, {
-          height: logoHeight,
-          width: logoWidth,
-          fit: [logoWidth, logoHeight]
-        });
-      } catch (error) {
-        // Fallback to text logo
-        this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
-      }
-    } else {
-      // Draw text-based LupaProp logo
-      this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
-    }
+    // if (this.lupapropLogoBuffer) {
+    //   try {
+    //     this.doc.image(this.lupapropLogoBuffer, logoX, logoY, {
+    //       height: logoHeight,
+    //       width: logoWidth,
+    //       fit: [logoWidth, logoHeight]
+    //     });
+    //   } catch (error) {
+    //     // Fallback to text logo
+    //     this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
+    //   }
+    // } else {
+    //   // Draw text-based LupaProp logo
+    //   this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
+    // }
 
     // Company name and title - adjusted for much larger logos
     this.doc
@@ -874,29 +874,29 @@ generateComparativeShort(data) {
       } catch (_) { }
     }
 
-    // Add LupaProp logo at far right edge of header - FIXED POSITIONING
-    const logoHeight = 60;
-    const logoWidth = 200;
-    const rightMargin = 10; // Small margin from right edge
-    // Calculate logoX based on page right edge for consistent positioning
-    const logoX = pageWidth - logoWidth - rightMargin + 110;
-    const logoY = 55; // Lowered position
+    // // Add LupaProp logo at far right edge of header - FIXED POSITIONING
+    // const logoHeight = 60;
+    // const logoWidth = 200;
+    // const rightMargin = 10; // Small margin from right edge
+    // // Calculate logoX based on page right edge for consistent positioning
+    // const logoX = pageWidth - logoWidth - rightMargin + 110;
+    // const logoY = 55; // Lowered position
 
-    if (this.lupapropLogoBuffer) {
-      try {
-        this.doc.image(this.lupapropLogoBuffer, logoX, logoY, {
-          height: logoHeight,
-          width: logoWidth,
-          fit: [logoWidth, logoHeight]
-        });
-      } catch (error) {
-        // Fallback to text logo
-        this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
-      }
-    } else {
-      // Draw text-based LupaProp logo
-      this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
-    }
+    // if (this.lupapropLogoBuffer) {
+    //   try {
+    //     this.doc.image(this.lupapropLogoBuffer, logoX, logoY, {
+    //       height: logoHeight,
+    //       width: logoWidth,
+    //       fit: [logoWidth, logoHeight]
+    //     });
+    //   } catch (error) {
+    //     // Fallback to text logo
+    //     this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
+    //   }
+    // } else {
+    //   // Draw text-based LupaProp logo
+    //   this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
+    // }
 
     // Company name and title - adjusted for much larger logos
     this.doc
