@@ -496,7 +496,7 @@ generateComparativeShort(data) {
     .fillColor('#ffffff')
     .fontSize(22)
     .font('Helvetica-Bold')
-    .text('Propuesta Comercial', marginLeft + 160, 55, { width: contentWidth - 170 });
+    .text('Propuesta Comercial', marginLeft + 130, 55, { width: contentWidth - 170 });
 
   this.doc
     .fillColor('#ffffff')
@@ -589,7 +589,7 @@ generateComparativeShort(data) {
 
     const introText = data.introText ||
       `Presentamos esta propuesta especialmente preparada para ${data.client.name}.`;
-      this.doc.y = introY + 25; // Set position directly
+      this.doc.y = introY + 30; // Set position directly
     this.doc
       .fillColor('#333333')
       .fontSize(8)
@@ -600,7 +600,7 @@ generateComparativeShort(data) {
       });
 
     // Price and key details section - ultra compact
-    const priceY = this.doc.y + 30;
+    const priceY = this.doc.y + 40;
     this.drawSectionHeader('Detalles Clave', marginLeft, priceY, contentWidth);
 
     let priceDetailsY = priceY + 20;
@@ -700,7 +700,7 @@ generateComparativeShort(data) {
       .fillColor('#ffffff')
       .fontSize(22)
       .font('Helvetica-Bold')
-      .text('Propuesta Comercial', marginLeft + 160, 55, { width: contentWidth - 170 });
+      .text('Propuesta Comercial', marginLeft + 130, 55, { width: contentWidth - 170 });
 
     this.doc
       .fillColor('#ffffff')
@@ -903,7 +903,7 @@ generateComparativeShort(data) {
       .fillColor('#ffffff')
       .fontSize(22)
       .font('Helvetica-Bold')
-      .text('Propuesta Comercial', marginLeft + 160, 55, { width: contentWidth - 170 });
+      .text('Propuesta Comercial', marginLeft + 130, 55, { width: contentWidth - 170 });
 
     this.doc
       .fillColor('#ffffff')
