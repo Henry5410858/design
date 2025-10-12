@@ -459,7 +459,7 @@ generateComparativeShort(data) {
   if (this.preloadedLogoBuffer) {
     try {
       const logoHeight = 60;
-      this.doc.image(this.preloadedLogoBuffer, marginLeft + 8, 40, {
+      this.doc.image(this.preloadedLogoBuffer, marginLeft + 8, 55, {
         height: logoHeight,
         fit: [0, logoHeight]
       });
@@ -467,13 +467,13 @@ generateComparativeShort(data) {
   }
 
   // Add LupaProp logo at far right edge of header - CORRECTED POSITIONING
-  const logoHeight = 40;
+  const logoHeight = 60;
   const logoWidth = 200;
   const rightMargin = 10; // Small margin from right edge
 
-  // CORRECT CALCULATION: Position from header's left edge + content width - logo width - margin
-  const logoX = marginLeft + contentWidth - logoWidth - rightMargin;
-  const logoY = 65; // Lowered position
+  // CORRECT CALCULATION: Position from page right edge minus logo width and margin
+  const logoX = pageWidth - logoWidth - rightMargin + 110;
+  const logoY = 55; // Lowered position
   
   if (this.lupapropLogoBuffer) {
     try {
@@ -584,61 +584,61 @@ generateComparativeShort(data) {
     }
 
     // Brief introduction text - ultra compact
-    const introY = Math.max(y + imageHeight + 8, detailsY + 15);
+    const introY = y + imageHeight + 40;
     this.drawSectionHeader('Introducción', marginLeft, introY, contentWidth);
 
     const introText = data.introText ||
       `Presentamos esta propuesta especialmente preparada para ${data.client.name}.`;
-
+      this.doc.y = introY + 25; // Set position directly
     this.doc
       .fillColor('#333333')
       .fontSize(8)
       .font('Helvetica')
-      .text(this.sanitizeText(introText), marginLeft + 8, this.doc.y + 6, {
+      .text(this.sanitizeText(introText), marginLeft + 8, this.doc.y + 10, {
         align: 'justify',
         width: contentWidth - 16
       });
 
     // Price and key details section - ultra compact
-    const priceY = this.doc.y + 8;
+    const priceY = this.doc.y + 30;
     this.drawSectionHeader('Detalles Clave', marginLeft, priceY, contentWidth);
 
-    let priceDetailsY = priceY + 18;
+    let priceDetailsY = priceY + 20;
     if (firstProperty) {
       this.drawLabelValue('Propiedad', this.sanitizeText(firstProperty.title || ''), marginLeft + 8, priceDetailsY);
-      priceDetailsY += 10;
+      priceDetailsY += 15;
 
       if (firstProperty.location) {
         this.drawLabelValue('Ubicación', this.sanitizeText(firstProperty.location), marginLeft + 8, priceDetailsY);
-        priceDetailsY += 10;
+        priceDetailsY += 15;
       }
 
       if (firstProperty.price) {
         const { amount, symbol } = this.getDisplayPrice(firstProperty.price);
         this.drawLabelValue('Precio', `${symbol}${amount}`, marginLeft + 8, priceDetailsY);
-        priceDetailsY += 10;
+        priceDetailsY += 15;
       }
     }
 
     // Contact section (bottom) - force single page
     this.forceSinglePage();
-    const contactY = this.doc.y + 8;
+    const contactY = this.doc.y + 10;
     this.drawSectionHeader('Contacto', marginLeft, contactY, contentWidth);
 
     const contact = data.contact || {};
-    let contactYPos = contactY + 18;
+    let contactYPos = contactY + 20;
 
     if (contact.name) {
       this.drawLabelValue('Nombre', this.sanitizeText(contact.name), marginLeft + 8, contactYPos);
-      contactYPos += 10;
+      contactYPos += 15;
     }
     if (contact.email) {
       this.drawLabelValue('Email', this.sanitizeText(contact.email), marginLeft + 8, contactYPos);
-      contactYPos += 10;
+      contactYPos += 15;
     }
     if (contact.phone) {
       this.drawLabelValue('Teléfono', this.sanitizeText(contact.phone), marginLeft + 8, contactYPos);
-      contactYPos += 10;
+      contactYPos += 15;
     }
     if (contact.company) {
       this.drawLabelValue('Empresa', this.sanitizeText(contact.company), marginLeft + 8, contactYPos);
@@ -664,7 +664,7 @@ generateComparativeShort(data) {
     if (this.preloadedLogoBuffer) {
       try {
         const logoHeight = 60;
-        this.doc.image(this.preloadedLogoBuffer, marginLeft + 8, 40, {
+        this.doc.image(this.preloadedLogoBuffer, marginLeft + 8, 55, {
           height: logoHeight,
           fit: [0, logoHeight]
         });
@@ -672,13 +672,12 @@ generateComparativeShort(data) {
     }
 
     // Add LupaProp logo at far right edge of header - FIXED POSITIONING
-    const logoHeight = 40;
+    const logoHeight = 60;
     const logoWidth = 200;
     const rightMargin = 10; // Small margin from right edge
-    // Calculate logoX based on header's right edge, not page width
-    const headerRightEdge = marginLeft + contentWidth; // This is the actual right edge of the header
-    const logoX = headerRightEdge - logoWidth - rightMargin; // Position from header's right edge
-    const logoY = 65; // Lowered position
+    // Calculate logoX based on page right edge for consistent positioning
+    const logoX = pageWidth - logoWidth - rightMargin +110;
+    const logoY = 55; // Lowered position
 
     if (this.lupapropLogoBuffer) {
       try {
@@ -789,7 +788,7 @@ generateComparativeShort(data) {
     }
 
     // Brief introduction text - ultra compact
-    const introY = Math.max(y + imageHeight + 8, detailsY + 15);
+    const introY = y + imageHeight + 40; // Fixed position instead of Math.max
     this.drawSectionHeader('Introducción', marginLeft, introY, contentWidth);
 
     const introText = data.introText ||
@@ -805,45 +804,45 @@ generateComparativeShort(data) {
       });
 
     // Price and key details section - ultra compact
-    const priceY = this.doc.y + 8;
+    const priceY = this.doc.y + 30;
     this.drawSectionHeader('Detalles Clave', marginLeft, priceY, contentWidth);
 
-    let priceDetailsY = priceY + 18;
+    let priceDetailsY = priceY + 20;
     if (firstProperty) {
       this.drawLabelValue('Propiedad', this.sanitizeText(firstProperty.title || ''), marginLeft + 8, priceDetailsY);
-      priceDetailsY += 10;
+      priceDetailsY += 15;
 
       if (firstProperty.location) {
         this.drawLabelValue('Ubicación', this.sanitizeText(firstProperty.location), marginLeft + 8, priceDetailsY);
-        priceDetailsY += 10;
+        priceDetailsY += 15;
       }
 
       if (firstProperty.price) {
         const { amount, symbol } = this.getDisplayPrice(firstProperty.price);
         this.drawLabelValue('Precio', `${symbol}${amount}`, marginLeft + 8, priceDetailsY);
-        priceDetailsY += 10;
+        priceDetailsY += 15;
       }
     }
 
     // Contact section (bottom) - force single page
     this.forceSinglePage();
-    const contactY = this.doc.y + 8;
+    const contactY = this.doc.y + 25;
     this.drawSectionHeader('Contacto', marginLeft, contactY, contentWidth);
 
     const contact = data.contact || {};
-    let contactYPos = contactY + 18;
+    let contactYPos = contactY + 30;
 
     if (contact.name) {
       this.drawLabelValue('Nombre', this.sanitizeText(contact.name), marginLeft + 8, contactYPos);
-      contactYPos += 10;
+      contactYPos += 15;
     }
     if (contact.email) {
       this.drawLabelValue('Email', this.sanitizeText(contact.email), marginLeft + 8, contactYPos);
-      contactYPos += 10;
+      contactYPos += 15;
     }
     if (contact.phone) {
       this.drawLabelValue('Teléfono', this.sanitizeText(contact.phone), marginLeft + 8, contactYPos);
-      contactYPos += 10;
+      contactYPos += 15;
     }
     if (contact.company) {
       this.drawLabelValue('Empresa', this.sanitizeText(contact.company), marginLeft + 8, contactYPos);
@@ -868,7 +867,7 @@ generateComparativeShort(data) {
     if (this.preloadedLogoBuffer) {
       try {
         const logoHeight = 60;
-        this.doc.image(this.preloadedLogoBuffer, marginLeft + 8, 40, {
+        this.doc.image(this.preloadedLogoBuffer, marginLeft + 8, 55, {
           height: logoHeight,
           fit: [0, logoHeight]
         });
@@ -876,13 +875,12 @@ generateComparativeShort(data) {
     }
 
     // Add LupaProp logo at far right edge of header - FIXED POSITIONING
-    const logoHeight = 40;
+    const logoHeight = 60;
     const logoWidth = 200;
     const rightMargin = 10; // Small margin from right edge
-    // Calculate logoX based on header's right edge, not page width
-    const headerRightEdge = marginLeft + contentWidth; // This is the actual right edge of the header
-    const logoX = headerRightEdge - logoWidth - rightMargin; // Position from header's right edge
-    const logoY = 65; // Lowered position
+    // Calculate logoX based on page right edge for consistent positioning
+    const logoX = pageWidth - logoWidth - rightMargin + 110;
+    const logoY = 55; // Lowered position
 
     if (this.lupapropLogoBuffer) {
       try {
@@ -993,7 +991,7 @@ generateComparativeShort(data) {
     }
 
     // Brief introduction text - ultra compact
-    const introY = Math.max(y + imageHeight + 8, detailsY + 15);
+    const introY = y + imageHeight + 40; // Fixed position instead of Math.max
     this.drawSectionHeader('Introducción', marginLeft, introY, contentWidth);
 
     const introText = data.introText ||
@@ -1015,17 +1013,17 @@ generateComparativeShort(data) {
     let priceDetailsY = priceY + 18;
     if (firstProperty) {
       this.drawLabelValue('Propiedad', this.sanitizeText(firstProperty.title || ''), marginLeft + 8, priceDetailsY);
-      priceDetailsY += 10;
+      priceDetailsY += 15;
 
       if (firstProperty.location) {
         this.drawLabelValue('Ubicación', this.sanitizeText(firstProperty.location), marginLeft + 8, priceDetailsY);
-        priceDetailsY += 10;
+        priceDetailsY += 15;
       }
 
       if (firstProperty.price) {
         const { amount, symbol } = this.getDisplayPrice(firstProperty.price);
         this.drawLabelValue('Precio', `${symbol}${amount}`, marginLeft + 8, priceDetailsY);
-        priceDetailsY += 10;
+        priceDetailsY += 15;
       }
     }
 
@@ -1056,15 +1054,15 @@ generateComparativeShort(data) {
 
     if (contact.name) {
       this.drawLabelValue('Nombre', this.sanitizeText(contact.name), marginLeft + 8, contactYPos);
-      contactYPos += 10;
+      contactYPos += 15;
     }
     if (contact.email) {
       this.drawLabelValue('Email', this.sanitizeText(contact.email), marginLeft + 8, contactYPos);
-      contactYPos += 10;
+      contactYPos += 15;
     }
     if (contact.phone) {
       this.drawLabelValue('Teléfono', this.sanitizeText(contact.phone), marginLeft + 8, contactYPos);
-      contactYPos += 10;
+      contactYPos += 15;
     }
     if (contact.company) {
       this.drawLabelValue('Empresa', this.sanitizeText(contact.company), marginLeft + 8, contactYPos);
