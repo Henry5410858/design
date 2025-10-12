@@ -1,3 +1,28 @@
+// [file name]: image.png
+// [file content begin]
+// # Propuesta Comercial  
+// Para: Andi Jackson  
+
+// ## Información del Cliente  
+// **Cliente:**  
+// Andi Jackson  
+
+// ---
+
+// ## Apartmento Cento  
+// G=DÍI Madrid Centro  
+// $250.000  
+// Características:  
+// 3 bedrooms, 2 kichens  
+
+// ---
+
+// ## Introducción  
+// Hola Andi Jackson,Gracias por considerar nuestra propuesta. Nos enfocamos en presentar soluciones inmobiliarias que refuercen su marca y conviertan mejor. Nuestra propuesta destaca Calidad Premium, Entrega Rapida.A continuación, encontrará una selección de propiedades pensadas para impactar positivamente a sus clientes.
+
+
+// [file content end]
+
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
@@ -11,7 +36,7 @@ class PDFRenderer {
   sanitizeText(input) {
     if (!input) return '';
     const str = String(input);
-    
+
     // Remove specific problematic characters and clean text
     return str
       .replace(/[Ø=ÜÍ]/g, '') // Remove specific problematic characters
@@ -41,7 +66,7 @@ class PDFRenderer {
     const pageHeight = this.doc.page.height;
     const currentY = this.doc.y;
     const availableHeight = pageHeight - currentY - 50; // 50px margin for footer
-    
+
     // If we're too close to the bottom, reduce content or move up
     if (availableHeight < 100) {
       // Move current content up by reducing spacing
@@ -53,9 +78,37 @@ class PDFRenderer {
   forceSinglePage() {
     const pageHeight = this.doc.page.height;
     const maxContentHeight = pageHeight - 100; // Leave 100px for margins and footer
-    
+
     if (this.doc.y > maxContentHeight) {
       this.doc.y = maxContentHeight;
+    }
+  }
+
+  // Draw text-based LupaProp logo as fallback
+  drawLupaPropTextLogo(x, y, width, height) {
+    try {
+      // Draw background rectangle
+      this.doc
+        .save()
+        .rect(x, y, width, height)
+        .fill('#1f2937')
+        .restore();
+
+      // Draw LupaProp text
+      this.doc
+        .fillColor('#ffffff')
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text('LupaProp', x + 10, y + 15, { width: width - 20, align: 'center' });
+
+      // Draw tagline
+      this.doc
+        .fillColor('#ffffff')
+        .fontSize(8)
+        .font('Helvetica')
+        .text('CASA PROPIA, UNA OPORTUNIDAD', x + 10, y + 35, { width: width - 20, align: 'center' });
+    } catch (error) {
+      // Silent fallback - if text logo fails, just continue
     }
   }
 
@@ -223,13 +276,34 @@ class PDFRenderer {
 
     // Load LupaProp logo separately (for top right corner)
     const lupapropLogoPath = path.join(__dirname, '../assets/img/lupaprop-logo.png');
+    const lupapropSvgPath = path.join(__dirname, '../assets/img/lupaprop-logo.svg');
     let lupapropLogoBuffer = null;
-    
+
+    // Try PNG first, then SVG, then create a fallback
     if (fs.existsSync(lupapropLogoPath)) {
-      lupapropLogoBuffer = fs.readFileSync(lupapropLogoPath);
-      console.log('🔍 LupaProp logo loaded, size:', lupapropLogoBuffer.length);
+      const fileSize = fs.statSync(lupapropLogoPath).size;
+      console.log('🔍 LupaProp PNG found, size:', fileSize);
+      if (fileSize > 1000) { // Only use if file is reasonably sized
+        lupapropLogoBuffer = fs.readFileSync(lupapropLogoPath);
+        console.log('🔍 LupaProp PNG logo loaded, size:', lupapropLogoBuffer.length);
+      } else {
+        console.log('⚠️ LupaProp PNG too small, trying SVG...');
+        if (fs.existsSync(lupapropSvgPath)) {
+          lupapropLogoBuffer = fs.readFileSync(lupapropSvgPath);
+          console.log('🔍 LupaProp SVG logo loaded, size:', lupapropLogoBuffer.length);
+        }
+      }
+    } else if (fs.existsSync(lupapropSvgPath)) {
+      lupapropLogoBuffer = fs.readFileSync(lupapropSvgPath);
+      console.log('🔍 LupaProp SVG logo loaded, size:', lupapropLogoBuffer.length);
     } else {
-      console.log('❌ LupaProp logo not found at:', lupapropLogoPath);
+      console.log('❌ No LupaProp logo found at:', lupapropLogoPath, 'or', lupapropSvgPath);
+    }
+
+    // If still no logo, create a fallback text-based logo
+    if (!lupapropLogoBuffer) {
+      console.log('🔧 Creating fallback LupaProp text logo...');
+      // We'll handle this in the drawing code by drawing text instead of image
     }
 
     // Load property images
@@ -366,58 +440,70 @@ class PDFRenderer {
   }
 
   // Template 1: Comparative Short (2-3 properties, 2 pages) - ULTRA COMPACT SINGLE PAGE
-  generateComparativeShort(data) {
-    const pageWidth = this.doc.page.width;
-    const marginLeft = 30;
-    const marginRight = 30;
-    const contentWidth = pageWidth - marginLeft - marginRight;
+  // Template 1: Comparative Short - ULTRA COMPACT SINGLE PAGE
+  // Template 1: Comparative Short - ULTRA COMPACT SINGLE PAGE
+generateComparativeShort(data) {
+  const pageWidth = this.doc.page.width;
+  const marginLeft = 30;
+  const marginRight = 30;
+  const contentWidth = pageWidth - marginLeft - marginRight;
 
-    // Even larger header to accommodate much larger logos
-    this.doc
-      .save()
-      .rect(marginLeft, 40, contentWidth, 90)
-      .fill(this.brandTheme.primary)
-      .restore();
+  // Even larger header to accommodate much larger logos
+  this.doc
+    .save()
+    .rect(marginLeft, 40, contentWidth, 90)
+    .fill(this.brandTheme.primary)
+    .restore();
 
-    // Add logo in top left if available - EVEN LARGER
-    if (this.preloadedLogoBuffer) {
-      try {
-        const logoHeight = 60;
-        this.doc.image(this.preloadedLogoBuffer, marginLeft + 8, 40, {
-          height: logoHeight,
-          fit: [0, logoHeight]
-        });
-      } catch (_) { }
+  // Add logo in top left if available - EVEN LARGER
+  if (this.preloadedLogoBuffer) {
+    try {
+      const logoHeight = 60;
+      this.doc.image(this.preloadedLogoBuffer, marginLeft + 8, 40, {
+        height: logoHeight,
+        fit: [0, logoHeight]
+      });
+    } catch (_) { }
+  }
+
+  // Add LupaProp logo at far right edge of header - CORRECTED POSITIONING
+  const logoHeight = 40;
+  const logoWidth = 200;
+  const rightMargin = 10; // Small margin from right edge
+
+  // CORRECT CALCULATION: Position from header's left edge + content width - logo width - margin
+  const logoX = marginLeft + contentWidth - logoWidth - rightMargin;
+  const logoY = 65; // Lowered position
+  
+  if (this.lupapropLogoBuffer) {
+    try {
+      this.doc.image(this.lupapropLogoBuffer, logoX, logoY, {
+        height: logoHeight,
+        width: logoWidth,
+        fit: [logoWidth, logoHeight]
+      });
+    } catch (error) {
+      // Fallback to text logo
+      this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
     }
+  } else {
+    // Draw text-based LupaProp logo
+    this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
+  }
 
-    // Add LupaProp logo at far right edge of header - MUCH LARGER
-    if (this.lupapropLogoBuffer) {
-      try {
-        const logoHeight = 65;
-        const logoWidth = 200;
-        const rightMargin = 2; // Minimal margin to push to absolute right edge
-        this.doc.image(this.lupapropLogoBuffer, pageWidth - logoWidth - rightMargin, 35, {
-          height: logoHeight,
-          width: logoWidth,
-          fit: [logoWidth, logoHeight]
-        });
-      } catch (_) { }
-    }
+  // Company name and title - adjusted for much larger logos
+  this.doc
+    .fillColor('#ffffff')
+    .fontSize(22)
+    .font('Helvetica-Bold')
+    .text('Propuesta Comercial', marginLeft + 160, 55, { width: contentWidth - 170 });
 
-    // Company name and title - adjusted for much larger logos
-    this.doc
-      .fillColor('#ffffff')
-      .fontSize(22)
-      .font('Helvetica-Bold')
-      .text('Propuesta Comercial', marginLeft + 160, 55, { width: contentWidth - 170 });
+  this.doc
+    .fillColor('#ffffff')
+    .fontSize(16)
+    .font('Helvetica')
+    .text(`Para: ${this.sanitizeText(data.client.name)}`, marginLeft + 160, 85, { width: contentWidth - 170 });
 
-    this.doc
-      .fillColor('#ffffff')
-      .fontSize(16)
-      .font('Helvetica')
-      .text(`Para: ${this.sanitizeText(data.client.name)}`, marginLeft + 160, 85, { width: contentWidth - 170 });
-
-    // Client details section - adjusted for much larger header
     let y = 140;
     this.drawSectionHeader('Información del Cliente', marginLeft, y, contentWidth);
     y += 20;
@@ -560,6 +646,7 @@ class PDFRenderer {
   }
 
   // Template 2: Simple Proposal (1-2 pages with photos and details) - ULTRA COMPACT SINGLE PAGE
+  // Template 2: Simple Proposal - ULTRA COMPACT SINGLE PAGE
   generateSimpleProposal(data) {
     const pageWidth = this.doc.page.width;
     const marginLeft = 30;
@@ -584,18 +671,29 @@ class PDFRenderer {
       } catch (_) { }
     }
 
-    // Add LupaProp logo at far right edge of header - MUCH LARGER
+    // Add LupaProp logo at far right edge of header - FIXED POSITIONING
+    const logoHeight = 40;
+    const logoWidth = 200;
+    const rightMargin = 10; // Small margin from right edge
+    // Calculate logoX based on header's right edge, not page width
+    const headerRightEdge = marginLeft + contentWidth; // This is the actual right edge of the header
+    const logoX = headerRightEdge - logoWidth - rightMargin; // Position from header's right edge
+    const logoY = 65; // Lowered position
+
     if (this.lupapropLogoBuffer) {
       try {
-        const logoHeight = 65;
-        const logoWidth = 200;
-        const rightMargin = 2; // Minimal margin to push to absolute right edge
-        this.doc.image(this.lupapropLogoBuffer, pageWidth - logoWidth - rightMargin, 35, {
+        this.doc.image(this.lupapropLogoBuffer, logoX, logoY, {
           height: logoHeight,
           width: logoWidth,
           fit: [logoWidth, logoHeight]
         });
-      } catch (_) { }
+      } catch (error) {
+        // Fallback to text logo
+        this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
+      }
+    } else {
+      // Draw text-based LupaProp logo
+      this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
     }
 
     // Company name and title - adjusted for much larger logos
@@ -610,7 +708,6 @@ class PDFRenderer {
       .fontSize(16)
       .font('Helvetica')
       .text(`Para: ${this.sanitizeText(data.client.name)}`, marginLeft + 160, 85, { width: contentWidth - 170 });
-
     // Client details section - adjusted for much larger header
     let y = 140;
     this.drawSectionHeader('Información del Cliente', marginLeft, y, contentWidth);
@@ -778,18 +875,29 @@ class PDFRenderer {
       } catch (_) { }
     }
 
-    // Add LupaProp logo at far right edge of header - MUCH LARGER
+    // Add LupaProp logo at far right edge of header - FIXED POSITIONING
+    const logoHeight = 40;
+    const logoWidth = 200;
+    const rightMargin = 10; // Small margin from right edge
+    // Calculate logoX based on header's right edge, not page width
+    const headerRightEdge = marginLeft + contentWidth; // This is the actual right edge of the header
+    const logoX = headerRightEdge - logoWidth - rightMargin; // Position from header's right edge
+    const logoY = 65; // Lowered position
+
     if (this.lupapropLogoBuffer) {
       try {
-        const logoHeight = 65;
-        const logoWidth = 200;
-        const rightMargin = 2; // Minimal margin to push to absolute right edge
-        this.doc.image(this.lupapropLogoBuffer, pageWidth - logoWidth - rightMargin, 35, {
+        this.doc.image(this.lupapropLogoBuffer, logoX, logoY, {
           height: logoHeight,
           width: logoWidth,
           fit: [logoWidth, logoHeight]
         });
-      } catch (_) { }
+      } catch (error) {
+        // Fallback to text logo
+        this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
+      }
+    } else {
+      // Draw text-based LupaProp logo
+      this.drawLupaPropTextLogo(logoX, logoY, logoWidth, logoHeight);
     }
 
     // Company name and title - adjusted for much larger logos
@@ -804,7 +912,6 @@ class PDFRenderer {
       .fontSize(16)
       .font('Helvetica')
       .text(`Para: ${this.sanitizeText(data.client.name)}`, marginLeft + 160, 85, { width: contentWidth - 170 });
-
     // Client details section - adjusted for much larger header
     let y = 140;
     this.drawSectionHeader('Información del Cliente', marginLeft, y, contentWidth);
