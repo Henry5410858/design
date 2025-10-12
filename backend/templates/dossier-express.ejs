@@ -12,7 +12,7 @@
       --muted: #6b7280;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; color: var(--text); }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; color: var(--text); max-height: 100vh; overflow: hidden; }
 
     .cover {
       height: 240px;
@@ -22,6 +22,11 @@
       align-items: center;
       padding: 32px 40px;
       position: relative;
+    }
+    .lupaprop-logo {
+      position: absolute;
+      top: 20px;
+      right: 40px;
     }
     .logo { max-height: 64px; max-width: 200px; object-fit: contain; }
     .title-wrap { margin-left: 24px; }
@@ -46,11 +51,15 @@
 <body>
   <header class="cover">
     <% if (theme?.logoUrl) { %>
-      <img class="logo" src="<%= logoTransformed %>" alt="Logo" />
+      <img class="logo" src="<%= theme.logoUrl %>" alt="Logo" />
     <% } %>
     <div class="title-wrap">
       <h1 class="title"><%= t('proposal_title', 'Propuesta Comercial') %></h1>
       <p class="subtitle"><%= client?.name || '' %></p>
+    </div>
+    <!-- LupaProp logo in top right -->
+    <div class="lupaprop-logo">
+      <img src="/assets/lupaprop-logo.png" alt="LupaProp Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;" />
     </div>
   </header>
 

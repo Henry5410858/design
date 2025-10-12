@@ -5,8 +5,9 @@
   <title>Propuesta Simple</title>
   <style>
     :root { --primary: <%= theme?.primary || '#1f2937' %>; --secondary: <%= theme?.secondary || '#6366f1' %>; --text: #111827; --muted: #6b7280; }
-    body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; color: var(--text); }
-    .cover { height: 240px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; display: flex; align-items: center; padding: 36px 44px; }
+    body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; color: var(--text); max-height: 100vh; overflow: hidden; }
+    .cover { height: 240px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; display: flex; align-items: center; padding: 36px 44px; position: relative; }
+    .lupaprop-logo { position: absolute; top: 20px; right: 44px; }
     .logo { max-height: 64px; max-width: 220px; }
     .container { padding: 28px 44px; }
     .h2 { font-size: 20px; font-weight: 800; margin: 18px 0 8px; }
@@ -23,9 +24,13 @@
 <body>
   <header class="cover">
     <% if (theme?.logoUrl) { %>
-      <img class="logo" src="<%= logoTransformed %>" alt="Logo" />
+      <img class="logo" src="<%= theme.logoUrl %>" alt="Logo" />
     <% } %>
     <h1 style="margin-left:16px">Propuesta Comercial</h1>
+    <!-- LupaProp logo in top right -->
+    <div class="lupaprop-logo">
+      <img src="/assets/lupaprop-logo.png" alt="LupaProp Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;" />
+    </div>
   </header>
 
   <main class="container">

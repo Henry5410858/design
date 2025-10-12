@@ -5,8 +5,9 @@
   <title>Comparativa Corta</title>
   <style>
     :root { --primary: <%= theme?.primary || '#1f2937' %>; --secondary: <%= theme?.secondary || '#6366f1' %>; --text: #111827; --muted: #6b7280; }
-    body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; color: var(--text); }
-    .cover { height: 200px; background: var(--primary); color: #fff; display: flex; align-items: center; padding: 28px 40px; }
+    body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; color: var(--text); max-height: 100vh; overflow: hidden; }
+    .cover { height: 200px; background: var(--primary); color: #fff; display: flex; align-items: center; padding: 28px 40px; position: relative; }
+    .lupaprop-logo { position: absolute; top: 20px; right: 40px; }
     .logo { max-height: 56px; max-width: 180px; }
     .container { padding: 24px 40px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -23,9 +24,13 @@
 <body>
   <header class="cover">
     <% if (theme?.logoUrl) { %>
-      <img class="logo" src="<%= logoTransformed %>" alt="Logo" />
+      <img class="logo" src="<%= theme.logoUrl %>" alt="Logo" />
     <% } %>
     <h1 style="margin-left:16px">Comparativa de Propiedades</h1>
+    <!-- LupaProp logo in top right -->
+    <div class="lupaprop-logo">
+      <img src="/assets/lupaprop-logo.png" alt="LupaProp Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;" />
+    </div>
   </header>
   <main class="container">
     <section class="grid">
