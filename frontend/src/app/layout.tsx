@@ -23,8 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" 
           rel="stylesheet" 
         />
+        <meta name="google" content="translate" />
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased" translate="yes">
        
         <ClientOnly>
         <DevServiceWorkerGuard />

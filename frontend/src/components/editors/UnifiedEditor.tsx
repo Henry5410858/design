@@ -9440,7 +9440,7 @@ const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-blue-400 opacity-60 rounded-lg"></div>
                   
                   {/* Debug Color Harmony Buttons */}
-                  <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+                  {/* <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
                     <button
                       onClick={manualTriggerColorHarmony}
                       className="px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors shadow-lg"
@@ -9469,7 +9469,7 @@ const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                     >
                       🧪 Test System
                     </button>
-                  </div>
+                  </div> */}
                   
                   {/* Drag and drop overlay */}
                   {isDragOver && (

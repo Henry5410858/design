@@ -1,6 +1,22 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, startTransition } from 'react';
+
+// Google Translate API types
+declare global {
+  interface Window {
+    google: {
+      translate: {
+        TranslateElement: {
+          new (options: any, elementId: string): any;
+          InlineLayout: {
+            SIMPLE: string;
+          };
+        };
+      };
+    };
+  }
+}
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import {
   FileText as FilePdf,
@@ -174,14 +190,55 @@ export default function ProposalPage() {
   const [durationDays, setDurationDays] = useState<number | ''>('');
 
   useEffect(() => {
+    // Set page language to Spanish
     const html = document.documentElement;
     html.lang = 'es';
-    html.setAttribute('translate', 'no');
-
-    // Optional: reset when unmount
+    
+    // Enable translation on the page
+    html.removeAttribute('translate');
+    html.removeAttribute('data-no-translate');
+    
+    // Allow translation on body and main content
+    document.body.setAttribute('translate', 'yes');
+    
+    // Remove any existing translation blocking meta tags
+    const existingMeta = document.querySelector('meta[name="google"]');
+    if (existingMeta) {
+      existingMeta.remove();
+    }
+    
+    // Add Google Translate support meta tag
+    const meta = document.createElement('meta');
+    meta.name = 'google';
+    meta.content = 'translate';
+    document.head.appendChild(meta);
+    
+    // Add Google Translate widget script if not already present
+    if (!document.querySelector('script[src*="translate.googleapis.com"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://translate.googleapis.com/translate_static/js/element/main.js';
+      script.async = true;
+      script.onload = () => {
+        // Initialize Google Translate widget
+        if (window.google && window.google.translate) {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'es',
+            includedLanguages: 'en,fr,de,it,pt,ru,ja,ko,zh,ar',
+            layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE
+          }, 'google_translate_element');
+        }
+      };
+      document.head.appendChild(script);
+    }
+  
+    // Cleanup
     return () => {
       html.lang = 'en';
-      html.removeAttribute('translate');
+      document.body.removeAttribute('translate');
+      const meta = document.querySelector('meta[name="google"]');
+      if (meta) {
+        meta.remove();
+      }
     };
   }, []);
 
@@ -396,13 +453,29 @@ export default function ProposalPage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center">
-              <FilePdf size={24} className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-2xl flex items-center justify-center">
+                <FilePdf size={24} className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Generador de Propuestas</h1>
+                <p className="text-gray-600">Crea propuestas comerciales profesionales con propiedades y productos</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Generador de Propuestas</h1>
-              <p className="text-gray-600">Crea propuestas comerciales profesionales con propiedades y productos</p>
+            {/* Google Translate Widget */}
+            <div id="google_translate_element" className="flex items-center">
+              <div className="goog-te-combo" style={{ 
+                background: 'white', 
+                border: '1px solid #d1d5db', 
+                borderRadius: '8px', 
+                padding: '4px 8px',
+                fontSize: '14px'
+              }}></div>
+            </div>
+            {/* Fallback translation notice */}
+            <div className="text-xs text-gray-500 mt-1">
+              💡 Right-click to translate this page
             </div>
           </div>
         </div>
