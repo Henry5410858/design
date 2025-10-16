@@ -1,5 +1,5 @@
 # MongoDB Configuration
-MONGODB_URL=mongodb+srv://tonyklassen:fXUND8zN7necywxH@designflow.hlbvhbv.mongodb.net/design_center
+MONGODB_URL=mongodb+srv://tonyklassen496:p9RvCVjeLfQKJ2Jp@designflow.hlbvhbv.mongodb.net/design_center
 # MONGODB_URL=mongodb://localhost:27017/designcenter
 
 # JWT Secret
