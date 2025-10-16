@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
+const os = require('os');
 const cloudinary = require('../config/cloudinary');
 const auth = require('../middleware/auth');
 const premium = require('../middleware/premium');
@@ -179,10 +180,19 @@ router.post('/enhance-intro', auth, async (req, res) => {
     console.error('❌ AI intro enhancement failed:', error);
     console.error('📋 Error stack:', error.stack);
     console.error('🔍 Error name:', error.name);
+    console.error('🧪 Dependencies check:');
+    console.error('   Puppeteer:', checkPuppeteerAvailable());
+    console.error('   Canvas:', checkCanvasAvailable());
     res.status(500).json({ 
       message: 'AI intro enhancement failed', 
       error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
-      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
+      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack,
+      diagnostics: process.env.NODE_ENV !== 'production' ? {
+        puppeteer: checkPuppeteerAvailable(),
+        canvas: checkCanvasAvailable(),
+        nodeVersion: process.version,
+        nodeEnv: process.env.NODE_ENV
+      } : undefined
     });
   }
 });
@@ -354,17 +364,36 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
     console.error('🌍 Environment:', process.env.NODE_ENV);
     console.error('📦 Puppeteer available:', checkPuppeteerAvailable());
     console.error('🎨 Canvas available:', checkCanvasAvailable());
+    console.error('🔧 Puppeteer path:', process.env.PUPPETEER_EXECUTABLE_PATH);
+    console.error('🔧 Chrome path:', process.env.CHROME_PATH);
     
-    res.status(500).json({ 
+    // Enhanced error response with diagnostics
+    const errorResponse = {
       message: 'PDF generation failed', 
       error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      diagnostics: process.env.NODE_ENV === 'production' ? undefined : {
+      errorType: error.name,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Add stack trace in development/staging
+    if (process.env.NODE_ENV !== 'production') {
+      errorResponse.stack = error.stack;
+      errorResponse.diagnostics = {
         puppeteer: checkPuppeteerAvailable(),
         canvas: checkCanvasAvailable(),
-        nodeEnv: process.env.NODE_ENV
-      }
-    });
+        nodeEnv: process.env.NODE_ENV,
+        nodeVersion: process.version,
+        puppeteerPath: process.env.PUPPETEER_EXECUTABLE_PATH,
+        chromePath: process.env.CHROME_PATH,
+        platformInfo: {
+          platform: process.platform,
+          arch: process.arch,
+          availableMemory: Math.round(os.freemem() / 1024 / 1024) + ' MB'
+        }
+      };
+    }
+    
+    res.status(500).json(errorResponse);
   }
 });
 

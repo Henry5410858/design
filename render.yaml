@@ -3,15 +3,20 @@ services:
     name: design-center-backend
     env: node
     buildCommand: |
+      set -e
+      echo "🔧 Render Build Starting..."
       echo "📦 Installing system dependencies for PDF generation..."
-      apt-get update -qq && \
+      apt-get update && \
       apt-get install -y --no-install-recommends \
         build-essential \
         python3 \
         git \
         ca-certificates \
+        wget \
+        gnupg \
         libfontconfig1 \
         chromium-browser \
+        chromium \
         libcairo2 \
         libcairo2-dev \
         libpango1.0 \
@@ -22,25 +27,41 @@ services:
         libpixman-1 \
         libpixman-1-dev \
         libx11-6 \
-        libxext6 && \
+        libxext6 \
+        libxrender1 \
+        fonts-liberation \
+        xfonts-75dpi \
+        xfonts-100dpi && \
       apt-get clean && \
       rm -rf /var/lib/apt/lists/* && \
-      echo "✅ System dependencies installed" && \
-      echo "📥 Installing Node dependencies..." && \
-      npm install && \
-      echo "✅ Backend ready for deployment"
+      echo "✅ System dependencies installed successfully" && \
+      echo "🔍 Verifying Chromium installation..." && \
+      which chromium-browser || which chromium || echo "⚠️ Chromium not found in PATH" && \
+      ls -la /usr/bin/chromium* 2>/dev/null || echo "⚠️ No chromium binaries in /usr/bin" && \
+      echo "📥 Installing Node dependencies in backend directory..." && \
+      cd backend && \
+      npm ci --prefer-offline --no-audit 2>&1 || npm install && \
+      echo "✅ Node dependencies installed" && \
+      echo "🧪 Testing critical dependencies..." && \
+      node -e "try { require('puppeteer'); console.log('✅ Puppeteer OK'); } catch(e) { console.error('❌ Puppeteer:', e.message); }" && \
+      node -e "try { require('canvas'); console.log('✅ Canvas OK'); } catch(e) { console.warn('⚠️ Canvas (optional):', e.message); }" && \
+      echo "📋 Backend build configuration complete"
     startCommand: cd backend && npm start
     rootDir: ./backend
     envVars:
       - key: NODE_ENV
         value: production
       - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: "true"
+        value: "false"
       - key: PUPPETEER_EXECUTABLE_PATH
         value: /usr/bin/chromium-browser
       - key: CHROME_PATH
         value: /usr/bin/chromium-browser
       - key: CHROMIUM_PATH
         value: /usr/bin/chromium-browser
+      - key: PUPPETEER_NO_SANDBOX
+        value: "true"
+      - key: PUPPETEER_DISABLE_HEADLESS_MODE
+        value: "false"
     healthCheckPath: /api/health
     autoDeploy: true

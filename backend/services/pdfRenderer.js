@@ -115,13 +115,26 @@ class PDFRenderer {
   // Main method to generate PDF
   async generateProposal(data) {
     // Preload images (logo and property images) before starting PDF rendering
-    const preloadResult = await this.preloadAssets(data);
+    let preloadResult;
+    try {
+      preloadResult = await this.preloadAssets(data);
+      console.log('✅ Assets preloaded successfully');
+    } catch (preloadError) {
+      console.error('❌ Asset preloading failed:', preloadError.message);
+      console.error('📋 Stack:', preloadError.stack);
+      // Continue with empty/fallback assets to ensure PDF still generates
+      preloadResult = {
+        logoBuffer: null,
+        lupapropLogoBuffer: null,
+        itemsWithBuffers: data.items || []
+      };
+    }
 
     return new Promise(async (resolve, reject) => {
       try {
-        console.log('Generating PDF with data:', {
+        console.log('📄 Generating PDF with data:', {
           template: data.template,
-          client: data.client,
+          client: data.client?.name,
           propertiesCount: data.items?.length,
           hasIntro: !!data.introText,
           hasContact: !!data.contact
@@ -175,11 +188,24 @@ class PDFRenderer {
         // Page numbers removed as requested
         // this.addPageNumbers();
 
+        console.log('✅ PDF template rendered, finalizing...');
         this.doc.end();
 
       } catch (error) {
-        console.error('Error in PDF generation:', error);
-        reject(error);
+        console.error('❌ Critical error in PDF generation:', error);
+        console.error('📋 Error stack:', error.stack);
+        console.error('🔍 Error name:', error.name);
+        console.error('🔍 Error message:', error.message);
+        console.error('📦 Template used:', data?.template);
+        console.error('👤 Client name:', data?.client?.name);
+        
+        // Provide detailed error information
+        const detailedError = new Error(`PDF generation failed: ${error.message}`);
+        detailedError.originalError = error;
+        detailedError.template = data?.template;
+        detailedError.client = data?.client?.name;
+        
+        reject(detailedError);
       }
     });
   }
