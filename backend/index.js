@@ -15,19 +15,41 @@ const proposalRoutes = require('./routes/proposals');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// ✅ UPDATED: Enhanced CORS configuration for Netlify + Render
+// ✅ UPDATED: Enhanced CORS configuration for Netlify + Render (environment-aware)
+const getAllowedOrigins = () => {
+  const baseOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ];
+  
+  // Add Netlify frontend URL from environment
+  if (process.env.FRONTEND_URL) {
+    baseOrigins.push(process.env.FRONTEND_URL);
+  }
+  
+  // Add any additional origins from environment variable
+  if (process.env.CORS_ORIGINS) {
+    process.env.CORS_ORIGINS.split(',').forEach(origin => {
+      const trimmed = origin.trim();
+      if (trimmed && !baseOrigins.includes(trimmed)) {
+        baseOrigins.push(trimmed);
+      }
+    });
+  }
+  
+  return baseOrigins;
+};
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    const allowedOrigins = [
-      'https://design-center.netlify.app',
-      'http://localhost:3000',
-      'http://localhost:3001'
-    ];
+    const allowedOrigins = getAllowedOrigins();
+    
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log('🚫 CORS blocked for origin:', origin);
+      console.log('✅ Allowed origins:', allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },

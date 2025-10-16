@@ -124,31 +124,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       
       // Send email and password to backend for authentication
-      // Try backend first; if it fails (e.g., server down), fall back to Next.js internal API
       const payload = { email, password };
-      let response: Response | null = null;
-
+      
+      // ✅ PRODUCTION: Use backend API only, no fallback to internal routes
+      // This ensures security and proper authentication flow
+      console.log('🔐 Login: Attempting authentication with backend at:', API_ENDPOINTS.SIGNIN);
+      
+      let response: Response;
       try {
         response = await fetch(API_ENDPOINTS.SIGNIN, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          credentials: 'include' // Important: include cookies for CORS requests
         });
-      } catch (e) {
-        console.warn('🔐 Login: Primary backend unreachable, falling back to internal API /api/auth/signin');
-      }
-
-      if (!response) {
-        response = await fetch('/api/auth/signin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+      } catch (fetchError) {
+        console.error('🔐 Login: Network error - backend unreachable:', fetchError);
+        throw new Error(
+          'Backend server is unreachable. Please check: ' +
+          '1) Backend is running and accessible ' +
+          '2) NEXT_PUBLIC_API_URL is set correctly'
+        );
       }
 
       if (response.ok) {
         const loginData = await response.json();
-        console.log('🔐 Login: Login successful, data:', loginData);
+        console.log('🔐 Login: Login successful');
 
         // Construct user object with name field
         const userData: User = {
@@ -156,7 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: loginData.user.username || loginData.user.email
         };
 
-        console.log('🔐 Login: Constructed user data:', userData);
+        console.log('🔐 Login: User authenticated:', userData.name);
 
         // Calculate expiry time (7 days from now, matching backend JWT expiry)
         const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
@@ -167,13 +168,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
 
-        console.log('🔐 Login: User state set, token stored');
+        console.log('🔐 Login: User state set, token stored (expires in 7 days)');
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error((errorData as any).message || 'Invalid credentials');
+        // Handle HTTP errors
+        let errorMessage = 'Invalid credentials';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use default message
+        }
+        throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('🔐 Login error:', error);
       throw error;
     } finally {
       setIsLoading(false);
