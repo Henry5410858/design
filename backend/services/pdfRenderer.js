@@ -187,7 +187,25 @@ class PDFRenderer {
   // Preload logo and property images as buffers so PDFKit can draw them synchronously
   async preloadAssets(data) {
     const items = Array.isArray(data.items) ? data.items : [];
-    const { createCanvas, loadImage } = require('canvas');
+    
+    // Try to load canvas library with error handling
+    let createCanvas, loadImage;
+    try {
+      const canvasLib = require('canvas');
+      createCanvas = canvasLib.createCanvas;
+      loadImage = canvasLib.loadImage;
+      console.log('✅ Canvas library loaded successfully');
+    } catch (error) {
+      console.error('❌ Canvas library not available:', error.message);
+      console.error('⚠️ PDF generation will continue without image optimization');
+      // Return fallback that skips image optimization
+      return { 
+        logoBuffer: null, 
+        lupapropLogoBuffer: null, 
+        itemsWithBuffers: items 
+      };
+    }
+    
     const toPngBuffer = async (buf) => {
       try {
         const img = await loadImage(buf);
@@ -195,7 +213,10 @@ class PDFRenderer {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         return canvas.toBuffer('image/png');
-      } catch (_) { return buf; }
+      } catch (error) { 
+        console.warn('⚠️ PNG buffer conversion failed:', error.message);
+        return buf; 
+      }
     };
     const loadOne = async (url) => {
       try {

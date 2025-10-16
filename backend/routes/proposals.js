@@ -9,6 +9,25 @@ const { uploadPdf } = require('../services/cloudinaryHelpers');
 const pdfRenderer = require('../services/pdfRenderer');
 const router = express.Router();
 
+// Helper functions for diagnostics
+const checkPuppeteerAvailable = () => {
+  try {
+    require.resolve('puppeteer');
+    return 'installed';
+  } catch (e) {
+    return 'missing';
+  }
+};
+
+const checkCanvasAvailable = () => {
+  try {
+    require.resolve('canvas');
+    return 'installed';
+  } catch (e) {
+    return 'missing';
+  }
+};
+
 // Test endpoint to verify connection and auth
 router.get('/test', auth, (req, res) => {
   console.log('🧪 Test endpoint called');
@@ -90,6 +109,31 @@ router.get('/health', (req, res) => {
   });
 });
 
+// Diagnostic endpoint to check dependencies
+router.get('/diagnostics', auth, (req, res) => {
+  const diagnostics = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    dependencies: {
+      puppeteer: checkPuppeteerAvailable(),
+      canvas: checkCanvasAvailable()
+    },
+    environment_variables: {
+      PUPPETEER_EXECUTABLE_PATH: process.env.PUPPETEER_EXECUTABLE_PATH ? 'set' : 'not set',
+      CHROME_PATH: process.env.CHROME_PATH ? 'set' : 'not set',
+      FRONTEND_URL: process.env.FRONTEND_URL || 'not set',
+      CORS_ORIGINS: process.env.CORS_ORIGINS || 'not set'
+    },
+    system: {
+      platform: process.platform,
+      nodeVersion: process.version,
+      memoryUsage: process.memoryUsage()
+    }
+  };
+  
+  res.json(diagnostics);
+});
+
 // List available templates
 router.get('/templates', auth, (req, res) => {
   res.json({
@@ -133,9 +177,12 @@ router.post('/enhance-intro', auth, async (req, res) => {
     res.json({ enhancedText });
   } catch (error) {
     console.error('❌ AI intro enhancement failed:', error);
+    console.error('📋 Error stack:', error.stack);
+    console.error('🔍 Error name:', error.name);
     res.status(500).json({ 
       message: 'AI intro enhancement failed', 
-      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message 
+      error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
+      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
     });
   }
 });
@@ -302,10 +349,21 @@ router.post('/generate', auth, premium, upload.any(), async (req, res) => {
 
   } catch (error) {
     console.error('💥 PDF generation failed:', error);
+    console.error('📋 Error stack:', error.stack);
+    console.error('🔍 Error name:', error.name);
+    console.error('🌍 Environment:', process.env.NODE_ENV);
+    console.error('📦 Puppeteer available:', checkPuppeteerAvailable());
+    console.error('🎨 Canvas available:', checkCanvasAvailable());
+    
     res.status(500).json({ 
       message: 'PDF generation failed', 
       error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      diagnostics: process.env.NODE_ENV === 'production' ? undefined : {
+        puppeteer: checkPuppeteerAvailable(),
+        canvas: checkCanvasAvailable(),
+        nodeEnv: process.env.NODE_ENV
+      }
     });
   }
 });

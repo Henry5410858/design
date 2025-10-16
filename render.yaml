@@ -1,8 +1,3 @@
-# backend/render.yaml - BACKUP (use root render.yaml instead)
-# NOTE: This file is kept for reference only
-# Render reads render.yaml from the REPOSITORY ROOT, not from subdirectories
-# The active configuration is in /render.yaml (root directory)
-
 services:
   - type: web
     name: design-center-backend
@@ -30,18 +25,22 @@ services:
         libxext6 && \
       apt-get clean && \
       rm -rf /var/lib/apt/lists/* && \
-      echo "✅ System dependencies installed"
-    startCommand: npm start
+      echo "✅ System dependencies installed" && \
+      echo "📥 Installing Node dependencies..." && \
+      npm install && \
+      echo "✅ Backend ready for deployment"
+    startCommand: cd backend && npm start
+    rootDir: ./backend
     envVars:
       - key: NODE_ENV
         value: production
       - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
         value: "true"
       - key: PUPPETEER_EXECUTABLE_PATH
-        value: "/usr/bin/chromium-browser"
+        value: /usr/bin/chromium-browser
       - key: CHROME_PATH
-        value: "/usr/bin/chromium-browser"
+        value: /usr/bin/chromium-browser
       - key: CHROMIUM_PATH
-        value: "/usr/bin/chromium-browser"
+        value: /usr/bin/chromium-browser
     healthCheckPath: /api/health
     autoDeploy: true
