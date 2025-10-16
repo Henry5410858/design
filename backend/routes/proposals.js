@@ -69,26 +69,11 @@ router.get('/test-ai', auth, async (req, res) => {
   }
 });
 
-// CORS configuration
-router.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      'https://design-center.netlify.app',
-      'http://localhost:3000',
-      'http://localhost:3001'
-    ];
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true
-}));
+// ✅ REMOVED: CORS is now handled globally in index.js
+// This prevents conflicting CORS configurations that block requests
+// The global CORS in index.js uses dynamic environment variables:
+// - FRONTEND_URL: Main frontend deployment URL
+// - CORS_ORIGINS: Additional allowed origins (comma-separated)
 
 const upload = multer({
   storage: multer.memoryStorage(),
